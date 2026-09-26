@@ -73,6 +73,13 @@ resolution.
   fixed/absolute descendants, which would break the window manager), no barrel distortion.
   Scanlines on shell chrome only, never over long-form body copy. Static, not animated.
 
+- [Window manager: does it feel right?](issues/04-window-manager-prototype.md): free
+  float with snap zones — edges and corners tile, 8px window-to-window magnetism,
+  dragging a snapped window restores its pre-snap size. Hand-rolled, no library: all
+  three prototype variants came to 423 lines of JS, against ~30 KB gzip for `react-rnd`
+  that would also own the chrome's DOM. Seed layout is fractions of the canvas; window
+  position is not persisted across reloads.
+
 ## Not yet specified
 
 - **Sound design.** Keyboard clicks, boot chime, window open/close. Hangs on how
@@ -130,3 +137,10 @@ resolution.
   `prefers-contrast: more` and `forced-colors: active`. And if any part of the CRT
   treatment animates, WCAG 2.2.2 makes a pause/stop/hide control a conformance
   requirement — a strong argument for keeping it static.
+- **A fixed-pixel seed layout is a trap.** It looks composed on a laptop and like four
+  stamps in the corner of a 4K screen. All initial window geometry is expressed as
+  fractions of the canvas.
+- **A window can end up entirely outside a shrinking desktop and be unreachable.** Pixel
+  geometry does not follow the viewport. A rescue clamp on every viewport change, keeping
+  each title bar reachable, is required — and is only a floor. Below the mobile
+  breakpoint the desktop shell must not render at all.
