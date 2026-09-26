@@ -66,6 +66,12 @@ resolution.
   bytes and zero licence obligations, and is the only route that guarantees the wireframe
   reading. No CC0 quadcopter exists anywhere in the free commons. Fallbacks, in order: a
   $5.99 Sketchfab Standard model, then a CC BY 3.0 poly.pizza quad.
+- [CRT / phosphor treatment](issues/02-crt-phosphor-treatment.md): hybrid — a CSS-only
+  DOM overlay for the shell (scanline gradient + `text-shadow` bloom) plus a shader pass
+  confined to the R3F canvas. Three refusals: no `mix-blend-mode` (6x compositor cost for
+  pixel-identical output), no `filter` on a wrapper (it becomes a containing block for
+  fixed/absolute descendants, which would break the window manager), no barrel distortion.
+  Scanlines on shell chrome only, never over long-form body copy. Static, not animated.
 
 ## Not yet specified
 
@@ -114,3 +120,13 @@ resolution.
   deprecation warning and it is a trap; `client:only` avoids the warning instead.
 - **`LineBasicMaterial.linewidth` is ignored by WebGL and WebGPU** — always one pixel. A
   1 px hairline dies under scanlines. Use drei's `<Edges>` (fat lines via `LineSegments2`).
+- **A CSS `filter` on a wrapper element becomes a containing block** for absolutely and
+  fixed-positioned descendants. Wrapping the desktop in a filter to get CRT bloom would
+  silently break window positioning. Per Filter Effects L1.
+- **`mix-blend-mode` on a full-viewport overlay costs ~6x display-compositor work and
+  changes no pixels** against a near-black ground — multiply against black reduces to
+  plain source-over alpha. Measured: 2.3ms → 13.8ms per frame, of a 16.7ms budget.
+- **`prefers-reduced-motion` is the wrong lever for a static overlay.** The right ones are
+  `prefers-contrast: more` and `forced-colors: active`. And if any part of the CRT
+  treatment animates, WCAG 2.2.2 makes a pause/stop/hide control a conformance
+  requirement — a strong argument for keeping it static.

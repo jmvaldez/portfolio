@@ -38,3 +38,7 @@ this prototype:
 - **Confirm Fast Refresh behaviour with a module-scope `ShaderMaterial`** under
   `astro dev`. Ticket `01` reasoned about this hazard but did not reproduce it; ten
   minutes here settles it.
+- **The canvas shader pass is the only place a post-process can live.** A WebGL pass
+  cannot touch DOM text; the shell's CRT treatment is CSS (ticket `02`). This prototype
+  owns making the two layers agree so the canvas doesn't read as a different material
+  from the chrome around it.
