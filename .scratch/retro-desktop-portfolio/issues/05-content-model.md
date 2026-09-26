@@ -1,7 +1,7 @@
 # Content model and the fake filesystem
 
 Type: grilling
-Status: open
+Status: claimed
 Blocked by: —
 
 ## Question
