@@ -44,3 +44,32 @@ Chrome snaps the gradient to whole device pixels with no antialiasing, so the sc
 bands beat between 1 and 2 device pixels and produce visible moiré. Driving the period
 from a `(resolution: Ndppx)` query fixes it; ticket 02 leans toward accepting it for v1
 and retrofitting, but this ticket owns the call.
+
+## Prototype
+
+Branch `prototype/visual-system`, at
+`.scratch/retro-desktop-portfolio/prototypes/06-visual-system/index.html`.
+Single self-contained HTML file; `python3 -m http.server 8732` from that directory.
+
+Three visual systems over one settled layout, switchable via `?variant=` and a floating
+bar. A static mock — nothing drags.
+
+- **A, Phosphor purist.** One hue, mono everywhere including body copy, hairline chrome,
+  dense. The HUD is a crosshair and nothing else.
+- **B, HUD.** Phosphor chrome with sans-serif body copy at a comfortable measure; amber
+  marks live state; corner brackets on the focused window and kill-feed toasts.
+- **C, Instrument panel.** Dual phosphor — green is data, amber is chrome and numerals.
+  Heavy bevelled frames, gauges in the taskbar, the strongest CRT.
+
+The token panel computes WCAG contrast **live from the rendered colours**, including each
+surface under its own scanline overlay, and checks both hard numbers from ticket 02 (the
+0.35 alpha ceiling and the ~10.2:1 phosphor floor). `C` toggles the CRT off — the single
+off-switch ticket 02 requires. "copy tokens" exports the variant as CSS custom properties.
+
+Type is system mono and system sans; picking the webfont is downstream. What this locks
+is whether long-form copy stays mono at all.
+
+Still to decide when the variant is picked: the DPR 1.25/1.5 moiré call inherited from
+ticket 02, and the `(resolution: Ndppx)` query if the answer is to fix it rather than
+accept it.
+
