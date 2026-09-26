@@ -20,6 +20,11 @@ what keeps it from reading as a theme pack.
 **Skills every session should consult**: `grilling` and `domain-modeling` by default;
 `prototype` for prototype tickets; `research` for research tickets.
 
+**Where things live**: tickets in `issues/NN-<slug>.md`; research write-ups in
+`research/NN-<slug>.md`; prototypes on their own throwaway branch, linked from the
+ticket. Research agents work on `research/<slug>` branches, merged to `main` on
+resolution.
+
 **Standing preferences**
 - Break the build into small tasks; one PR per task. Clean and modular.
 - Audience is both recruiters and peers; no rush, but legibility never loses to the toy.
@@ -39,8 +44,10 @@ what keeps it from reading as a theme pack.
   not folded into projects), `resume`, `contact`, plus a persistent taskbar.
 - **Mobile**: a separate linear layout that keeps the desktop's chrome (title bars as
   section headers, scanlines, HUD accents) but drops the metaphor.
-- **Stack**: new repo at `/mnt/shared/dev/portfolio`. Astro 5 + Tailwind 4, desktop
+- **Stack**: new repo at `/mnt/shared/dev/portfolio`. Astro 7 + Tailwind 4, desktop
   shell as a React island with `@react-three/fiber`, content pages near-zero JS.
+  (Astro 5 was named while charting and is stale: 7.0 shipped 2026-06-22. Nothing in
+  the island model or the `client:*` directives changed between 5 and 7.)
 - **Content**: Astro content collections — MDX + zod-validated frontmatter. The fake
   filesystem the terminal walks *is* the collection tree.
 - **Hosting**: static Astro on Cloudflare Pages. Contact is `mailto:` in v1; no backend.
@@ -48,6 +55,17 @@ what keeps it from reading as a theme pack.
 ## Decisions so far
 
 <!-- one line per closed ticket: gist + link -->
+
+- [Three.js / R3F inside Astro](issues/01-threejs-in-astro.md): `client:only="react"` on
+  the shell island with the 3D scene behind a `React.lazy()` boundary and a `matchMedia`
+  gate; 237 KB gzip for three+R3F+drei, content pages measured at 0 KB JS. Use `<Canvas>`,
+  not the `createRoot` escape hatch. Teardown is already correct — minimise keeps the
+  canvas mounted at `frameloop="never"`, only an explicit close unmounts.
+- [Sourcing the drone model](issues/03-drone-model-sourcing.md): build it procedurally
+  from three.js primitives — a recognisable FPV quad is ~388 triangles, ships zero asset
+  bytes and zero licence obligations, and is the only route that guarantees the wireframe
+  reading. No CC0 quadcopter exists anywhere in the free commons. Fallbacks, in order: a
+  $5.99 Sketchfab Standard model, then a CC BY 3.0 poly.pizza quad.
 
 ## Not yet specified
 
@@ -62,6 +80,12 @@ what keeps it from reading as a theme pack.
 - **Performance budget and how it's enforced** (Lighthouse CI, bundle-size gate).
 - **SEO and social**: meta, OG images for a site whose landing is a canvas.
 - **Domain name and analytics.**
+- **Repo visibility, and what it implies for assets.** If the repo goes public, paid
+  royalty-free licences (Sketchfab Standard, Quaternius QAL) forbid committing the asset
+  file, while CC-BY permits it — an inversion where the paid route is the riskier one.
+  Moot if the drone stays procedural; decide alongside hosting.
+- **A `/credits` page.** Only needed if any CC-BY asset lands. CC BY 4.0 §3(a)(2) lets a
+  hyperlink satisfy attribution, so it never has to intrude on the UI.
 
 ## Out of scope
 
@@ -73,3 +97,20 @@ what keeps it from reading as a theme pack.
   that makes the work harder to read.
 - **Terminal as primary navigation.** Fails the 40-second recruiter test.
 - **Real content.** Deliberately deferred; lorem ipsum until the build is done.
+- **Draco mesh compression.** Its glTF decoder is 250 KB against an ~85 KB model, and
+  drei's `useGLTF` silently defaults it to a gstatic.com CDN. Meshopt (29 KB) if any
+  loader is ever needed at all; procedural means none is.
+
+## Hazards
+
+<!-- things a later session must not rediscover the hard way -->
+
+- **Downloaded drone models must be looked at, not just licence-checked.** The post-2022
+  free "FPV drone" corpus is overwhelmingly military — kamikaze drones, munitions,
+  surveillance rigs — and one popular low-poly quad has Rostec branding baked into its
+  textures. A recruiter-facing page rendering a loitering munition is hard to walk back.
+- **`vite.ssr.noExternal: ['@react-three/drei']` breaks `astro dev`** with a 500 and a
+  `detect-gpu` CJS named-export error. It is the obvious-looking fix for three's CJS
+  deprecation warning and it is a trap; `client:only` avoids the warning instead.
+- **`LineBasicMaterial.linewidth` is ignored by WebGL and WebGPU** — always one pixel. A
+  1 px hairline dies under scanlines. Use drei's `<Edges>` (fat lines via `LineSegments2`).

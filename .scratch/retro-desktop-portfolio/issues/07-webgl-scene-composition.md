@@ -18,3 +18,23 @@ created and destroyed as windows open and close; and the fallback path on mobile
 `prefers-reduced-motion`.
 
 Resolve with the prototype linked as an asset and measured frame timings, not estimates.
+
+## Inputs from resolved research
+
+Carried here by tickets `01` and `03`, which each deferred their last open question to
+this prototype:
+
+- **Evaluate drei's `<View>` first.** It is the standing answer to "one canvas or two",
+  and the 237 KB three chunk is shared either way, so the decision is about the browser's
+  live-context cap and about resize behaviour, not about bytes.
+- **Does a ~388-triangle procedural quad actually read as an FPV drone at `viewer.exe`
+  scale?** This is the only genuine unknown left in the drone recommendation. If it
+  doesn't read, the fallback is a $5.99 Sketchfab Standard model or a CC BY 3.0
+  poly.pizza quad — see ticket `03`.
+- **Use drei's `<Edges>` for the wireframe, not `LineBasicMaterial`.** `linewidth` is
+  ignored by WebGL and WebGPU; a 1 px hairline will not survive the scanline overlay.
+- **Frame cost on integrated graphics is unmeasured.** Bytes are known, milliseconds are
+  not. Measure, don't estimate.
+- **Confirm Fast Refresh behaviour with a module-scope `ShaderMaterial`** under
+  `astro dev`. Ticket `01` reasoned about this hazard but did not reproduce it; ten
+  minutes here settles it.
