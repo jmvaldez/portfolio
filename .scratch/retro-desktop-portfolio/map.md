@@ -80,6 +80,15 @@ resolution.
   that would also own the chrome's DOM. Seed layout is fractions of the canvas; window
   position is not persisted across reloads.
 
+- [Content model and the fake filesystem](issues/05-content-model.md): plain `.md`, not
+  MDX — `.mdx` entries never carry `entry.rendered`, `.md` do, which deletes the whole
+  rendering mechanism. Three collections (`projects`, `drones`, `pages`), infinitely
+  nestable, each schema a union discriminated on an explicit `type` so a nested note
+  isn't forced to carry project frontmatter. A directory's content is `readme.md`, never
+  `index.md`. A mount table assembles the tree and also feeds the taskbar launchers and
+  the desktop icons. `cat` prints raw source; windows hold the full body, one static
+  file per entry fetched on open and prefetched on hover.
+
 ## Not yet specified
 
 - **Sound design.** Keyboard clicks, boot chime, window open/close. Hangs on how
@@ -87,8 +96,6 @@ resolution.
 - **Accessibility strategy beyond `prefers-reduced-motion`.** Keyboard navigation of
   a window manager, focus order, screen-reader story for a desktop metaphor, contrast
   under a CRT overlay.
-- **Project case-study page template.** What a single project page actually contains
-  and how deep it goes. Waits on the content model.
 - **Resume delivery.** PDF download, a rendered page, or both.
 - **Performance budget and how it's enforced** (Lighthouse CI, bundle-size gate).
 - **SEO and social**: meta, OG images for a site whose landing is a canvas.
@@ -144,3 +151,20 @@ resolution.
   geometry does not follow the viewport. A rescue clamp on every viewport change, keeping
   each title bar reachable, is required — and is only a floor. Below the mobile
   breakpoint the desktop shell must not render at all.
+- **Astro 7 replaced remark with Sätteri** as the default Markdown processor and
+  `@astrojs/markdown-remark` is no longer installed. Plugin-free content is unaffected,
+  but every remark snippet on the internet is now wrong for this codebase, and the
+  standard reading-time recipe needs rewriting as a Sätteri mdast plugin. Unexplored.
+- **`.mdx` entries never have `entry.rendered`; `.md` entries do.** `@astrojs/mdx`
+  registers `contentModuleTypes`, which sends every `.mdx` entry down the deferred-render
+  branch unconditionally. Anyone "upgrading" the content to MDX later silently loses
+  `rendered.html` and has to reintroduce the Container API to get it back.
+- **`getCollection()` from client code is a hard build error** (`[ServerOnlyModule]`),
+  with no workaround. Anything the browser needs from a collection must be built at
+  build time and serialised.
+- **The glob loader strips a trailing `/index`**, so `x/index.md` and a sibling `x.md`
+  produce the same id and one silently wins. Dodged by using `readme.md` for a
+  directory's content; reintroducing `index.md` reopens it.
+- **Zod 4 since Astro 6.** Import `z` from `astro/zod`, not `astro:content`.
+  `.default()` must now match the *output* type, `z.string().email()` became `z.email()`,
+  and `errorsMap` is gone.

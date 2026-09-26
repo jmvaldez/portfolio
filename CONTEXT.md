@@ -19,6 +19,24 @@ A draggable, resizable panel inside the desktop shell. Floats freely and tiles w
 released against an edge or corner.
 _Avoid_: modal, dialog, panel, card
 
+**Content window**:
+A window holding one entry's rendered body.
+_Avoid_: detail window, viewer
+
+**Folder window**:
+A window holding a directory's listing rather than a body.
+_Avoid_: browser, explorer, finder
+
+**Launcher**:
+A taskbar button that opens a root-level mount. Distinct from the button representing
+an already-open window.
+_Avoid_: shortcut, tab, nav item
+
+**Desktop icon**:
+An icon on the desktop surface itself, derived from the same mount table as the
+launchers.
+_Avoid_: shortcut, tile
+
 **Snap zone**:
 A region at an edge or corner of the desktop that tiles a window released into it.
 _Avoid_: dock, drop target
@@ -73,6 +91,24 @@ _Avoid_: document, record, post, item
 An entry's prose, authored as plain Markdown. Rendered to HTML at build time and
 fetched on demand.
 _Avoid_: content, copy, markdown (as a noun for the prose itself)
+
+**Project**:
+An entry describing a piece of software work. Carries `type: "project"`.
+_Avoid_: case study, work, portfolio item
+
+**Drone build**:
+An entry describing one aircraft. A peer of a project, never a kind of project.
+Carries `type: "drone"`.
+_Avoid_: drone project, build log
+
+**Note**:
+A supporting entry nested under a project or a drone build, carrying only a title.
+Exists so nesting does not force full frontmatter onto every file.
+_Avoid_: sub-page, child, fragment
+
+**Readme**:
+The file holding a directory's own content. A directory never carries a body itself.
+_Avoid_: index, overview page
 
 **Tech**:
 A software project's technology stack.
