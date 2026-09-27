@@ -163,6 +163,16 @@ resolution.
   Folder pages use the same template: readme body if one exists, then the listing. A
   window adds only a one-line **spec strip** above its body.
 
+- [Typeface selection](issues/13-typeface.md): **IBM Plex Mono**, one face everywhere.
+  Its true italic beat Noto Sans Mono's real small caps, since emphasis is on every page
+  and small caps only in the spec keys, which get an explicit uppercase fallback, never
+  `font-variant-caps`. Regular, Bold and Italic are hinted woff2, pre-subset with
+  `smcp,c2sc,zero,case,tnum` kept, ~50 KB. They are self-hosted through Astro's local
+  provider with only Regular preloaded, and use `swap`. Astro's `optimizedFallbacks` is off
+  in favour of hand-written size-adjusted Menlo / Consolas / DejaVu Sans Mono faces.
+  Slashed zero goes on chrome and terminal only. OFL is safe in a public repo, but the
+  "Plex" RFN means the subset files are renamed.
+
 ## Not yet specified
 
 - **Sound design.** Keyboard clicks, boot chime, window open/close. Hangs on how
@@ -186,7 +196,8 @@ resolution.
   critical path of a round trip and needs a bound. Accepted deliberately as the price of
   keeping content pages at 0 KB JS. Ticket 10 adds two more: the inline boot-gate
   script in `<head>` on `/`, and a 600 ms floor on first-visit time-to-desktop. Ticket 11 adds a build step that renders the drone SVG from the
-  procedural geometry.
+  procedural geometry. Ticket 13 adds ~50 KB of woff2 on every page, with one
+  preload.
 - **SEO and social**: meta and OG images. The landing-is-a-canvas half of this is no
   longer fog — ticket 09 made `/` server-render the linear layout, so the crawler reads a
   real document. What remains is per-entry meta and how OG images get generated. Ticket 12
@@ -195,7 +206,8 @@ resolution.
 - **Repo visibility, and what it implies for assets.** If the repo goes public, paid
   royalty-free licences (Sketchfab Standard, Quaternius QAL) forbid committing the asset
   file, while CC-BY permits it — an inversion where the paid route is the riskier one.
-  Moot if the drone stays procedural; decide alongside hosting.
+  Moot if the drone stays procedural; decide alongside hosting. The typeface is not a
+  constraint here: ticket 13 chose an OFL face that can be committed publicly.
 - **A `/credits` page.** Only needed if any CC-BY asset lands. CC BY 4.0 §3(a)(2) lets a
   hyperlink satisfy attribution, so it never has to intrude on the UI.
 
@@ -340,3 +352,21 @@ resolution.
   content pages before first paint, which needs a small inline blocking script — the
   dark-mode pattern. "Near-zero JS" on content pages means this and nothing more; anyone who
   removes it to hit a literal zero will make the toggle appear not to persist.
+
+- **Font subsetting strips the features the design depends on.** pyftsubset's defaults
+  drop `smcp`, `c2sc` and `zero`, and Fontsource and Google-served woff2 files strip
+  those and box drawing too. Always subset with
+  `--layout-features+=smcp,c2sc,zero,case,tnum`, and check the output with fontTools.
+- **Astro's Fonts API does not subset local files, and its `monospace` fallback is Courier
+  New only**, placed *ahead* of any fallbacks you list. Leaving `optimizedFallbacks` on
+  quietly shadows the hand-written Menlo/Consolas faces. Consolas without `size-adjust`
+  narrows the 58ch column by ~44 px on swap.
+- **"Plex" is an OFL Reserved Font Name.** A subset is a Modified Version, so shipping a
+  subset still named "IBM Plex Mono" breaches the licence. Rename it inside the file, and
+  commit `OFL.txt` beside the woff2.
+- **`font-variant-caps: small-caps` on a face without `smcp` makes the browser fake it**
+  with scaled capitals. Plex has none, so small caps are always the explicit uppercase
+  fallback.
+- **The fallback metrics are partly unverified.** The Menlo and Consolas advances came from
+  secondary sources, and hinted Plex at 11–13px is unchecked on Windows at fractional DPR.
+  Check both on real machines before trusting the numbers.
