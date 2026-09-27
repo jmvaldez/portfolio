@@ -111,6 +111,21 @@ resolution.
   ticket 02's hybrid CRT survives. `drag mode: freeze` is A-only: with a shared canvas it
   measured *worse* than live. The procedural ~388-triangle quad reads as an FPV drone.
 
+- [Navigation and transition model](issues/09-navigation-and-transitions.md): **promotion is
+  the navigation** — a window holds the full body and its maximise box navigates to the
+  node's page; a window has a maximise box iff its node has a URL, so synthetic nodes are
+  shell-only. The shell never mutates the URL (always `/`), so an in-window section is not
+  linkable and the page is the one canonical address. The terminal never navigates. `/`
+  server-renders the linear layout and the shell replaces it on hydration, so one artifact
+  serves mobile, no-JS and the crawler. A page carries the chrome and drops the metaphor,
+  with a close box that is a plain `<a href="/">`. The transition is **native
+  cross-document view transitions, outbound only** — `<ClientRouter />` is excluded because
+  persisting the shell requires emitting the island on every page, which would put 237 KB
+  of three + R3F on every content page against ticket 01's measured 0 KB. Return is a plain
+  cut; Firefox degrades to it anyway. `sessionStorage` restores the window layout within a
+  tab (narrowing ticket 04, not reversing it); the CRT toggle is a `localStorage`
+  preference readable by the pages; boot is gated on shell state, not route.
+
 ## Not yet specified
 
 - **Sound design.** Keyboard clicks, boot chime, window open/close. Hangs on how
@@ -118,10 +133,19 @@ resolution.
 - **Accessibility strategy beyond `prefers-reduced-motion`.** Keyboard navigation of
   a window manager, focus order, and the screen-reader story for a desktop metaphor.
   (Contrast under the CRT overlay is no longer fog: the visual system locked a palette
-  that clears AA on every surface with its own scanline composited in.)
+  that clears AA on every surface with its own scanline composited in. Reduced motion for
+  the promotion transition is no longer fog either: ticket 09 settled `navigation: none`
+  under the media query. What remains is whether promotion is reachable from the keyboard
+  at all, and what a screen reader makes of a maximise box that is really a link.)
 - **Resume delivery.** PDF download, a rendered page, or both.
-- **Performance budget and how it's enforced** (Lighthouse CI, bundle-size gate).
-- **SEO and social**: meta, OG images for a site whose landing is a canvas.
+- **Performance budget and how it's enforced** (Lighthouse CI, bundle-size gate). Ticket
+  09 put a new number inside this: promotion destroys the shell, so **shell re-entry cost**
+  (parse, hydrate, fresh WebGL context, restore the sessionStorage layout) is now on the
+  critical path of a round trip and needs a bound. Accepted deliberately as the price of
+  keeping content pages at 0 KB JS.
+- **SEO and social**: meta and OG images. The landing-is-a-canvas half of this is no
+  longer fog — ticket 09 made `/` server-render the linear layout, so the crawler reads a
+  real document. What remains is per-entry meta and how OG images get generated.
 - **Domain name and analytics.**
 - **Repo visibility, and what it implies for assets.** If the repo goes public, paid
   royalty-free licences (Sketchfab Standard, Quaternius QAL) forbid committing the asset
@@ -228,3 +252,46 @@ resolution.
   is a discrete RTX 3060; two attempts to force headless Chrome onto this machine's AMD iGPU
   produced a page that loaded and never rendered. The DPR-2 / high-density stress column is a
   stand-in for a weak GPU, not a measurement of one.
+
+- **`transition:persist` silently drops an element the next page does not contain.** Astro's
+  shipped swap does `if (!newEl) continue;` and discards it with the old `<body>`; there is a
+  test in Astro's own repo named for this case. The only way to persist the desktop shell
+  across a navigation is to emit the island on *every* page — which means every content page
+  runs 237 KB of three + R3F, against ticket 01's measured 0 KB. This looks like the obvious
+  way to keep the desktop alive and it is a trap.
+- **`<ClientRouter />` silently sets `prefetchAll: true`** for every link on the page
+  (`init({ prefetchAll: true })` in the shipped source). Installing the router quietly
+  overwrites any selective prefetch policy. `@astrojs/prefetch` is separately deprecated on
+  npm.
+- **Astro's router owns `history.state`** (`{index, scrollX, scrollY}`) and `onPopState`
+  early-returns on `ev.state === null`, so an island calling `pushState(null, ...)`
+  desynchronises Back — the URL changes and the DOM does not. **Still unfixed in 7.3.5.**
+  Dodged here only because ticket 09 decided the shell never touches the URL. Also:
+  `samePage()` compares pathname *and search*, so a query-string change makes the router
+  fetch and swap the whole document on traversal, while a hash-only change short-circuits.
+- **In `astro dev` only, an incoming `client:only` island is fully hydrated in a hidden
+  `<iframe src=target>`** (`prepareForClientOnlyComponents()`). Every dev-mode client-side
+  navigation back to the shell page therefore briefly runs **two shells and two WebGL
+  contexts**. Production builds do not. Anyone profiling the shell in dev will measure a
+  phantom.
+- **Two elements sharing a `view-transition-name` skip the entire transition, silently.**
+  The name must be applied to exactly the window being promoted, in the click handler, never
+  statically to every window. Related: a named element forms a stacking context and
+  **flattens 3D transforms at all times**, not only while transitioning, and a fragmented
+  element drops out of the transition with no error.
+- **Cross-document view transitions have no reduced-motion handling of their own.** Astro's
+  router ships `animation: none !important` under `prefers-reduced-motion`; the CSS
+  `@view-transition` form ships nothing, and reduced motion appears nowhere in either spec,
+  on MDN, or in Chrome's docs. `navigation: none` inside `@media` is legal and is on us.
+- **Firefox has no cross-document view-transition support** and its meta bug (1860854) has
+  no target milestone. Note the inversion against Astro-5-era advice: *same-document* view
+  transitions *did* land in Firefox 144, so Astro's router animates in Firefox while
+  `@view-transition` does not.
+- **Astro 7's Rust compiler no longer auto-corrects invalid nesting and errors on unclosed
+  tags.** Hand-built window chrome is exactly the code that used to get away with it. Also
+  `compressHTML: 'jsx'` strips whitespace between inline elements, and `src/fetch.ts` is
+  now reserved.
+- **A zero-JS page cannot read a `localStorage` preference.** The CRT toggle has to apply on
+  content pages before first paint, which needs a small inline blocking script — the
+  dark-mode pattern. "Near-zero JS" on content pages means this and nothing more; anyone who
+  removes it to hit a literal zero will make the toggle appear not to persist.

@@ -51,6 +51,18 @@ A real, statically rendered route with its own URL, outside the desktop shell. W
 long-form content is actually read.
 _Avoid_: view, screen, route
 
+**Promotion**:
+Navigating from a window to the same node's page. The maximise box performs it; a window
+is never a preview, so promotion changes the framing and never the content. A window has
+a maximise box if and only if its node has a URL.
+_Avoid_: maximise to page, expand, open full, pop out
+
+**Linear layout**:
+The site rendered with the chrome but without the metaphor: no dragging, no snapping, no
+desktop surface. One artifact serving three jobs — the mobile experience, the document
+served at `/` for a visitor without the shell, and what a crawler reads.
+_Avoid_: mobile view, fallback, responsive layout, no-JS version
+
 ### The filesystem
 
 **Filesystem**:

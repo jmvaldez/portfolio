@@ -17,3 +17,13 @@ string is; the easter eggs and how discoverable they are; and how the terminal i
 reachable (always-open window, taskbar item, keyboard shortcut).
 
 Depends on the filesystem shape settled in `05`.
+
+## Hard constraint from ticket 09
+
+**The terminal never navigates.** Everything it does happens inside the desktop shell. A
+typed command that can tear down the document is an unbounded set of ways to lose desktop
+state, and the terminal was already ruled out as primary navigation. So `open projects`
+raises the projects *window*; it never loads the projects *page*. If the visitor wants the
+page, they maximise the window the terminal opened — promotion is the maximise box's job,
+not a verb. This is not a decision this ticket revisits; the `open`? in the question above
+is settled as window-only.
