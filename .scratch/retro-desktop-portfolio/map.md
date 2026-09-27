@@ -100,6 +100,17 @@ resolution.
   at every DPR and deletes the `(resolution: Ndppx)` query from the design. The webfont
   itself is still open, graduated to [Typeface selection](issues/13-typeface.md).
 
+- [WebGL scene composition](issues/07-webgl-scene-composition.md): variant B — **one
+  canvas, drei `<View>`**. The grid tracks `#desktop`, each `viewer.exe` tracks its own
+  window body; windows add views, never contexts (1 context with five viewers open, against
+  A's 6), so the browser's context cap stops being a design constraint. Measured on a real
+  GPU: all three variants are vsync-capped in the light case and only separate under stress
+  (DPR 2, high density, five viewers), where B holds the best worst-frame (66.6ms vs A's
+  109.3ms) and C collapses to 16 fps. The reported "post-process cannot compose with
+  `View.Port`" was wrong — the pass brackets it at useFrame priorities 0.5 / 1 / 10, so
+  ticket 02's hybrid CRT survives. `drag mode: freeze` is A-only: with a shared canvas it
+  measured *worse* than live. The procedural ~388-triangle quad reads as an FPV drone.
+
 ## Not yet specified
 
 - **Sound design.** Keyboard clicks, boot chime, window open/close. Hangs on how
@@ -193,3 +204,27 @@ resolution.
   the failure lands on the small subordinate text — bylines, column headers, gauge
   labels — which is exactly the text nobody re-checks. Every token gets its contrast
   computed against the scan-darkened surface, not the clean one.
+
+- **An opaque DOM surface over the canvas is the silent failure mode of every
+  shared-canvas design.** `#desktop` carried `background: var(--bg)` and paints after the
+  full-viewport canvas, so the ambient grid was invisible in all three variants of the 07
+  prototype, and the drone with it in B and C — for a whole session, convincingly enough to
+  look like "only two contexts works". The ground fill belongs on an ancestor *behind* the
+  canvas; `#desktop` and any window that shows 3D stay transparent. Whenever the 3D layer
+  is blank, suspect paint order before suspecting WebGL.
+- **drei's `View` leaves the viewport set to the last view it rendered.** `finishSkissor`
+  restores `autoClear` and turns the scissor test off but does not reset the viewport, so a
+  full-screen pass drawn afterwards appears squashed into whichever view went last — which
+  reads exactly like proof that a post-process cannot compose with `View.Port`. Reset the
+  viewport before the fullscreen quad.
+- **Freeze-to-bitmap during drag only helps when something can stop rendering.** Under one
+  shared canvas the grid must keep running, so a frozen window pays the full render *plus* a
+  `toDataURL` of the whole canvas per gesture — measured worse than not freezing. The
+  shared-canvas equivalent is `<View frames={0}>` / `visible={false}` on the dragged view.
+- **`renderer.info` reports one renderer.** A design with a canvas per window (variant A)
+  reports the stats of whichever renderer the HUD happens to hold — it read 2 draw calls
+  against the one-canvas variants' 212. Frame timings stay sound; geometry counters do not.
+- **The frame budget on integrated graphics is still unmeasured.** Every number in ticket 07
+  is a discrete RTX 3060; two attempts to force headless Chrome onto this machine's AMD iGPU
+  produced a page that loaded and never rendered. The DPR-2 / high-density stress column is a
+  stand-in for a weak GPU, not a measurement of one.
