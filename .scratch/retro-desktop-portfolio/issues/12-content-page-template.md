@@ -1,7 +1,7 @@
 # Content page template
 
 Type: grilling
-Status: open
+Status: claimed
 Blocked by: —
 
 ## Question
