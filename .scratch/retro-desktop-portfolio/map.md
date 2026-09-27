@@ -177,6 +177,13 @@ resolution.
   Slashed zero goes on chrome and terminal only. OFL is safe in a public repo, but the
   "Plex" RFN means the subset files are renamed.
 
+- [Research: build-time OG image generation in Astro 7](issues/17-og-image-generation.md):
+  Satori + resvg-js in a hand-written static `getStaticPaths` endpoint. Satori draws the full
+  chrome, so there's no background PNG. The font is a renamed TTF subset, because Satori
+  rejects woff2. About 0.3 s per image cold, and cached across deploys by Astro 7.2's
+  experimental `incrementalBuild` plus Cloudflare's build cache. There's no SEO component,
+  so meta goes in a hand-written `Head.astro`.
+
 ## Not yet specified
 
 <!-- empty: the remaining fog graduated into tickets 14-19 on 2026-09-27 -->
@@ -345,3 +352,15 @@ resolution.
 - **The fallback metrics are partly unverified.** The Menlo and Consolas advances came from
   secondary sources, and hinted Plex at 11–13px is unchecked on Windows at fractional DPR.
   Check both on real machines before trusting the numbers.
+
+- **Satori rejects woff2 and drops missing glyphs silently.** Every OG render needs a TTF
+  subset, renamed per the OFL, and any character outside the subset disappears with no
+  warning.
+- **Without `site` in the Astro config, `og:image` silently becomes
+  `http://localhost:4321/...`** and the build still passes.
+- **Astro's incremental build is blind to files read from disk, and turns off at
+  `build.concurrency > 1`.** Hash the font into `cacheKey` by hand. Cloudflare Pages keeps
+  only `node_modules/.astro`, its build cache is off until enabled, and it's purged after 7
+  days without a read.
+- **resvg-js scans system fonts on every render by default** (~75 ms per image). Pass
+  `font: { loadSystemFonts: false }`.

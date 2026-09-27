@@ -1,7 +1,7 @@
 # Research: build-time OG image generation in Astro 7
 
 Type: research
-Status: open
+Status: resolved
 Blocked by: —
 
 ## Question
@@ -30,3 +30,15 @@ Findings: [build-time OG image generation in Astro 7](../research/17-og-image-ge
 In short: a static `getStaticPaths` endpoint rendering with Satori + resvg-js from a renamed
 TTF subset, with Astro 7.2's experimental incremental build and Cloudflare Pages' build
 cache keeping the images across deploys.
+
+## Resolution
+
+Generate OG images with a hand-written static endpoint, `src/pages/og/[...path].png.ts`, that
+runs `getStaticPaths` over the collections and renders each image with Satori 0.33 and
+`@resvg/resvg-js` 2.6. Satori draws the full chrome itself (bevel, bloom, scanlines, slashed
+zero), so there's no pre-rendered background. The font is a TTF built by ticket 13's subsetting
+script without `--flavor`, renamed like the woff2. Rendering costs about 0.3 s per image cold.
+Astro 7.2's experimental `incrementalBuild` flag, with Cloudflare Pages' build cache turned on,
+skips images that haven't changed. Astro 7 has no SEO component, so meta goes in a
+hand-written `Head.astro`, with absolute URLs built from `site`. Takumi is the fallback if
+resvg-js goes stale. The options weighed, the evidence, and 15 hazards are in the write-up.
