@@ -1,7 +1,7 @@
 # Mobile layout
 
 Type: grilling
-Status: open
+Status: claimed
 Blocked by: 09
 
 ## Question
