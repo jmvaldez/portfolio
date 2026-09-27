@@ -48,8 +48,9 @@ resolution.
   shell as a React island with `@react-three/fiber`, content pages near-zero JS.
   (Astro 5 was named while charting and is stale: 7.0 shipped 2026-06-22. Nothing in
   the island model or the `client:*` directives changed between 5 and 7.)
-- **Content**: Astro content collections — MDX + zod-validated frontmatter. The fake
-  filesystem the terminal walks *is* the collection tree.
+- **Content**: Astro content collections — zod-validated frontmatter. The fake
+  filesystem the terminal walks *is* the collection tree. (MDX was named while charting
+  and is stale; ticket 05 settled on plain `.md`.)
 - **Hosting**: static Astro on Cloudflare Pages. Contact is `mailto:` in v1; no backend.
 
 ## Decisions so far
@@ -89,13 +90,24 @@ resolution.
   the desktop icons. `cat` prints raw source; windows hold the full body, one static
   file per entry fetched on open and prefetched on hover.
 
+- [Visual system](issues/06-visual-system.md): variant C, instrument panel, CRT on. Dual
+  phosphor — green `#7dff8f` is data, amber `#ffc24d` is chrome and numerals. Heavy 3px
+  bevelled frames, square corners, 30px title bars, gauges in the taskbar, the strongest
+  CRT in the set (0.32 alpha on a 3px period). **Long-form body copy stays mono**, at
+  15px / 1.75 / 58ch — no sans anywhere. Focus is an amber border plus a lit title bar.
+  The DPR moiré call inherited from ticket 02 is **fixed, not accepted**: soft-edged
+  scanline bands have no hard stop to snap to a device pixel, which removes the artefact
+  at every DPR and deletes the `(resolution: Ndppx)` query from the design. The webfont
+  itself is still open, graduated to [Typeface selection](issues/13-typeface.md).
+
 ## Not yet specified
 
 - **Sound design.** Keyboard clicks, boot chime, window open/close. Hangs on how
   committed the overall treatment turns out to be.
 - **Accessibility strategy beyond `prefers-reduced-motion`.** Keyboard navigation of
-  a window manager, focus order, screen-reader story for a desktop metaphor, contrast
-  under a CRT overlay.
+  a window manager, focus order, and the screen-reader story for a desktop metaphor.
+  (Contrast under the CRT overlay is no longer fog: the visual system locked a palette
+  that clears AA on every surface with its own scanline composited in.)
 - **Resume delivery.** PDF download, a rendered page, or both.
 - **Performance budget and how it's enforced** (Lighthouse CI, bundle-size gate).
 - **SEO and social**: meta, OG images for a site whose landing is a canvas.
@@ -168,3 +180,16 @@ resolution.
 - **Zod 4 since Astro 6.** Import `z` from `astro/zod`, not `astro:content`.
   `.default()` must now match the *output* type, `z.string().email()` became `z.email()`,
   and `errorsMap` is gone.
+
+- **Hard colour stops in a scanline gradient beat against fractional DPR.** At DPR 1.25
+  and 1.5 Chrome snaps them to whole device pixels with no antialiasing, so the bands
+  alternate between 1 and 2 device pixels and ripple. Soft-edged bands (a ramp, not a
+  stop) have no edge to snap and fix it at every DPR without a `(resolution: Ndppx)`
+  matrix. Anyone "tidying" the gradient back to two hard stops reintroduces it.
+- **The soft-edge fix is unverified on real fractional-DPR hardware.** Reasoned and
+  checked at DPR 1 only. Look at the shell on a 1.25x or 1.5x Windows display before
+  trusting it.
+- **A palette that passes AA unattenuated can still fail under its own scanline**, and
+  the failure lands on the small subordinate text — bylines, column headers, gauge
+  labels — which is exactly the text nobody re-checks. Every token gets its contrast
+  computed against the scan-darkened surface, not the clean one.

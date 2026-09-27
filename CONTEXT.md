@@ -117,3 +117,34 @@ _Avoid_: stack, technologies
 **Hardware**:
 A drone build's component stack — motors, ESC, flight controller, VTX, camera.
 _Avoid_: stack, parts, components, specs
+
+### The treatment
+
+**CRT treatment**:
+The layer of effects that makes the shell read as a phosphor monitor: scanlines and
+bloom. Static, never animated, and switchable off as a single unit.
+_Avoid_: CRT effect, retro filter, screen effect
+
+**Scanline**:
+The horizontal darkening applied to a chrome surface. Per-surface, never a viewport
+overlay, and never over long-form body copy.
+_Avoid_: scanlines overlay, raster line, CRT lines
+
+**Bloom**:
+The glow on lit text, drawn as a `text-shadow`. Never a CSS filter or a blend mode.
+_Avoid_: glow, halo, phosphor glow
+
+**Phosphor green**:
+The green that carries data and lit text. One of two hues; the other is the amber.
+_Avoid_: terminal green, primary green
+
+**Amber**:
+The second hue. It carries chrome, numerals, the HUD layer, and the focused window's
+border. Never used for body copy.
+_Avoid_: orange, accent colour, highlight
+
+**HUD layer**:
+The competitive-FPS borrowings: the crosshair and readout inside the viewer, the
+kill-feed toasts, and the taskbar gauges. One layer, deliberately thin.
+_Avoid_: HUD overlay, game UI, chrome
+
