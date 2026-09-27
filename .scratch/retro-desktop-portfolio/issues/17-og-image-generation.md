@@ -23,3 +23,10 @@ on Cloudflare Pages with no backend, so images have to be rendered at build time
 
 Primary sources only. Carry the hazards forward in the Astro 7 vein: Sätteri, the Rust
 compiler, Zod 4.
+
+## Research
+
+Findings: [build-time OG image generation in Astro 7](../research/17-og-image-generation.md).
+In short: a static `getStaticPaths` endpoint rendering with Satori + resvg-js from a renamed
+TTF subset, with Astro 7.2's experimental incremental build and Cloudflare Pages' build
+cache keeping the images across deploys.
