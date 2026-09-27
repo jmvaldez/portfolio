@@ -1,7 +1,7 @@
 # Content page template
 
 Type: grilling
-Status: claimed
+Status: resolved
 Blocked by: —
 
 ## Question
@@ -67,3 +67,98 @@ a second strip.
 same maximise-box glyph meaning "this node's page". The page masthead should read as a
 Section grown to full height, so a mobile visitor tapping a Section's maximise box sees
 the same object get bigger, even without a transition.
+
+## Answer
+
+The captain took every recommendation in the round.
+
+### URLs
+
+**A page's URL is its node path with the extension dropped, with a trailing slash.**
+`projects/orbital-mesh/readme.md` → `/projects/orbital-mesh/`; a note →
+`/projects/orbital-mesh/notes/`; `pages/about` → `/about/`. Every entry gets a URL,
+notes included; synthetic nodes get none, which is what keeps ticket 09's "maximise box
+iff the node has a URL" rule mechanical. One rule, derived from the filesystem, so the
+terminal's `pwd` and the address bar agree.
+
+### The page frame
+
+The page's outermost framed element is the **page frame**, and it is the view-transition
+morph target. A **centered column the same ~72ch as the linear layout's Sections**,
+at least full viewport height, grid floor in the margins. Not full-bleed: a window growing
+into a centered column reads as the same object getting bigger, where a full-bleed frame
+reads as replacement. Ticket 11's "a Section grown to full height" is literally true.
+
+### Anatomy, top to bottom
+
+1. **Masthead**: the title bar, showing the filename, with the close box on its right
+   (`<a href="/">`, ticket 09).
+2. **Breadcrumbs**.
+3. **Spec block**, on entries whose frontmatter carries facts.
+4. **Cover**, projects only, when set.
+5. **Body**, clean: no scanlines (ticket 02).
+6. **Gallery**, then **footage**.
+7. **Children listing**, directories only.
+8. **Prev/next**.
+9. **Taskbar strip**, fixed, ticket 11's strip.
+
+Facts before prose, so the first screen answers role, tech and period; visuals after prose,
+so they illustrate it rather than replace it. `pages` entries (about, contact) use the
+same template with no spec block, cover or prev/next.
+
+### Breadcrumbs
+
+A terminal-style path, `/ projects / orbital-mesh / notes`, each segment linking to that
+directory's folder page and `/` linking to the desktop. Titles are each link's accessible
+name, so a screen reader hears "Orbital Mesh", not "orbital-mesh". Wrapped in a
+`<nav aria-label="Breadcrumb">`.
+
+### Spec block
+
+A key/value list in the instrument-panel voice: **amber small-caps keys, green values**,
+numerals tabular.
+
+- Projects: `ROLE`, `PERIOD`, `STATUS`, `TECH`, `REPO`, `LIVE`.
+- Drones: `CLASS`, `FRAME`, `WEIGHT`, `PROPS`, `FIRST FLIGHT`, then `HARDWARE` as a nested
+  list (motors, ESC, flight controller, VTX, camera).
+- Empty optional fields are **omitted**, never rendered as `—`.
+
+### Gallery and footage, with zero JS
+
+- **Gallery**: a grid of framed thumbnails, each a plain link to the full-size image. No
+  lightbox. Images carry no scanlines, like body copy.
+- **Footage**: rows of poster frame plus label, each linking out to the URL. **No iframe
+  embeds**: a YouTube embed brings roughly 1 MB of third-party JS onto a page that is
+  otherwise near-zero.
+
+### Folder pages
+
+One template branching on two facts: *has a body* and *has children*. A directory's page
+shows its readme body if it has one, then its listing as a Section inside the page frame
+— the same rows as the folder window. No readme means listing only. `/projects/` and
+`/drones/` are ordinary folder pages. This is how a project's notes stay reachable from
+its page.
+
+### Prev/next
+
+Siblings in the same directory, in folder-listing order (featured, then date). Notes are
+out of their parent's sequence. No wraparound. Labels are titles.
+
+### Window versus page
+
+- **The window** carries the body, a **one-line spec strip** under the title bar
+  (`WIP · 2025–PRESENT · LEAD`, `FREESTYLE · 5" · 612G`), and the `READ FULL PAGE` bar
+  when the body overflows. Without the strip a drone window is anonymous prose.
+- **The page alone** carries the breadcrumbs, the full spec block, cover, gallery, footage,
+  children listing and prev/next.
+- **The page never carries** the `READ FULL PAGE` bar, any window control except the close
+  box, or anything draggable.
+
+### Knock-on effects
+
+- **Typeface selection (13)**: the spec block wants small caps and tabular numerals from
+  the chosen face, or a convincing fallback for small caps.
+- **SEO and social**: the URL scheme is now fixed, so per-entry meta has a canonical
+  address to hang on. OG image generation is still fog.
+- **Accessibility**: breadcrumb naming is settled above; the close box and the maximise
+  box are still glyph links that need accessible names.

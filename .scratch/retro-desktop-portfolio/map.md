@@ -154,6 +154,15 @@ resolution.
   CRT toggle, and it is shared with content pages. The drone is a build-time SVG from the
   procedural geometry. No terminal.
 
+- [Content page template](issues/12-content-page-template.md): the URL is the node path
+  without its extension (`/projects/orbital-mesh/`), and every entry has one, notes included.
+  The **page frame** is a centered ~72ch column and is the morph target. Top to bottom:
+  masthead with close box, terminal-style breadcrumbs, **spec block** (amber keys, green
+  values, empty fields omitted), cover, clean body, gallery (plain-link thumbnails), footage
+  (poster links, no iframes), children listing, prev/next among siblings, taskbar strip.
+  Folder pages use the same template: readme body if one exists, then the listing. A
+  window adds only a one-line **spec strip** above its body.
+
 ## Not yet specified
 
 - **Sound design.** Keyboard clicks, boot chime, window open/close. Hangs on how
@@ -180,7 +189,8 @@ resolution.
   procedural geometry.
 - **SEO and social**: meta and OG images. The landing-is-a-canvas half of this is no
   longer fog — ticket 09 made `/` server-render the linear layout, so the crawler reads a
-  real document. What remains is per-entry meta and how OG images get generated.
+  real document. What remains is per-entry meta and how OG images get generated. Ticket 12
+  fixed the URL scheme, so per-entry meta has its canonical address.
 - **Domain name and analytics.**
 - **Repo visibility, and what it implies for assets.** If the repo goes public, paid
   royalty-free licences (Sketchfab Standard, Quaternius QAL) forbid committing the asset

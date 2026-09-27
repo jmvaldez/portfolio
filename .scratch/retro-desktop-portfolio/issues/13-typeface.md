@@ -29,3 +29,10 @@ Decide: which mono, and how it ships.
   `size-adjust` metric overrides on the fallback.
 
 Graduated from the visual system, which locked everything about type except the face.
+
+## Constraint from ticket 12
+
+The spec block on every content page sets **amber small-caps keys over tabular green
+values**. The face needs real small caps (`font-variant-caps: all-small-caps`) or the
+design needs a decided fallback (uppercase at reduced size with letter-spacing), and it
+must carry tabular figures.

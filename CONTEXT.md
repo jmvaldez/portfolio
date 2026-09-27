@@ -69,6 +69,21 @@ the document's flow. Never dragged, closed or collapsed. Its only control is a m
 box, and only when its node has a URL.
 _Avoid_: panel, card, window (a Section is never a window)
 
+**Page frame**:
+The outermost framed element of a page: the same object as a window or a Section, grown
+to full height. What a promoted window becomes.
+_Avoid_: page container, wrapper, layout
+
+**Spec block**:
+A page's rendering of an entry's frontmatter facts as keys and values. Only fields that
+have a value appear.
+_Avoid_: metadata, info box, sidebar
+
+**Spec strip**:
+The one-line condensation of the spec block that a content window carries under its title
+bar.
+_Avoid_: subtitle, byline, meta line
+
 **Breakpoint**:
 The single viewport condition that decides whether a visitor gets the desktop shell or
 the linear layout. It is a hard handover and never a responsive squeeze, and it is re-evaluated live.
