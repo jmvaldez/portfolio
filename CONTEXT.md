@@ -89,6 +89,28 @@ A node with no collection entry behind it — a directory that only groups, an i
 text file, an easter egg.
 _Avoid_: virtual node, fake file, stub
 
+### The terminal
+
+**Terminal**:
+The toy shell: an app node that opens as a single window. Always an alternate path
+through the filesystem, never the only one, and never navigates away from the shell.
+_Avoid_: console, CLI, shell (the desktop shell is something else)
+
+**Command**:
+A verb the terminal understands. Each one is also a node under `/bin`, so the
+commands are discoverable by walking the filesystem.
+_Avoid_: program, builtin, script
+
+**Working directory**:
+The terminal's current position in the filesystem, shown in the prompt. Moved only by
+`cd`; clicking windows never changes it.
+_Avoid_: cwd (in prose), location, current folder
+
+**Easter egg**:
+A command absent from `help` and present in `/bin`, found by exploring rather than
+reading.
+_Avoid_: secret, hidden command, cheat
+
 ### The content
 
 **Collection**:

@@ -126,6 +126,15 @@ resolution.
   tab (narrowing ticket 04, not reversing it); the CRT toggle is a `localStorage`
   preference readable by the pages; boot is gated on shell state, not route.
 
+- [Terminal command surface](issues/08-terminal-command-surface.md): nine commands
+  (`help ls cd pwd cat open clear whoami exit`), no flags, Unix-shaped errors with a dry
+  second line; prompt `guest@valdez:<wd>$`. The terminal is `/bin/terminal.exe`, one
+  instance, open-but-unfocused on first arrival, backtick toggles it Quake-style. Tab
+  completion plus 100-line history in `sessionStorage`. `open` raises windows by node kind
+  and is the only terminal-to-window sync — clicking never moves the working directory.
+  Apps are `.exe`, commands extensionless. Easter eggs (`sudo`, `rm -rf /`, `arm`/`disarm`,
+  `hack`, Konami → amber grid) are absent from `help`, discoverable via `ls /bin`.
+
 ## Not yet specified
 
 - **Sound design.** Keyboard clicks, boot chime, window open/close. Hangs on how
@@ -136,7 +145,8 @@ resolution.
   that clears AA on every surface with its own scanline composited in. Reduced motion for
   the promotion transition is no longer fog either: ticket 09 settled `navigation: none`
   under the media query. What remains is whether promotion is reachable from the keyboard
-  at all, and what a screen reader makes of a maximise box that is really a link.)
+  at all, and what a screen reader makes of a maximise box that is really a link. Ticket 08 adds
+  the terminal: whether its output is announced as it prints.)
 - **Resume delivery.** PDF download, a rendered page, or both.
 - **Performance budget and how it's enforced** (Lighthouse CI, bundle-size gate). Ticket
   09 put a new number inside this: promotion destroys the shell, so **shell re-entry cost**

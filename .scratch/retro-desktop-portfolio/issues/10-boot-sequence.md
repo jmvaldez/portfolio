@@ -37,3 +37,10 @@ navigation a plain cut with no view transition, partly because a first-time arri
 shell already has the boot playing there. Whatever this ticket specifies for a *returning*
 visitor (who has already booted this session) is what fills that moment on a round trip —
 so "what a returning visitor sees instead" is now load-bearing, not a detail.
+
+## Note from ticket 08
+
+The terminal is open (unfocused) on first arrival at the shell and prints a one-line motd,
+`valdez-os 1.0 · type 'help'`, on a session's first open. Decide whether the boot's last
+line hands off into that motd, or whether the two are independent. Also: the boot's
+"skippable by any keypress" must not deliver that keypress to the terminal.
