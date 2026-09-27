@@ -135,6 +135,15 @@ resolution.
   Apps are `.exe`, commands extensionless. Easter eggs (`sudo`, `rm -rf /`, `arm`/`disarm`,
   `hack`, Konami → amber grid) are absent from `help`, discoverable via `ls /bin`.
 
+- [Boot sequence](issues/10-boot-sequence.md): the boot **starts at first paint, not at
+  hydration** — an inline head script (above the breakpoint, JS on) hides the linear
+  layout and shows a static CSS-timed boot screen the island takes over. Floor 600 ms,
+  ceiling 1.5 s, waits only on the island mounting and never on the 3D chunk; a 6 s hard
+  timeout reveals the linear layout so nobody is trapped. Returning visitors get a one-line
+  `RESUME · N WINDOWS RESTORED` held only while the shell mounts. Any key/click/tap jumps
+  to the end and is swallowed. Six straight POST lines, four reporting real state, no joke.
+  Hard cut to the desktop; independent of the terminal motd.
+
 ## Not yet specified
 
 - **Sound design.** Keyboard clicks, boot chime, window open/close. Hangs on how
@@ -146,13 +155,16 @@ resolution.
   the promotion transition is no longer fog either: ticket 09 settled `navigation: none`
   under the media query. What remains is whether promotion is reachable from the keyboard
   at all, and what a screen reader makes of a maximise box that is really a link. Ticket 08 adds
-  the terminal: whether its output is announced as it prints.)
+  the terminal: whether its output is announced as it prints. Ticket 10 adds the boot
+  screen and the resume line: likely `aria-hidden`, with one status announcement when the
+  desktop is ready.)
 - **Resume delivery.** PDF download, a rendered page, or both.
 - **Performance budget and how it's enforced** (Lighthouse CI, bundle-size gate). Ticket
   09 put a new number inside this: promotion destroys the shell, so **shell re-entry cost**
   (parse, hydrate, fresh WebGL context, restore the sessionStorage layout) is now on the
   critical path of a round trip and needs a bound. Accepted deliberately as the price of
-  keeping content pages at 0 KB JS.
+  keeping content pages at 0 KB JS. Ticket 10 adds two more: the inline boot-gate
+  script in `<head>` on `/`, and a 600 ms floor on first-visit time-to-desktop.
 - **SEO and social**: meta and OG images. The landing-is-a-canvas half of this is no
   longer fog — ticket 09 made `/` server-render the linear layout, so the crawler reads a
   real document. What remains is per-entry meta and how OG images get generated.

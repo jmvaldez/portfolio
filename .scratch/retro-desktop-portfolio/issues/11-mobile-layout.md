@@ -50,3 +50,12 @@ Consequences this ticket must respect:
   layout is the whole experience.
 - **Navigation without windows**: promotion does not exist here. Every node link in the
   linear layout goes straight to the node's page.
+
+## Hard constraint from ticket 10
+
+**The breakpoint must be testable before any JS module loads.** An inline blocking script
+in `<head>` decides whether to hide the linear layout and show the boot screen, and it
+reads this ticket's breakpoint to do so. Whatever the breakpoint is (width or capability),
+it must be expressible as a media query `matchMedia` can evaluate at first paint, and the
+island must use the same query, or the boot gate and the shell will disagree about which
+experience a visitor gets.

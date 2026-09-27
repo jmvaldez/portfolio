@@ -63,6 +63,17 @@ desktop surface. One artifact serving three jobs — the mobile experience, the 
 served at `/` for a visitor without the shell, and what a crawler reads.
 _Avoid_: mobile view, fallback, responsive layout, no-JS version
 
+**Boot**:
+The POST-style sequence shown on a tab's first arrival at the desktop shell. Belongs to
+the shell: wherever the shell does not render, there is no boot. Covers the shell's real
+startup rather than delaying it.
+_Avoid_: intro, splash, loading screen, splash screen
+
+**Resume**:
+What a visitor who has already booted this session sees while the shell starts again: a
+single line, never a replay of the boot.
+_Avoid_: reboot, warm boot, re-entry screen
+
 ### The filesystem
 
 **Filesystem**:
