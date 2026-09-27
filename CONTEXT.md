@@ -63,6 +63,17 @@ desktop surface. One artifact serving three jobs — the mobile experience, the 
 served at `/` for a visitor without the shell, and what a crawler reads.
 _Avoid_: mobile view, fallback, responsive layout, no-JS version
 
+**Section**:
+A framed block with a title bar in the linear layout: one root-level mount rendered in
+the document's flow. Never dragged, closed or collapsed. Its only control is a maximise
+box, and only when its node has a URL.
+_Avoid_: panel, card, window (a Section is never a window)
+
+**Breakpoint**:
+The single viewport condition that decides whether a visitor gets the desktop shell or
+the linear layout. It is a hard handover and never a responsive squeeze, and it is re-evaluated live.
+_Avoid_: mobile cutoff, responsive threshold
+
 **Boot**:
 The POST-style sequence shown on a tab's first arrival at the desktop shell. Belongs to
 the shell: wherever the shell does not render, there is no boot. Covers the shell's real

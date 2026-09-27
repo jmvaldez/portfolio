@@ -1,7 +1,7 @@
 # Mobile layout
 
 Type: grilling
-Status: claimed
+Status: resolved
 Blocked by: 09
 
 ## Question
@@ -59,3 +59,95 @@ reads this ticket's breakpoint to do so. Whatever the breakpoint is (width or ca
 it must be expressible as a media query `matchMedia` can evaluate at first paint, and the
 island must use the same query, or the boot gate and the shell will disagree about which
 experience a visitor gets.
+
+## Answer
+
+The captain took every recommendation in the round; the downstream points below were
+settled on the same defaults. This ticket designed the **linear layout** as a whole, since
+ticket 09 made it one artifact for mobile, the no-JS visitor, and the crawler; the phone
+is only its most common viewport.
+
+### Breakpoint
+
+**`(min-width: 1024px) and (min-height: 600px)`**, size only, no capability clause. One
+string, shared by the inline boot gate in `<head>` and the island's `matchMedia`, so they
+cannot disagree. Height is in because ticket 04 measured it mattering (860×560 tight,
+640×480 broken); 600 rather than 700 because a 1366×768 laptop's viewport is ~1366×650
+after browser chrome. No `pointer: fine`: a landscape iPad (1180×820) has room for the
+shell, and the window manager is already on pointer events.
+
+### Crossing it mid-session: live swap, both ways
+
+The linear layout is always in the DOM; the gate only hides it. The island listens to the
+same query: narrowing past it unmounts the shell (the window layout is already in
+`sessionStorage`) and reveals the linear layout; widening past it again shows the
+**Resume** line and remounts, never a boot. The rescue clamp from ticket 04 stays as a
+floor for the moments before the listener fires, not as a design.
+
+### What `/` is: one long scroll
+
+- A **masthead** band first: name and one-line role, over the CSS grid floor. Not a
+  Section.
+- Then one **Section** per root-level mount, in mount-table order: about → projects →
+  drones → resume → contact. Each Section's anchor id is its mount path (`#projects`).
+- `about` and `contact` render their body inline. `projects` and `drones` render the
+  folder listing (the same rows a folder window shows), each row linking to its page.
+  `resume` is a placeholder row until the resume delivery fog clears.
+
+### Section
+
+A framed block with a title bar, in flow. Heavy bevelled frame, amber title bar, scanlines
+on the chrome only, body clean (ticket 02). **The only title-bar control is the maximise
+box, and only where the node has a URL** — a plain link to the node's page. The ticket-09
+rule ("a maximise box iff the node has a URL") therefore holds on both surfaces, and
+promotion survives here as a link with no transition. No minimise, no close, no drag, no
+collapse: dead controls lie to a thumb.
+
+### Taskbar strip
+
+A **fixed bottom strip**, ~44px plus `env(safe-area-inset-bottom)`. Launchers are anchor
+links: `#projects` on `/`, `/#projects` from a page. The gauges and window buttons drop:
+they report live shell state and there is no shell here. The CRT toggle sits at the right
+end where the gauges were, rendered hidden and revealed by the same tiny inline script
+that applies the `localStorage` preference, so a no-JS visitor never sees a dead switch.
+**The same strip is the taskbar strip on content pages** (ticket 12), so all three surfaces
+agree.
+
+### The 3D layer, without the island
+
+- **Grid**: pure CSS, a perspective-transformed `linear-gradient` floor, confined to the
+  masthead band and never behind body copy.
+- **Drone**: a **build-time SVG** of the procedural quad's edges, generated from the same
+  geometry code the viewer uses, at a fixed three-quarter angle. It sits in the drones
+  Section with the viewer's crosshair and readout drawn over it in HTML. One source, so
+  the two surfaces cannot drift.
+- Both drop out under `forced-colors: active`.
+
+### HUD layer
+
+Crosshair and readout survive over the drone SVG. Kill-feed toasts and gauges drop: both
+need live state.
+
+### Terminal
+
+**Absent.** It is always an alternate path, and the linear layout already is the direct
+one. A transcript you cannot type into would be a costume, which is the theme-pack failure
+the map's Notes warn against. The in-world voice may appear in one line of footer copy.
+
+### Wide viewports
+
+The linear layout is also what a no-JS or crawler visit sees at 1440px and up. **A single
+centered column**, Sections capped at ~72ch (the 58ch body plus frame and padding), the
+grid floor filling the margins. One max-width from phone to wide screen; the reading order
+never changes with width.
+
+### Knock-on effects
+
+- **Content page template (12)**: the page's taskbar strip is this strip, CRT toggle
+  included. Section and page frame share the bevel and title bar, so the page masthead
+  should read as a Section grown to full height.
+- **Performance budget**: a build step now renders the drone SVG from the procedural
+  geometry; its size belongs in the budget.
+- **Accessibility**: a Section's maximise box is a link with a glyph for a label and needs
+  an accessible name ("Open <title> page"). The live swap moves focus out of an unmounted
+  window, so it needs a defined landing point.

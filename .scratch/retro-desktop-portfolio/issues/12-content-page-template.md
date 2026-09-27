@@ -55,3 +55,15 @@ so this ticket does not owe it one.
 
 **Folder pages are in scope and reached the same way**: folder windows promote too, same
 gesture, same meaning.
+
+## Hard constraints from ticket 11
+
+**The page's taskbar strip is the linear layout's strip**: fixed bottom, ~44px plus the
+safe-area inset, launchers as `/#<mount>` anchor links, no gauges or window buttons, and
+the CRT toggle at its right end (hidden until the inline script reveals it). Do not design
+a second strip.
+
+**A Section and the page frame are one family.** Same bevel and amber title bar, and the
+same maximise-box glyph meaning "this node's page". The page masthead should read as a
+Section grown to full height, so a mobile visitor tapping a Section's maximise box sees
+the same object get bigger, even without a transition.

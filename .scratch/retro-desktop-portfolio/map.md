@@ -144,6 +144,16 @@ resolution.
   to the end and is swallowed. Six straight POST lines, four reporting real state, no joke.
   Hard cut to the desktop; independent of the terminal motd.
 
+- [Mobile layout](issues/11-mobile-layout.md): designed as the **linear layout** for all
+  three jobs. Breakpoint `(min-width: 1024px) and (min-height: 600px)`, size only, shared
+  verbatim by the boot gate and the island, with a **live swap both ways** (widening shows
+  Resume, never a boot). `/` is one long scroll: a masthead over a CSS grid floor, then one
+  **Section** per root mount in mount-table order, in a single ~72ch centered column at every
+  width. A Section's only control is a maximise box, which is a plain link and appears only
+  where the node has a URL. There's a fixed bottom taskbar strip of anchor launchers plus the
+  CRT toggle, and it is shared with content pages. The drone is a build-time SVG from the
+  procedural geometry. No terminal.
+
 ## Not yet specified
 
 - **Sound design.** Keyboard clicks, boot chime, window open/close. Hangs on how
@@ -154,7 +164,9 @@ resolution.
   that clears AA on every surface with its own scanline composited in. Reduced motion for
   the promotion transition is no longer fog either: ticket 09 settled `navigation: none`
   under the media query. What remains is whether promotion is reachable from the keyboard
-  at all, and what a screen reader makes of a maximise box that is really a link. Ticket 08 adds
+  at all, and what a screen reader makes of a maximise box that is really a link. Ticket 11 puts that same maximise-box link on every Section in the
+  linear layout, where it needs an accessible name, and adds a focus landing point for
+  the live swap across the breakpoint. Ticket 08 adds
   the terminal: whether its output is announced as it prints. Ticket 10 adds the boot
   screen and the resume line: likely `aria-hidden`, with one status announcement when the
   desktop is ready.)
@@ -164,7 +176,8 @@ resolution.
   (parse, hydrate, fresh WebGL context, restore the sessionStorage layout) is now on the
   critical path of a round trip and needs a bound. Accepted deliberately as the price of
   keeping content pages at 0 KB JS. Ticket 10 adds two more: the inline boot-gate
-  script in `<head>` on `/`, and a 600 ms floor on first-visit time-to-desktop.
+  script in `<head>` on `/`, and a 600 ms floor on first-visit time-to-desktop. Ticket 11 adds a build step that renders the drone SVG from the
+  procedural geometry.
 - **SEO and social**: meta and OG images. The landing-is-a-canvas half of this is no
   longer fog — ticket 09 made `/` server-render the linear layout, so the crawler reads a
   real document. What remains is per-entry meta and how OG images get generated.
