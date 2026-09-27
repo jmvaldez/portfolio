@@ -52,6 +52,10 @@ resolution.
   filesystem the terminal walks *is* the collection tree. (MDX was named while charting
   and is stale; ticket 05 settled on plain `.md`.)
 - **Hosting**: static Astro on Cloudflare Pages. Contact is `mailto:` in v1; no backend.
+- **Repo is public.** The source is part of the portfolio. That's safe because the drone
+  is procedural and the face is OFL (with the subset renamed, per ticket 13). No CC-BY
+  asset lands, so no `/credits` page is needed. If one ever does, CC BY 4.0 §3(a)(2) lets
+  a hyperlink satisfy attribution. A paid royalty-free asset must never be committed.
 
 ## Decisions so far
 
@@ -175,41 +179,7 @@ resolution.
 
 ## Not yet specified
 
-- **Sound design.** Keyboard clicks, boot chime, window open/close. Hangs on how
-  committed the overall treatment turns out to be.
-- **Accessibility strategy beyond `prefers-reduced-motion`.** Keyboard navigation of
-  a window manager, focus order, and the screen-reader story for a desktop metaphor.
-  (Contrast under the CRT overlay is no longer fog: the visual system locked a palette
-  that clears AA on every surface with its own scanline composited in. Reduced motion for
-  the promotion transition is no longer fog either: ticket 09 settled `navigation: none`
-  under the media query. What remains is whether promotion is reachable from the keyboard
-  at all, and what a screen reader makes of a maximise box that is really a link. Ticket 11 puts that same maximise-box link on every Section in the
-  linear layout, where it needs an accessible name, and adds a focus landing point for
-  the live swap across the breakpoint. Ticket 08 adds
-  the terminal: whether its output is announced as it prints. Ticket 10 adds the boot
-  screen and the resume line: likely `aria-hidden`, with one status announcement when the
-  desktop is ready.)
-- **Resume delivery.** PDF download, a rendered page, or both.
-- **Performance budget and how it's enforced** (Lighthouse CI, bundle-size gate). Ticket
-  09 put a new number inside this: promotion destroys the shell, so **shell re-entry cost**
-  (parse, hydrate, fresh WebGL context, restore the sessionStorage layout) is now on the
-  critical path of a round trip and needs a bound. Accepted deliberately as the price of
-  keeping content pages at 0 KB JS. Ticket 10 adds two more: the inline boot-gate
-  script in `<head>` on `/`, and a 600 ms floor on first-visit time-to-desktop. Ticket 11 adds a build step that renders the drone SVG from the
-  procedural geometry. Ticket 13 adds ~50 KB of woff2 on every page, with one
-  preload.
-- **SEO and social**: meta and OG images. The landing-is-a-canvas half of this is no
-  longer fog — ticket 09 made `/` server-render the linear layout, so the crawler reads a
-  real document. What remains is per-entry meta and how OG images get generated. Ticket 12
-  fixed the URL scheme, so per-entry meta has its canonical address.
-- **Domain name and analytics.**
-- **Repo visibility, and what it implies for assets.** If the repo goes public, paid
-  royalty-free licences (Sketchfab Standard, Quaternius QAL) forbid committing the asset
-  file, while CC-BY permits it — an inversion where the paid route is the riskier one.
-  Moot if the drone stays procedural; decide alongside hosting. The typeface is not a
-  constraint here: ticket 13 chose an OFL face that can be committed publicly.
-- **A `/credits` page.** Only needed if any CC-BY asset lands. CC BY 4.0 §3(a)(2) lets a
-  hyperlink satisfy attribution, so it never has to intrude on the UI.
+<!-- empty: the remaining fog graduated into tickets 14-19 on 2026-09-27 -->
 
 ## Out of scope
 
@@ -224,6 +194,11 @@ resolution.
 - **Draco mesh compression.** Its glTF decoder is 250 KB against an ~85 KB model, and
   drei's `useGLTF` silently defaults it to a gstatic.com CDN. Meshopt (29 KB) if any
   loader is ever needed at all; procedural means none is.
+- **Sound design** (key clicks, boot chime, window open/close). Everything settled is
+  silent. Sound would bring autoplay-policy workarounds and a mandatory mute control. A v2
+  delight, like the desktop pet.
+- **Domain name.** Registering and pointing a domain is a shipping chore, not a spec
+  decision. Analytics, which *does* touch the spec, is [Analytics](issues/16-analytics.md).
 
 ## Hazards
 
