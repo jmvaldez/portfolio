@@ -1,0 +1,114 @@
+---
+// `/` as one long scroll (ticket 11 § "What `/` is"): the masthead over the grid floor,
+// then one Section per root mount that carries a `section` id, in mount-table order —
+// about, projects, drones, resume, contact (D11). Reads `mounts` directly rather than
+// `tree['/'].children`, same reasoning `TaskbarStrip` already documents: mount order is
+// the source of truth D11 names, and a tree's children array is sorted for other reasons
+// (D10) that don't apply to the root.
+import Masthead from './Masthead.astro';
+import Section from './Section.astro';
+import FolderListing from '~/components/FolderListing.astro';
+import DroneFigure from '~/components/DroneFigure.astro';
+import { mounts, type CollectionMount, type RootFileMount } from '~/fs/mounts';
+import { getEntryForNode } from '~/fs/load';
+import type { FsNode, FsTree } from '~/fs/types';
+
+interface Props {
+  tree: FsTree;
+}
+
+const { tree } = Astro.props;
+
+function isSectionMount(mount: (typeof mounts)[number]): mount is RootFileMount | CollectionMount {
+  return (mount.kind === 'file' || mount.kind === 'collection') && Boolean(mount.section);
+}
+
+const RESUME_SUMMARY_FALLBACK =
+  'Lorem ipsum dolor sit amet: a plausible summary of a career, condensed to one line.';
+
+interface SectionData {
+  node: FsNode;
+  path: string;
+  bodyHtml?: string | undefined;
+  resumeSummary?: string | undefined;
+}
+
+const sections: SectionData[] = await Promise.all(
+  mounts.filter(isSectionMount).map(async (mount): Promise<SectionData> => {
+    const node = tree[mount.path];
+    if (!node) throw new Error(`LinearLayout: no node at Section mount "${mount.path}"`);
+
+    if (mount.path === '/about.txt' || mount.path === '/contact.txt') {
+      const entry = await getEntryForNode(mount.path);
+      return { node, path: mount.path, bodyHtml: entry?.rendered?.html };
+    }
+
+    if (mount.path === '/resume.txt') {
+      const entry = await getEntryForNode(mount.path);
+      return {
+        node,
+        path: mount.path,
+        resumeSummary: entry?.data.summary ?? RESUME_SUMMARY_FALLBACK,
+      };
+    }
+
+    return { node, path: mount.path };
+  }),
+);
+---
+
+<div id="linear">
+  <Masthead />
+
+  {sections.map(({ node, path, bodyHtml, resumeSummary }) => (
+    <Section node={node}>
+      {(path === '/about.txt' || path === '/contact.txt') && bodyHtml && (
+        <div class="prose" set:html={bodyHtml} />
+      )}
+      {(path === '/projects' || path === '/drones') && (
+        <>
+          {path === '/drones' && <DroneFigure />}
+          <FolderListing node={node} tree={tree} />
+        </>
+      )}
+      {path === '/resume.txt' && (
+        <>
+          <p class="prose">{resumeSummary}</p>
+          <p>
+            <a href="/resume.pdf" download="joe-valdez-resume.pdf">
+              DOWNLOAD PDF
+            </a>
+          </p>
+        </>
+      )}
+    </Section>
+  ))}
+
+  <p class="linear-footer">guest@valdez:/$ — that's the whole tree; `ls /bin` finds the rest.</p>
+</div>
+
+<style>
+  #linear {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--pad);
+    padding: 0 var(--pad) calc(64px + env(safe-area-inset-bottom));
+  }
+
+  /* Single column at every width (ticket 11 § Wide viewports): one `max-width` from
+     phone to wide screen, the reading order never changes. Mirrors `PageLayout`'s
+     `.page-shell > :global(.frame)` sizing of the page frame it's the same object as. */
+  #linear > :global(.frame) {
+    width: 100%;
+    max-width: calc(72ch + 2 * var(--pad) + 2 * var(--border-w));
+  }
+
+  .linear-footer {
+    max-width: var(--body-measure);
+    color: var(--ink-faint);
+    font-size: 0.85em;
+    text-align: center;
+    margin: var(--pad) 0 0;
+  }
+</style>

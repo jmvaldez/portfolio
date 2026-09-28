@@ -1,0 +1,43 @@
+---
+// A linear-layout Section (glossary "Section"; ticket 11 § Section, ticket 14): a `Frame`
+// as `<section>`, anchored at `id={node.section}`, labelled by its own `h2` title (the
+// node's filename, matching the page masthead's convention — `[...path].astro` titles a
+// page frame off `bodyNode?.name ?? node.name`; every root node a Section renders is its
+// own body node, so `node.name` alone is that same value here). Its only control is a
+// maximise box, and only when the node has a URL — never a close box, since a Section is
+// never a window.
+import Frame from '~/components/chrome/Frame.astro';
+import MaximiseBox from '~/components/chrome/MaximiseBox.astro';
+import type { FsNode } from '~/fs/types';
+
+interface Props {
+  node: FsNode;
+}
+
+const { node } = Astro.props;
+const titleId = `${node.section}-title`;
+---
+
+<Frame
+  as="section"
+  id={node.section}
+  title={node.name}
+  titleId={titleId}
+  ariaLabelledby={titleId}
+  headingLevel="h2"
+>
+  {node.url && (
+    <Fragment slot="controls">
+      <MaximiseBox href={node.url} title={node.title} />
+    </Fragment>
+  )}
+  <div class="section-body">
+    <slot />
+  </div>
+</Frame>
+
+<style>
+  .section-body {
+    padding: var(--pad);
+  }
+</style>

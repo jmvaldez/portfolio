@@ -1,0 +1,45 @@
+---
+// The ambient grid, without the island (ticket 11 § "The 3D layer, without the island";
+// D19: one source for the grid on every surface that isn't the shell's WebGL canvas). A
+// pure-CSS, perspective-transformed `linear-gradient` floor in Commodore blue (`--grid`).
+// Confined to whatever positioned ancestor hosts it — the linear layout's masthead band
+// (`Masthead.astro`), or a page's margins around its frame (`PageLayout.astro`) — never
+// placed inside a Section or a page's `.prose`, so it's never rendered behind body copy.
+// `aria-hidden`, decorative only, and never animated (map Hazards: an animated static
+// overlay would trigger WCAG 2.2.2's pause/stop/hide requirement).
+---
+
+<div class="grid-floor" aria-hidden="true"></div>
+
+<style>
+  .grid-floor {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    background: var(--bg-sunk);
+    pointer-events: none;
+  }
+
+  .grid-floor::before {
+    content: '';
+    position: absolute;
+    left: -50%;
+    right: -50%;
+    bottom: 0;
+    height: 60%;
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 48px 48px;
+    transform: perspective(220px) rotateX(65deg);
+    transform-origin: bottom;
+    opacity: 0.4;
+  }
+
+  @media (forced-colors: active) {
+    .grid-floor {
+      display: none;
+    }
+  }
+</style>
