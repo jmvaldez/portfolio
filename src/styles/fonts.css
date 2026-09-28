@@ -1,0 +1,42 @@
+/*
+ * Hand-written, size-adjusted fallback faces for the "Valdez Mono" family
+ * (ticket 13 § Fallback stack). Astro's `optimizedFallbacks` is off
+ * (astro.config.mjs) because its automatic fallback only knows Courier New
+ * and is prepended ahead of any listed fallback, shadowing these faces
+ * (map Hazards). These three are named to match the `fallbacks` array there
+ * and are picked up by `local()` if the named system font is installed.
+ *
+ * Values are computed from each fallback's own advance against IBM Plex
+ * Mono's (research 13-typeface.md § Fallback overrides): `size-adjust` keeps
+ * the 58ch measure from shifting on swap, and the override triad re-derives
+ * ascent/descent/line-gap against the adjusted size so line height doesn't
+ * move either. Consolas is the one that matters — unadjusted, it narrows the
+ * 58ch column by about 44px.
+ */
+
+@font-face {
+  font-family: 'Valdez Mono Menlo';
+  src: local('Menlo');
+  size-adjust: 99.66%;
+  ascent-override: 102.85%;
+  descent-override: 27.59%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: 'Valdez Mono Consolas';
+  src: local('Consolas');
+  size-adjust: 109.13%;
+  ascent-override: 93.92%;
+  descent-override: 25.2%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: 'Valdez Mono DejaVu';
+  src: local('DejaVu Sans Mono');
+  size-adjust: 99.66%;
+  ascent-override: 102.85%;
+  descent-override: 27.59%;
+  line-gap-override: 0%;
+}
