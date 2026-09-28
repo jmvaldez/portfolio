@@ -90,9 +90,3 @@ The deploy needs two repo secrets, `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUN
 the Cloudflare Pages project `joe-valdez-portfolio`. Until they're set, the deploy step is
 skipped with a `::notice::` and the workflow still passes. `site` in `astro.config.mjs` is
 still the `pages.dev` placeholder origin.
-
-## Design record
-
-The design is specified in [`.scratch/retro-desktop-portfolio/map.md`](.scratch/retro-desktop-portfolio/map.md),
-with its resolved tickets and research write-ups in the same directory. That map is the
-source of truth for settled decisions; `CONTEXT.md` is the glossary derived from it.

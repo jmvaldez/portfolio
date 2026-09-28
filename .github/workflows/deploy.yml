@@ -3,6 +3,8 @@ name: Deploy
 on:
   push:
     branches: [main]
+    # Same filter as ci.yml: a docs-only push doesn't rebuild or redeploy the site.
+    paths-ignore: ['README.md', 'CONTEXT.md', '.github/*.md']
   workflow_dispatch:
 
 concurrency:

@@ -105,8 +105,7 @@ _Avoid_: intro, splash, loading screen, splash screen
 
 **Restore**:
 What a visitor who has already booted this session sees while the shell starts again: a
-single line, never a replay of the boot. (Tickets 10 and 11 called this "Resume", before
-that word went to the document.)
+single line, never a replay of the boot.
 _Avoid_: resume, reboot, warm boot, re-entry screen
 
 ### The filesystem

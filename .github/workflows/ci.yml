@@ -4,6 +4,10 @@ on:
   pull_request:
   push:
     branches: [main]
+    # Docs can't change the build; content Markdown under src/ can, so the filter names
+    # files rather than `**.md`. Push only: on a pull_request a path-filtered skip never
+    # reports, and the required checks would sit pending.
+    paths-ignore: ['README.md', 'CONTEXT.md', '.github/*.md']
 
 jobs:
   verify:

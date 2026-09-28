@@ -7,7 +7,7 @@ import globals from 'globals';
 
 export default defineConfig(
   {
-    ignores: ['dist/', '.astro/', '.scratch/', 'node_modules/'],
+    ignores: ['dist/', '.astro/', 'node_modules/'],
   },
   {
     files: ['src/**/*.{ts,tsx}'],
