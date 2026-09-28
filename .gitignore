@@ -3,3 +3,7 @@ dist
 .astro
 .DS_Store
 .claude/worktrees/
+playwright-report/
+test-results/
+.lighthouseci/
+.cache/

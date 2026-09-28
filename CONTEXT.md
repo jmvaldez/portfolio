@@ -232,4 +232,3 @@ _Avoid_: orange, accent colour, highlight
 The competitive-FPS borrowings: the crosshair and readout inside the viewer, the
 kill-feed toasts, and the taskbar gauges. One layer, deliberately thin.
 _Avoid_: HUD overlay, game UI, chrome
-
