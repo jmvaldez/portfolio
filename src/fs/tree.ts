@@ -190,7 +190,10 @@ export function buildTree(entries: RawEntry[], mounts: Mount[], bin: FsNode[]): 
   }
 
   function buildCollectionMount(mount: CollectionMount): void {
-    ensureDir(mount.path, '/');
+    const rootNode = ensureDir(mount.path, '/');
+    if (mount.launcher !== undefined) rootNode.launcher = mount.launcher;
+    if (mount.icon !== undefined) rootNode.icon = mount.icon;
+    if (mount.section !== undefined) rootNode.section = mount.section;
     const collectionEntries = entries.filter((e) => e.collection === mount.collection);
     const readmeByDir = new Map<string, RawEntry>();
 

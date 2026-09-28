@@ -1,7 +1,8 @@
 import { test, expect } from '@playwright/test';
 
-test('/ returns 200 and renders the valdez-os 1.0 frame', async ({ page }) => {
+// Phase 3's placeholder Frame is gone; `/` is now the real linear layout (Phase 6).
+test('/ returns 200 and renders the masthead', async ({ page }) => {
   const response = await page.goto('/');
   expect(response?.status()).toBe(200);
-  await expect(page.locator('body')).toContainText('valdez-os 1.0');
+  await expect(page.locator('h1')).toHaveText('Joe Valdez');
 });

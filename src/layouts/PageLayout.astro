@@ -9,6 +9,7 @@ import Frame from '~/components/chrome/Frame.astro';
 import CloseBox from '~/components/chrome/CloseBox.astro';
 import Breadcrumbs from '~/components/page/Breadcrumbs.astro';
 import TaskbarStrip from '~/components/TaskbarStrip.astro';
+import GridFloor from '~/components/GridFloor.astro';
 import type { FsNode, FsTree } from '~/fs/types';
 
 interface Props {
@@ -26,6 +27,7 @@ const { title, description, node, tree, filename } = Astro.props;
 
 <BaseLayout title={title} description={description} page>
   <div class="page-shell">
+    <GridFloor />
     <Frame as="article" title={filename} headingLevel="h1" vtName="page-frame">
       <Fragment slot="controls">
         <CloseBox />
@@ -41,9 +43,10 @@ const { title, description, node, tree, filename } = Astro.props;
 
 <style>
   .page-shell {
-    /* Phase 6 replaces this flat fill with the shared WebGL/CSS grid floor that shows
-       in a page's margins. A plain background is enough for now. */
-    background: var(--bg-sunk);
+    /* `GridFloor` fills this in behind the frame (ticket 11 § "The 3D layer, without
+       the island"), so the page frame, the linear layout masthead and (Phase 12) the
+       WebGL scene all reference one shared floor concept. */
+    position: relative;
     min-height: 100dvh;
     display: flex;
     justify-content: center;

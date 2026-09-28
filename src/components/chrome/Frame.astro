@@ -11,15 +11,26 @@ interface Props {
   titleId?: string;
   headingLevel?: 'h1' | 'h2';
   vtName?: string;
+  /** The linear layout's Sections need a stable anchor id (ticket 11: `id={node.section}`);
+   * nothing else has used this yet, so it stays optional. */
+  id?: string | undefined;
+  /** Labels the frame itself off its own title heading — a `<section>` landmark needs an
+   * accessible name (ticket 14); `article`/`div` callers leave this unset. */
+  ariaLabelledby?: string;
 }
 
-const { title, as = 'div', titleId, headingLevel = 'h2', vtName } = Astro.props;
+const { title, as = 'div', titleId, headingLevel = 'h2', vtName, id, ariaLabelledby } = Astro.props;
 
 const Tag = as;
 const Heading = headingLevel;
 ---
 
-<Tag class="frame" style={vtName ? `view-transition-name: ${vtName}` : undefined}>
+<Tag
+  class="frame"
+  id={id}
+  aria-labelledby={ariaLabelledby}
+  style={vtName ? `view-transition-name: ${vtName}` : undefined}
+>
   <div class="titlebar scan bloom">
     <Heading id={titleId}>{title}</Heading>
     <slot name="controls" />

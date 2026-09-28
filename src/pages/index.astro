@@ -1,21 +1,20 @@
 ---
+// `/` (ticket 09, ticket 11): server-renders the linear layout, the one artifact serving
+// the mobile experience, the no-JS visitor and the crawler. Phase 8 replaces the shell's
+// canvas with this document at first paint and hydrates the desktop over it above the
+// breakpoint; nothing here depends on that island existing.
 import BaseLayout from '~/layouts/BaseLayout.astro';
-import Frame from '~/components/chrome/Frame.astro';
-import CrtToggle from '~/components/chrome/CrtToggle.astro';
+import LinearLayout from '~/components/linear/LinearLayout.astro';
+import TaskbarStrip from '~/components/TaskbarStrip.astro';
+import { getTree } from '~/fs/load';
+
+const tree = await getTree();
 ---
 
 <BaseLayout
-  title="Joe Valdez"
+  title="Joe Valdez · Software Engineer"
   description="Joe Valdez's software-engineering portfolio, presented as a retro personal computer."
 >
-  <Frame title="valdez-os 1.0" headingLevel="h1">
-    <Fragment slot="controls">
-      <CrtToggle />
-    </Fragment>
-    <p class="prose">
-      Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut
-      labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco
-      laboris nisi ut aliquip ex ea commodo consequat.
-    </p>
-  </Frame>
+  <LinearLayout tree={tree} />
+  <TaskbarStrip tree={tree} onHome={true} />
 </BaseLayout>

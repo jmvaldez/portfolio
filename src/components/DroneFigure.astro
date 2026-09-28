@@ -1,0 +1,122 @@
+---
+// The drone, without the island (ticket 11 § "The 3D layer, without the island"): a
+// build-time SVG from the same procedural geometry `viewer.exe` orbits, with the
+// viewer's crosshair and `.readout` drawn over it in plain HTML — one source for both
+// surfaces, so they cannot drift. Runs entirely in this component's frontmatter, which
+// only ever executes at build time (same as a `.astro` page's), so `renderDroneSvg` and
+// `getCollection` here are both build-time work, never shipped to the client.
+import { getCollection } from 'astro:content';
+import { renderDroneSvg } from '~/drone/svg';
+
+const WIDTH = 400;
+const HEIGHT = 300;
+
+// The `drones` collection also holds `note` entries nested under a build (glossary:
+// "Note"), which carry no `featured`/`class`/spec fields — narrow to `type: "drone"`
+// first, same discriminant the content schemas use.
+type DroneEntryData = Extract<
+  Awaited<ReturnType<typeof getCollection<'drones'>>>[number]['data'],
+  { type: 'drone' }
+>;
+
+const drones = await getCollection('drones');
+const featured = drones.find(
+  (entry): entry is (typeof drones)[number] & { data: DroneEntryData } =>
+    entry.data.type === 'drone' && entry.data.featured,
+);
+
+// The readout reads the featured build's own frontmatter (ticket 11: "these three
+// values come from the featured drone's frontmatter"). Nothing here is invented if a
+// future featured drone is missing a field — the readout just omits that segment.
+const readoutParts: string[] = [];
+if (featured) {
+  const { class: droneClass, weightG, propSizeIn } = featured.data;
+  if (droneClass && propSizeIn !== undefined) {
+    readoutParts.push(`${droneClass.toUpperCase()}-${propSizeIn}`);
+  }
+  if (weightG !== undefined) readoutParts.push(`${weightG} G`);
+  if (propSizeIn !== undefined) readoutParts.push(`${propSizeIn} IN`);
+}
+const readout = readoutParts.join(' · ');
+
+const svg = renderDroneSvg({ width: WIDTH, height: HEIGHT });
+---
+
+<div class="drone-figure" aria-hidden="true">
+  <div class="drone-figure-svg" set:html={svg} />
+  <div class="cross"></div>
+  {readout && <div class="readout">{readout}</div>}
+</div>
+
+<style>
+  /* Ticket 11: the wireframe drone and its HUD overlay both drop under forced colours
+     — wireframe line art doesn't reliably survive that mode. */
+  @media (forced-colors: active) {
+    .drone-figure {
+      display: none;
+    }
+  }
+
+  .drone-figure {
+    position: relative;
+    width: 100%;
+    max-width: 400px;
+    aspect-ratio: 4 / 3;
+    margin: 0 auto var(--pad);
+    color: var(--ink);
+  }
+
+  .drone-figure-svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    line-height: 0;
+  }
+
+  .drone-figure-svg :global(svg) {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Crosshair and readout, ported verbatim from the visual-system prototype's HUD
+     layer over the viewer (`prototype/visual-system`, `.cross` / `.readout`). */
+  .cross {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .cross::before,
+  .cross::after {
+    content: '';
+    position: absolute;
+    background: var(--hud);
+    opacity: 0.8;
+  }
+
+  .cross::before {
+    left: 50%;
+    top: calc(50% - 9px);
+    width: 1px;
+    height: 18px;
+    transform: translateX(-0.5px);
+  }
+
+  .cross::after {
+    top: 50%;
+    left: calc(50% - 9px);
+    height: 1px;
+    width: 18px;
+    transform: translateY(-0.5px);
+  }
+
+  .readout {
+    position: absolute;
+    left: 10px;
+    bottom: 8px;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--hud);
+    font-variant-numeric: tabular-nums;
+  }
+</style>
