@@ -11,6 +11,8 @@
 // either of these surfaces.
 import CrtToggle from '~/components/chrome/CrtToggle.astro';
 import { mounts, type CollectionMount, type RootFileMount } from '~/fs/mounts';
+import { SHELL_QUERY } from '~/lib/breakpoint';
+import { LAYOUT_OVERRIDE_KEY } from '~/lib/storage';
 import type { FsTree } from '~/fs/types';
 
 interface Props {
@@ -19,6 +21,26 @@ interface Props {
 }
 
 const { tree, onHome } = Astro.props;
+
+// Task 8.3 § 5: the Desktop control only ever makes sense on `/` (it offers a way
+// back into the shell), and only when a visitor is both above the breakpoint and
+// has set the layout override — i.e. they *could* have the shell but chose the
+// linear layout. Kept as its own tiny `is:inline` script rather than folded into
+// `HeadGate.astro`, which is already tight against its 1.5 KB budget (ticket 19)
+// and is `/`-only for an unrelated reason (deciding boot vs. restore vs. bail).
+const desktopControlScript = `
+var el=document.querySelector('[data-desktop-control]');
+if(el){
+try{
+if(localStorage.getItem('${LAYOUT_OVERRIDE_KEY}')=='linear'&&matchMedia('${SHELL_QUERY}').matches){
+el.removeAttribute('hidden');
+}
+}catch(e){}
+el.addEventListener('click',function(){
+try{localStorage.removeItem('${LAYOUT_OVERRIDE_KEY}')}catch(e){}
+location.reload();
+});
+}`;
 
 function isLauncherMount(mount: (typeof mounts)[number]): mount is RootFileMount | CollectionMount {
   return (mount.kind === 'file' || mount.kind === 'collection') && Boolean(mount.launcher);
@@ -41,8 +63,16 @@ const launchers = mounts
       </li>
     ))}
   </ul>
+  {onHome && (
+    <button type="button" data-desktop-control hidden>
+      Desktop
+    </button>
+  )}
   <CrtToggle />
 </nav>
+{onHome &&
+  // prettier-ignore
+  <script is:inline set:html={desktopControlScript} />}
 
 <style>
   .taskbar-strip {

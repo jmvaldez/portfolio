@@ -22,3 +22,7 @@ const { title, description, page = false } = Astro.props;
 {/* Ticket 13: only Regular is preloaded; Bold and Italic swap in on demand. */}
 <Font cssVariable="--font-mono" preload={[{ weight: '400', style: 'normal' }]} />
 <CrtPrefScript page={page} />
+{/* Extra head content a specific page needs (Phase 8: `/`'s `HeadGate`, `/`-only
+    and unrelated to the title/description/page props above). Empty on every page
+    that doesn't fill it. */}
+<slot />

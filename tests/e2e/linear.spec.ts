@@ -35,6 +35,11 @@ for (const [name, viewport] of Object.entries(VIEWPORTS)) {
     test('every Section has exactly one maximise link named "Open <title> page"', async ({
       page,
     }) => {
+      // Phase 8: above the breakpoint with JS on, the shell now hides `#linear`
+      // (`html.shell`), and a hidden element has no computed accessible name. The
+      // layout override keeps the linear layout the visible surface here, which is
+      // exactly the conforming-alternate-version mechanism ticket 14 relies on.
+      await page.addInitScript(() => localStorage.setItem('vos:layout-override', 'linear'));
       await page.goto('/');
       for (const id of SECTIONS) {
         const maxbox = page.locator(`section#${id} .maxbox`);

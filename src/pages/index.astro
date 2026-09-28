@@ -1,11 +1,16 @@
 ---
 // `/` (ticket 09, ticket 11): server-renders the linear layout, the one artifact serving
-// the mobile experience, the no-JS visitor and the crawler. Phase 8 replaces the shell's
-// canvas with this document at first paint and hydrates the desktop over it above the
-// breakpoint; nothing here depends on that island existing.
+// the mobile experience, the no-JS visitor and the crawler. `HeadGate` decides, before
+// first paint, whether it stays that way or hands off to `BootScreen`/`RestoreLine` and
+// then `Shell` — the `client:only` React island (ticket 01, D9: `tree` arrives as
+// serialised props, never a fetch).
 import BaseLayout from '~/layouts/BaseLayout.astro';
 import LinearLayout from '~/components/linear/LinearLayout.astro';
 import TaskbarStrip from '~/components/TaskbarStrip.astro';
+import HeadGate from '~/components/shell/HeadGate.astro';
+import BootScreen from '~/components/shell/BootScreen.astro';
+import RestoreLine from '~/components/shell/RestoreLine.astro';
+import Shell from '~/shell/Shell';
 import { getTree } from '~/fs/load';
 
 const tree = await getTree();
@@ -15,6 +20,12 @@ const tree = await getTree();
   title="Joe Valdez · Software Engineer"
   description="Joe Valdez's software-engineering portfolio, presented as a retro personal computer."
 >
+  <Fragment slot="head">
+    <HeadGate />
+  </Fragment>
   <LinearLayout tree={tree} />
+  <BootScreen />
+  <RestoreLine />
   <TaskbarStrip tree={tree} onHome={true} />
+  <Shell client:only="react" tree={tree} />
 </BaseLayout>

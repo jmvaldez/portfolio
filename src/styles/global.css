@@ -4,6 +4,11 @@
 @import './crt.css';
 @import './chrome.css';
 @import './transitions.css';
+/* The head-gate handover on `/` (ticket 10, ticket 11, Phase 8): boot vs. restore
+   vs. the linear layout, keyed off classes the gate sets on `<html>`. Loaded on
+   every page (small, class-gated, and inert unless `HeadGate` runs), same reasoning
+   as the other chrome files above. */
+@import './shell.css';
 /* Print-only (ticket 15): the media qualifier gates the whole file, so nothing in it
    needs its own `@media print` wrapper. Applies to every page — a visitor may print
    any of them — and is also the stylesheet Task 5.2's headless render uses. */
