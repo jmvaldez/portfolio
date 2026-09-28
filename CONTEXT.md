@@ -103,10 +103,11 @@ the shell: wherever the shell does not render, there is no boot. Covers the shel
 startup rather than delaying it.
 _Avoid_: intro, splash, loading screen, splash screen
 
-**Resume**:
+**Restore**:
 What a visitor who has already booted this session sees while the shell starts again: a
-single line, never a replay of the boot.
-_Avoid_: reboot, warm boot, re-entry screen
+single line, never a replay of the boot. (Tickets 10 and 11 called this "Resume", before
+that word went to the document.)
+_Avoid_: resume, reboot, warm boot, re-entry screen
 
 ### The filesystem
 
@@ -184,6 +185,11 @@ _Avoid_: drone project, build log
 A supporting entry nested under a project or a drone build, carrying only a title.
 Exists so nesting does not force full frontmatter onto every file.
 _Avoid_: sub-page, child, fragment
+
+**Resume**:
+Joe's CV. One entry in `pages`, read as a page, a content window, or a PDF built from the page.
+The page is the source; the PDF is never edited by hand.
+_Avoid_: CV, résumé (in prose), restore
 
 **Readme**:
 The file holding a directory's own content. A directory never carries a body itself.

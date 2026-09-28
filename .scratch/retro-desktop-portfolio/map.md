@@ -151,7 +151,7 @@ resolution.
 - [Mobile layout](issues/11-mobile-layout.md): designed as the **linear layout** for all
   three jobs. Breakpoint `(min-width: 1024px) and (min-height: 600px)`, size only, shared
   verbatim by the boot gate and the island, with a **live swap both ways** (widening shows
-  Resume, never a boot). `/` is one long scroll: a masthead over a CSS grid floor, then one
+  Restore, never a boot). `/` is one long scroll: a masthead over a CSS grid floor, then one
   **Section** per root mount in mount-table order, in a single ~72ch centered column at every
   width. A Section's only control is a maximise box, which is a plain link and appears only
   where the node has a URL. There's a fixed bottom taskbar strip of anchor launchers plus the
@@ -181,7 +181,8 @@ resolution.
   Satori + resvg-js in a hand-written static `getStaticPaths` endpoint. Satori draws the full
   chrome, so there's no background PNG. The font is a renamed TTF subset, because Satori
   rejects woff2. About 0.3 s per image cold, and cached across deploys by Astro 7.2's
-  experimental `incrementalBuild` plus Cloudflare's build cache. There's no SEO component,
+  experimental `incrementalBuild`, with the cache kept by `actions/cache` (amended by
+  Resume delivery, which moved the build to GitHub Actions). There's no SEO component,
   so meta goes in a hand-written `Head.astro`.
 
 - [Accessibility strategy](issues/14-accessibility.md): **hybrid**. The shell is keyboard
@@ -194,9 +195,37 @@ resolution.
   text line for the drone. Terminal output is a polite `role="log"`, one unit per command.
   Boot is `aria-hidden`, followed by one ready status. Z-order never reorders the DOM.
 
+- [Resume delivery](issues/15-resume-delivery.md): **page and PDF, page is the source**. The
+  `pages/resume` Markdown entry renders at `/resume/` (node `resume.txt`), and Playwright
+  prints it through the page's own print stylesheet to `/resume.pdf` (node `resume.pdf`,
+  downloaded as `joe-valdez-resume.pdf`). No special-casing in the shell. This moves
+  **build and deploy to GitHub Actions** (`wrangler pages deploy`). "Resume" now names the
+  document, and the returning-visitor line is renamed **Restore**.
+
+- [Analytics](issues/16-analytics.md): **none client-side**. No beacon, script or cookie on
+  any page, and no disclosure needed. Cloudflare's zero-code edge numbers answer the one
+  real question, "is anyone arriving". Revisit only on a concrete question those numbers
+  can't answer.
+
+- [Per-entry meta and OG images](issues/18-meta-and-og.md): hand-written `Head.astro`. Title
+  is `<title> · Joe Valdez`, description is `summary` with a fallback chain,
+  self-canonical, `trailingSlash: 'always'`, no new schema fields, and the build fails
+  without `site`. **One OG template, and every URL gets its own image**: a path title bar,
+  the title, up to three spec fields per type, and half-strength CRT. The drone appears on
+  the site default only. `Person` JSON-LD on `/` only. `@astrojs/sitemap`, and a robots.txt
+  that allows everything.
+
+- [Performance budget and enforcement](issues/19-performance-budget.md): content pages have
+  **0 bytes of external JS** and ≤ 1 KB inline. The shell's initial JS is ≤ 90 KB and its 3D
+  chunk ≤ 250 KB, with fonts ≤ 60 KB and CSS ≤ 20 KB. CLS ≤ 0.02 on pages. Re-entry is
+  interactive within 800 ms. Frames: p95 ≤ 16.7 ms at a **DPR cap of 1.5**. Byte checks and
+  CLS block merges, timing only warns, and frames are a manual PR checkbox. The iGPU frame
+  measurement is the build phase's first manual check, not a blocker for this map.
+
 ## Not yet specified
 
-<!-- empty: the remaining fog graduated into tickets 14-19 on 2026-09-27 -->
+<!-- empty. Tickets 14-19 resolved on 2026-09-27. Nothing is left to decide, so the map is
+     done and the spec is ready for `/plan`. -->
 
 ## Out of scope
 
@@ -369,9 +398,9 @@ resolution.
 - **Without `site` in the Astro config, `og:image` silently becomes
   `http://localhost:4321/...`** and the build still passes.
 - **Astro's incremental build is blind to files read from disk, and turns off at
-  `build.concurrency > 1`.** Hash the font into `cacheKey` by hand. Cloudflare Pages keeps
-  only `node_modules/.astro`, its build cache is off until enabled, and it's purged after 7
-  days without a read.
+  `build.concurrency > 1`.** Hash the font into `cacheKey` by hand. The build runs in GitHub
+  Actions (per Resume delivery), so the cache that matters is `actions/cache` on
+  `node_modules/.astro`. Key it on the lockfile and the font hash.
 - **resvg-js scans system fonts on every render by default** (~75 ms per image). Pass
   `font: { loadSystemFonts: false }`.
 
@@ -384,3 +413,15 @@ resolution.
   override, and `/` stops conforming.
 - **Moving focus on boot completion strands screen-reader users past the skip link.** The
   ready state is announced through a status region and focus stays put.
+
+- **"Resume" changed meaning on 2026-09-27.** Tickets 10 and 11 use **Resume** for the
+  returning visitor's one-line restart screen. The glossary now calls that **Restore**, and
+  **Resume** is the document. The in-world copy `RESUME · N WINDOWS RESTORED` is display
+  text and is unaffected. Read older tickets with that in mind.
+- **The resume PDF needs a real browser at build time.** Playwright's Chromium is why the
+  build runs in GitHub Actions rather than Cloudflare Pages' git builds. Moving the build
+  back silently loses both the PDF and Lighthouse CI.
+- **Every row of the performance budget comes from the design, not from a measured
+  build.** Only the 237 KB 3D chunk and the ~50 KB of fonts were ever measured. The first
+  real build should re-derive the 90 KB shell and 20 KB CSS figures before anyone treats
+  a failure as a regression.
