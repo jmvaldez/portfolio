@@ -11,6 +11,7 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { setLayoutOverride } from '~/lib/storage';
 import DesktopIcons from './DesktopIcons';
+import { launch } from './launch';
 import { applyStoredLayout, initPersistence, restoreLayout } from './persist';
 import { clearStalePromotionName } from './promote';
 import Taskbar from './Taskbar';
@@ -62,11 +63,20 @@ interface Props {
 }
 
 /** D16's seed layout, as fractions of the desktop — never fixed pixels (map Hazards).
- * `viewer.exe` and `terminal.exe` are omitted entirely: D16 says "a seed whose app is
- * not yet registered is skipped", and neither app exists in the mount table yet
- * (Phase 12 and Phase 11 respectively add them) — there is no node at either path for
- * `tree` to even resolve, so skipping is unconditional rather than a per-render check. */
+ * `viewer.exe` is still omitted entirely: D16 says "a seed whose app is not yet
+ * registered is skipped", and Phase 12 is what registers it — there's no node at
+ * that path for `tree` to even resolve yet, so skipping is unconditional rather
+ * than a per-render check. `terminal.exe` is registered as of this phase and is
+ * back in, per D16's own fraction (`0.02, 0.62, 0.32×0.34`).
+ *
+ * Listed FIRST, not last: `store.open()` always focuses whatever it just opened
+ * (`store.ts`), and D16 requires the terminal "unfocused" while the other two seeds
+ * carry no such requirement — opening it first means `about.txt` then `projects`
+ * each steal focus back in turn, leaving `projects` focused (as before this phase)
+ * and the terminal not. Ordering the array is the whole mechanism; nothing else
+ * needs to special-case the terminal's focus. */
 const SEEDS: ReadonlyArray<{ path: string; seed: SeedFraction }> = [
+  { path: '/bin/terminal.exe', seed: { x: 0.02, y: 0.62, w: 0.32, h: 0.34 } },
   { path: '/about.txt', seed: { x: 0.04, y: 0.06, w: 0.26, h: 0.42 } },
   { path: '/projects', seed: { x: 0.33, y: 0.06, w: 0.28, h: 0.42 } },
 ];
@@ -85,6 +95,7 @@ const Desktop = forwardRef<DesktopHandle, Props>(function Desktop({ onSkip, onSe
   const open = useShellStore((state) => state.open);
   const setRect = useShellStore((state) => state.setRect);
   const close = useShellStore((state) => state.close);
+  const restore = useShellStore((state) => state.restore);
 
   useImperativeHandle(ref, () => ({
     focusHeading: () => headingRef.current?.focus(),
@@ -192,6 +203,68 @@ const Desktop = forwardRef<DesktopHandle, Props>(function Desktop({ onSkip, onSe
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  // Backtick, Quake-style (Task 11.3, ticket 08 § Keys): opens or focuses the
+  // terminal; if it's already the focused window, minimises it and returns focus to
+  // whatever held it before. Never fires during the boot (the inline head script's
+  // own capture-phase listener swallows keys there too, but that lives in a
+  // separate `<script>` this React listener can't see, so it needs its own guard),
+  // and never fires while focus is in a text field OTHER than the terminal's own
+  // input (ticket 14 § Terminal) — typing a literal backtick into the terminal
+  // still toggles it, exactly like Quake's own console key.
+  useEffect(() => {
+    let previouslyFocused: HTMLElement | null = null;
+
+    function handleKeyDown(e: KeyboardEvent): void {
+      if (e.key !== '`') return;
+      // `html.boot` (`HeadGate.astro`) marks "this tab went through a boot", not
+      // "a boot is playing right now" — it's never removed on the passive
+      // ready path (only a narrowing swap or the 6s hard timeout clears it), so a
+      // boot is actually still in progress only while it's set *and* `shell-ready`
+      // hasn't landed yet.
+      const html = document.documentElement;
+      if (html.classList.contains('boot') && !html.classList.contains('shell-ready')) return;
+
+      const active = document.activeElement;
+      const isOwnTerminalInput =
+        active instanceof HTMLElement && active.classList.contains('terminal-input');
+      if (
+        !isOwnTerminalInput &&
+        active instanceof HTMLElement &&
+        (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)
+      ) {
+        return;
+      }
+
+      const node = useShellStore.getState().tree?.['/bin/terminal.exe'];
+      if (!node) return;
+      e.preventDefault();
+
+      const win = useShellStore.getState().windows.find((w) => w.id === node.path);
+      const focusedId = useShellStore.getState().focusedId;
+
+      if (win && !win.minimised && win.id === focusedId) {
+        useShellStore.getState().minimise(win.id);
+        if (previouslyFocused && document.contains(previouslyFocused)) {
+          previouslyFocused.focus();
+        } else {
+          headingRef.current?.focus();
+        }
+        previouslyFocused = null;
+        return;
+      }
+
+      previouslyFocused = active instanceof HTMLElement ? active : null;
+      launch(node);
+      if (win?.minimised) restore(win.id);
+      requestAnimationFrame(() => {
+        document.getElementById(`${node.path}-title`)?.focus();
+      });
+    }
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [restore]);
 
   const handleHeadingRef = useCallback((id: string, el: HTMLHeadingElement | null) => {
     if (el) titleRefs.current.set(id, el);

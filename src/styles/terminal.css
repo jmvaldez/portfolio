@@ -1,0 +1,65 @@
+/*
+ * Phase 11's terminal (`Terminal.tsx`, ticket 08 § Voice and prompt, ticket 14 §
+ * Terminal). Own file, same reasoning as `desktop.css` and `wm.css`: scoped to
+ * `.terminal` and never referenced outside it. Tones map straight to `--ink` /
+ * `--ink-dim` — ticket 08 is explicit the terminal never uses the amber accent, so
+ * nothing here reads `--accent`.
+ */
+
+.terminal {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  font-size: 0.85em;
+}
+
+.terminal-log {
+  flex: 1;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.term-entry {
+  margin-bottom: 2px;
+}
+
+.term-line {
+  color: var(--ink);
+}
+
+.term-line.term-dim,
+.term-line .term-dim {
+  color: var(--ink-dim);
+}
+
+.term-line .term-ink {
+  color: var(--ink);
+}
+
+.term-prompt {
+  color: var(--ink);
+}
+
+.terminal-input-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.terminal-prompt {
+  color: var(--ink);
+  white-space: pre;
+}
+
+.terminal-input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--ink);
+  font: inherit;
+}
