@@ -1,0 +1,43 @@
+---
+// The Restore line (glossary "Restore"; ticket 10 § Returning visitor: resume): a
+// returning visitor's single line, shown only while the shell mounts, no floor
+// (contrast `BootScreen`'s 600 ms floor / 1.5 s ceiling — there is none here).
+// Same ground as `BootScreen` (full-viewport black, CRT classes), shown by
+// `shell.css` only while `html.restore` is set, and hidden again once
+// `html.shell-ready` says the island has taken over. `aria-hidden` throughout
+// (ticket 14 § Boot and resume): the desktop-ready status is a single announcement
+// from the island, not from this screen.
+//
+// `#restore-line` starts with the zero-windows wording so that a skip mid-*first*
+// boot (ticket 10 § Skip: "the island has not mounted yet ... never a blank
+// screen") — which shows this element without ever having gone through
+// `HeadGate`'s restore branch — still reads as a sensible line rather than empty
+// text. `HeadGate.astro`'s script overwrites this text on an actual restore.
+---
+
+<div id="restore" class="scan" aria-hidden="true">
+  <p id="restore-line" class="bloom">
+    RESUME &middot; DESKTOP RESTORED
+  </p>
+</div>
+
+<style>
+  #restore {
+    position: fixed;
+    inset: 0;
+    z-index: 2;
+    background: #000;
+    color: var(--ink);
+    font-family: var(--font-mono);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* Slashed zero (ticket 13): chrome/log output, not body copy. */
+    font-feature-settings: 'zero';
+  }
+
+  #restore-line {
+    margin: 0;
+    color: var(--accent);
+  }
+</style>

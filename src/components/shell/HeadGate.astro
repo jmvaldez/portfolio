@@ -1,0 +1,85 @@
+---
+// The head gate (ticket 10 § Mechanism, ticket 11 § Breakpoint / Crossing it
+// mid-session, ticket 14 § Strategy, D13, D20, D23): an inline blocking script that
+// runs before first paint on `/` only, deciding boot vs. restore vs. staying on the
+// linear layout. Rendered unconditionally here — this component only ever appears
+// in `Head.astro`'s own `/`-only usage, wired in by Task 8.3.
+//
+// Own budget, separate from `CrtPrefScript`'s ~600 B (ticket 19: content pages get
+// ≤ 1 KB total inline JS; `/`'s head gate gets its own ≤ 1.5 KB). Kept hand-terse
+// rather than minified, same discipline as `CrtPrefScript`. Must run *after*
+// `CrtPrefScript` in document order: it reads `html[data-crt]`, which that script
+// sets synchronously.
+//
+// The breakpoint string and every storage key are interpolated in from
+// `~/lib/breakpoint` and `~/lib/storage` so each literal exists in exactly one
+// place — an `is:inline` script can't `import` at runtime, so this is the only way
+// to avoid a second, driftable copy of `vos:booted` etc.
+//
+// Task 8.3 fix: this script runs while `<head>` is still parsing, before `<body>` —
+// and with it `BootScreen`'s `[data-slot]` spans and `#restore-line` — exist in the
+// DOM. Filling those slots (and the Restore text) has to wait for `DOMContentLoaded`;
+// only the `<html>`-level class/dataset work above it can run synchronously. `rm` and
+// `booted` are captured up front so the deferred handler doesn't re-read anything.
+import { SHELL_QUERY } from '~/lib/breakpoint';
+import { LAYOUT_OVERRIDE_KEY, BOOTED_KEY, LAYOUT_KEY } from '~/lib/storage';
+
+// D15: "the return to `/` is a plain cut, no transition" (ticket 09) — `/` renders
+// the linear layout and then swaps it for the shell a few hundred ms later, so
+// morphing a page frame into that only to tear it out again reads as a glitch, not
+// continuity. `/`'s `pagereveal` handler therefore always calls `skipTransition()`,
+// unconditionally, regardless of where the visitor arrived from. Only a page's own
+// handler (`CrtPrefScript` with `page`) is conditional, accepting a transition when
+// arriving from `/`.
+const reveal = `d.addEventListener('pagereveal',function(e){e.viewTransition?.skipTransition()});`;
+
+// `g` is a tiny getter shared by both storage kinds; `c` is `documentElement.classList`.
+// Both exist purely to keep this at or under its own 1.5 KB budget (ticket 19) —
+// every `classList.add/contains/remove` and every `getItem` here is used enough
+// times that the alias pays for its own declaration several times over.
+const script = `
+var d=document,h=d.documentElement,c=h.classList,ls=localStorage,ss=sessionStorage;
+function g(s,k){try{return s.getItem(k)}catch(e){}}
+${reveal}
+if(g(ls,'${LAYOUT_OVERRIDE_KEY}')=='linear'||!matchMedia('${SHELL_QUERY}').matches)return;
+c.add('shell');
+var rm=matchMedia('(prefers-reduced-motion: reduce)').matches;
+if(rm)c.add('reduced');
+var booted=g(ss,'${BOOTED_KEY}');
+d.addEventListener('DOMContentLoaded',function(){
+var ph=d.querySelector('[data-slot="phosphor"]');
+if(ph&&h.dataset.crt=='off')ph.textContent='BYPASSED';
+var vu=d.querySelector('[data-slot="vector-unit"]');
+if(vu&&(rm||!window.WebGL2RenderingContext))vu.textContent='STANDBY';
+if(booted){
+var n=0;
+try{var raw=g(ss,'${LAYOUT_KEY}');if(raw)n=(JSON.parse(raw).windows||[]).length}catch(e){}
+var t=n==0?'DESKTOP RESTORED':n+' WINDOW'+(n==1?'':'S')+' RESTORED';
+var el=d.getElementById('restore-line');
+if(el)el.textContent='RESUME \\u00b7 '+t;
+}
+});
+if(booted){
+c.add('restore');
+}else{
+try{ss.setItem('${BOOTED_KEY}','1')}catch(e){}
+c.add('boot');
+h.dataset.bootAt=''+performance.now();
+['keydown','pointerdown'].forEach(function(t){window.addEventListener(t,sk,true)});
+}
+function sk(e){
+if(!c.contains('boot')||c.contains('shell-ready'))return;
+e.preventDefault();
+e.stopImmediatePropagation();
+c.add('boot-skipped');
+}
+setTimeout(function(){if(!c.contains('shell-ready'))c.remove('shell','boot','restore')},6000);
+`;
+
+// `is:inline` scripts run as plain top-level scripts (not modules), so the early
+// `return` above needs a function body to return out of.
+const wrapped = `(function(){${script}})();`;
+---
+
+<!-- prettier-ignore -->
+<script is:inline set:html={wrapped}></script>

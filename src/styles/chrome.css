@@ -128,6 +128,30 @@ a.folder-row-link:hover {
   }
 }
 
+/* The skip-link pattern (ticket 14 § Strategy: "first in the tab order and visible
+   on focus"), shared verbatim between the shell's "Skip to text layout" link
+   (`Desktop.tsx`, D14 primitive) and any other skip link this site adds. Standard
+   off-screen-until-focused technique: `position: fixed` rather than `absolute` so
+   it survives sitting inside a positioned ancestor. Never hidden by anything other
+   than this rule (map Hazards). */
+.skip-link {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 10;
+  transform: translateY(-100%);
+  padding: 8px 16px;
+  background: var(--chrome);
+  color: var(--accent);
+  border: var(--border-w) solid var(--edge);
+  border-radius: var(--radius);
+  text-decoration: none;
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
+}
+
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;

@@ -1,0 +1,124 @@
+---
+// The boot screen (ticket 10 § Lines, § Look and handoff, § Timing, § Reduced
+// motion, § Skip; D23): server-rendered HTML whose reveal is entirely CSS-timed,
+// shown by `shell.css` only while `html.boot` is set. `HeadGate.astro`'s inline
+// script (Task 8.1) fills the two real-state `[data-slot]` spans before this is
+// ever visible, and later flips `html.shell-ready` to reveal the final line's `OK`.
+// `aria-hidden` throughout (ticket 14 § Boot and resume): the desktop-ready status
+// is a single announcement from the island, not from this screen.
+//
+// The mount line is generated from the real mount table rather than hardcoded
+// (ticket 10 § Lines: "the real mount table"): every mount whose `kind` is
+// `'collection'` is an actual directory the filesystem mounts a collection at
+// (`/projects`, `/drones`); the `pages` collection has no directory of its own —
+// each of its entries mounts as an individual root file (`/about.txt`, …) — so it
+// never appears in this list.
+import { mounts, type CollectionMount } from '~/fs/mounts';
+
+function isCollectionMount(mount: (typeof mounts)[number]): mount is CollectionMount {
+  return mount.kind === 'collection';
+}
+
+const collectionPaths = mounts.filter(isCollectionMount).map((mount) => mount.path);
+const mountLine = `MOUNTING ${collectionPaths.join(' ')} .. OK`;
+---
+
+<div id="boot" class="scan" aria-hidden="true">
+  <pre class="boot-log bloom">
+<span class="boot-line boot-line-1 boot-header">VALDEZ-OS 1.0 &middot; BIOS REV 7.0</span>
+<span class="boot-line boot-line-2">MEMORY TEST ............ 640K OK</span>
+<span class="boot-line boot-line-3">PHOSPHOR ............... <span data-slot="phosphor">GREEN/AMBER OK</span></span>
+<span class="boot-line boot-line-4">VECTOR UNIT ............ <span data-slot="vector-unit">ONLINE</span></span>
+<span class="boot-line boot-line-5">{mountLine}</span>
+<span class="boot-line boot-line-6">LOADING DESKTOP ........ <span class="loading-ok">OK</span></span></pre>
+  <p class="boot-skip bloom">PRESS ANY KEY TO SKIP</p>
+</div>
+
+<style>
+  #boot {
+    position: fixed;
+    inset: 0;
+    /* Above the taskbar strip's `z-index: 1` (`TaskbarStrip.astro`) — belt and
+       braces, since `html.shell` already hides that strip whenever `#boot` can
+       show at all. */
+    z-index: 2;
+    background: #000;
+    color: var(--ink);
+    font-family: var(--font-mono);
+    /* Slashed zero (ticket 13): this is chrome/log output, not body copy. */
+    font-feature-settings: 'zero';
+  }
+
+  .boot-log {
+    margin: 0;
+    padding: var(--pad);
+    white-space: pre-wrap;
+  }
+
+  .boot-header {
+    color: var(--accent);
+  }
+
+  .boot-line {
+    display: block;
+    opacity: 0;
+    animation: boot-reveal 1ms linear both;
+  }
+
+  .boot-line-1 {
+    animation-delay: 0ms;
+  }
+  .boot-line-2 {
+    animation-delay: 80ms;
+  }
+  .boot-line-3 {
+    animation-delay: 160ms;
+  }
+  .boot-line-4 {
+    animation-delay: 240ms;
+  }
+  .boot-line-5 {
+    animation-delay: 320ms;
+  }
+  .boot-line-6 {
+    animation-delay: 400ms;
+  }
+
+  @keyframes boot-reveal {
+    to {
+      opacity: 1;
+    }
+  }
+
+  /* Ticket 10 § Reduced motion: the whole log renders in one frame. Ticket 10 §
+     Skip: any key/click/tap jumps straight to this same end state — `boot-skipped`
+     gets the identical override rather than a second animation. Neither this nor
+     the reduced-motion case is itself an *animation*, so ticket 02's static-CRT
+     constraint isn't in tension here: this only ever changes whether a delay
+     applies, never the CRT scan/bloom treatment. */
+  :global(html.reduced) #boot .boot-line,
+  :global(html.boot-skipped) #boot .boot-line {
+    animation: none;
+    opacity: 1;
+  }
+
+  /* The final line's completion marker only appears once the island has actually
+     taken over (ticket 10 § Timing: "held until the island mounts"). */
+  .loading-ok {
+    visibility: hidden;
+  }
+
+  :global(html.shell-ready) #boot .loading-ok {
+    visibility: visible;
+  }
+
+  .boot-skip {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    margin: 0;
+    padding: var(--pad);
+    color: var(--accent);
+    text-align: center;
+  }
+</style>

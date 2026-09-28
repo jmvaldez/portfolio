@@ -13,6 +13,10 @@ test('data-crt defaults to "on" with no stored preference and no forced media', 
 });
 
 test('the CRT toggle sets data-crt to "off" and it survives a reload', async ({ page }) => {
+  // Phase 8: above the breakpoint with JS on, the shell hides `/`'s taskbar strip
+  // (`html.shell`). The layout override keeps the linear layout — and its toggle —
+  // visible here; the toggle itself is the thing under test, not the shell handover.
+  await page.addInitScript(() => localStorage.setItem('vos:layout-override', 'linear'));
   await page.goto('/');
   await page.locator('[data-crt-toggle]').click();
   await expect(page.locator('html')).toHaveAttribute('data-crt', 'off');
@@ -35,6 +39,9 @@ test('prefers-contrast: more defaults data-crt off, but the toggle still works',
 }) => {
   const context = await browser.newContext();
   const page = await context.newPage();
+  // Phase 8: keep the linear layout — and its toggle — visible above the
+  // breakpoint (see the reload test above for why).
+  await page.addInitScript(() => localStorage.setItem('vos:layout-override', 'linear'));
   await page.emulateMedia({ contrast: 'more' });
   await page.goto('/');
   await expect(page.locator('html')).toHaveAttribute('data-crt', 'off');
