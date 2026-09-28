@@ -42,7 +42,8 @@ export interface Toast {
  * written to `sessionStorage`/`localStorage` (unlike `windows`) — it resets on
  * reload same as any other in-memory `useState` would. `armed` and `vector` are
  * Phase 11's terminal easter eggs (`arm`/`disarm`); `gridTint` is the Konami code
- * here in Phase 10, read by Phase 12's WebGL grid. */
+ * here in Phase 10, read by Phase 12's WebGL grid. `vector` is written only by the
+ * scene layer (Phase 12) and read only by the taskbar's `VEC` gauge. */
 export interface EffectsState {
   armed: boolean;
   gridTint: 'blue' | 'amber';
@@ -74,6 +75,12 @@ interface ShellState {
    * it from `Shell`'s own props. */
   tree: FsTree | null;
   setTree: (tree: FsTree) => void;
+
+  /** The build-time drone SVG and HUD readout (ticket 11; D19): `index.astro` renders
+   * them once and they arrive as island props, so `viewer.exe`'s fallback costs no
+   * three import. Empty until `Shell.tsx` sets them. */
+  droneFallback: { svg: string; readout: string };
+  setDroneFallback: (fallback: { svg: string; readout: string }) => void;
 
   /** The most recent message for the one shared `role="status"` region
    * (`Desktop.tsx` renders it): boot-ready and live-swap announcements now
@@ -180,6 +187,9 @@ export const useShellStore = create<ShellState>((set, get) => ({
 
   tree: null,
   setTree: (tree) => set({ tree }),
+
+  droneFallback: { svg: '', readout: '' },
+  setDroneFallback: (droneFallback) => set({ droneFallback }),
 
   lastAnnouncement: '',
   announce: (message) => set({ lastAnnouncement: message }),

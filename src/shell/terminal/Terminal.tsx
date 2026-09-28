@@ -23,6 +23,7 @@ import {
 } from '~/lib/storage';
 import type { AppProps } from '../apps/registry';
 import { launch } from '../launch';
+import { sceneGateOpen } from '../scene/gate';
 import { useShellStore } from '../store';
 import { appRegistry } from '../apps/registry';
 import { complete } from './complete';
@@ -161,10 +162,15 @@ export default function Terminal({ windowId }: AppProps) {
 
   function doArm(armed: boolean): void {
     const node = tree?.['/bin/viewer.exe'];
-    // Ticket 08 § `arm`/`disarm`: "opens or raises viewer.exe" — a no-op until
-    // Phase 12 registers `viewer` (same "not launchable" rule `launch.ts` and the
-    // icon/launcher renderers already apply).
-    if (node && node.kind === 'app' && node.app !== undefined && node.app in appRegistry) {
+    // Ticket 08 § `arm`/`disarm`: "opens or raises viewer.exe". Under the fallback
+    // (D19: reduced motion or no WebGL) there is nothing to spin, so arming only toasts.
+    if (
+      sceneGateOpen() &&
+      node &&
+      node.kind === 'app' &&
+      node.app !== undefined &&
+      node.app in appRegistry
+    ) {
       launch(node);
     }
     useShellStore.getState().setEffects({ armed });

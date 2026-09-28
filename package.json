@@ -21,6 +21,8 @@
   },
   "dependencies": {
     "@astrojs/react": "^7.0.0",
+    "@react-three/drei": "10.7.9",
+    "@react-three/fiber": "9.8.1",
     "@tailwindcss/vite": "^4.3.3",
     "astro": "7.3.5",
     "react": "19.2.0",

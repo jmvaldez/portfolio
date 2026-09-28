@@ -1,0 +1,95 @@
+/*
+ * Phase 12's 3D layer chrome (ticket 07, ticket 11 § "The 3D layer, without the island",
+ * D19): the shell's fallback floor and `viewer.exe`'s body. Nothing here paints an opaque
+ * surface over the canvas — the map's hazard: an opaque DOM surface above it hides the 3D.
+ */
+
+/* The fallback floor's rules are `GridFloor.astro`'s (global there, one source); the
+   shell only re-homes it: fixed to the viewport, above `body`'s ground fill, below
+   `#desktop`. */
+.scene-floor {
+  position: fixed;
+  z-index: 0;
+}
+
+/* `viewer.exe`'s window: the frame and body turn transparent so the shared canvas (or,
+   under the fallback, the floor) shows through — the titlebar keeps its own opaque
+   `--chrome`, so the window stays a window. */
+.frame[data-window]:has(.viewer) {
+  background: transparent;
+}
+
+.window-body:has(> .viewer) {
+  position: relative;
+  padding: 0;
+  overflow: hidden;
+  background: transparent;
+}
+
+.viewer {
+  position: absolute;
+  inset: 0;
+  color: var(--ink);
+}
+
+.viewer-view,
+.viewer-fallback {
+  position: absolute;
+  inset: 0;
+}
+
+.viewer-fallback :is(svg) {
+  width: 100%;
+  height: 100%;
+}
+
+/* Crosshair and readout, the same rules as `DroneFigure.astro`'s (ported verbatim from
+   the visual-system prototype's HUD layer over the viewer). */
+.viewer .cross {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.viewer .cross::before,
+.viewer .cross::after {
+  content: '';
+  position: absolute;
+  background: var(--hud);
+  opacity: 0.8;
+}
+
+.viewer .cross::before {
+  left: 50%;
+  top: calc(50% - 9px);
+  width: 1px;
+  height: 18px;
+  transform: translateX(-0.5px);
+}
+
+.viewer .cross::after {
+  top: 50%;
+  left: calc(50% - 9px);
+  height: 1px;
+  width: 18px;
+  transform: translateY(-0.5px);
+}
+
+.viewer .readout {
+  position: absolute;
+  left: 10px;
+  bottom: 8px;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--hud);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+@media (forced-colors: active) {
+  .scene-floor,
+  .viewer-fallback,
+  .viewer .cross {
+    display: none;
+  }
+}

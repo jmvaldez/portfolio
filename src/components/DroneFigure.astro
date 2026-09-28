@@ -5,41 +5,11 @@
 // surfaces, so they cannot drift. Runs entirely in this component's frontmatter, which
 // only ever executes at build time (same as a `.astro` page's), so `renderDroneSvg` and
 // `getCollection` here are both build-time work, never shipped to the client.
-import { getCollection } from 'astro:content';
 import { renderDroneSvg } from '~/drone/svg';
+import { DRONE_FIGURE_SIZE, featuredReadout } from '~/drone/readout';
 
-const WIDTH = 400;
-const HEIGHT = 300;
-
-// The `drones` collection also holds `note` entries nested under a build (glossary:
-// "Note"), which carry no `featured`/`class`/spec fields — narrow to `type: "drone"`
-// first, same discriminant the content schemas use.
-type DroneEntryData = Extract<
-  Awaited<ReturnType<typeof getCollection<'drones'>>>[number]['data'],
-  { type: 'drone' }
->;
-
-const drones = await getCollection('drones');
-const featured = drones.find(
-  (entry): entry is (typeof drones)[number] & { data: DroneEntryData } =>
-    entry.data.type === 'drone' && entry.data.featured,
-);
-
-// The readout reads the featured build's own frontmatter (ticket 11: "these three
-// values come from the featured drone's frontmatter"). Nothing here is invented if a
-// future featured drone is missing a field — the readout just omits that segment.
-const readoutParts: string[] = [];
-if (featured) {
-  const { class: droneClass, weightG, propSizeIn } = featured.data;
-  if (droneClass && propSizeIn !== undefined) {
-    readoutParts.push(`${droneClass.toUpperCase()}-${propSizeIn}`);
-  }
-  if (weightG !== undefined) readoutParts.push(`${weightG} G`);
-  if (propSizeIn !== undefined) readoutParts.push(`${propSizeIn} IN`);
-}
-const readout = readoutParts.join(' · ');
-
-const svg = renderDroneSvg({ width: WIDTH, height: HEIGHT });
+const readout = await featuredReadout();
+const svg = renderDroneSvg(DRONE_FIGURE_SIZE);
 ---
 
 <div class="drone-figure" aria-hidden="true">

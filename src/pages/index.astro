@@ -12,8 +12,14 @@ import BootScreen from '~/components/shell/BootScreen.astro';
 import RestoreLine from '~/components/shell/RestoreLine.astro';
 import Shell from '~/shell/Shell';
 import { getTree } from '~/fs/load';
+import { renderDroneSvg } from '~/drone/svg';
+import { DRONE_FIGURE_SIZE, featuredReadout } from '~/drone/readout';
 
 const tree = await getTree();
+// D19: the shell's fallback for `viewer.exe`, rendered here so it costs the island no
+// three import (same source as the linear layout's figure).
+const droneSvg = renderDroneSvg(DRONE_FIGURE_SIZE);
+const droneReadout = await featuredReadout();
 ---
 
 <BaseLayout
@@ -27,5 +33,5 @@ const tree = await getTree();
   <BootScreen />
   <RestoreLine />
   <TaskbarStrip tree={tree} onHome={true} />
-  <Shell client:only="react" tree={tree} />
+  <Shell client:only="react" tree={tree} droneSvg={droneSvg} droneReadout={droneReadout} />
 </BaseLayout>

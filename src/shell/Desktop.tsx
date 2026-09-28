@@ -14,6 +14,7 @@ import DesktopIcons from './DesktopIcons';
 import { launch } from './launch';
 import { applyStoredLayout, initPersistence, restoreLayout } from './persist';
 import { clearStalePromotionName } from './promote';
+import SceneLayer from './scene/SceneLayer';
 import Taskbar from './Taskbar';
 import Toasts from './Toasts';
 import { rescue, seedToRect, type SeedFraction, type SnapZone } from './wm/geometry';
@@ -63,20 +64,18 @@ interface Props {
 }
 
 /** D16's seed layout, as fractions of the desktop — never fixed pixels (map Hazards).
- * `viewer.exe` is still omitted entirely: D16 says "a seed whose app is not yet
- * registered is skipped", and Phase 12 is what registers it — there's no node at
- * that path for `tree` to even resolve yet, so skipping is unconditional rather
- * than a per-render check. `terminal.exe` is registered as of this phase and is
- * back in, per D16's own fraction (`0.02, 0.62, 0.32×0.34`).
+ * `viewer.exe` (Phase 12) and `terminal.exe` (Phase 11) are both registered, so both
+ * seeds are in, at D16's own fractions.
  *
  * Listed FIRST, not last: `store.open()` always focuses whatever it just opened
- * (`store.ts`), and D16 requires the terminal "unfocused" while the other two seeds
+ * (`store.ts`), and D16 requires the terminal "unfocused" while the other seeds
  * carry no such requirement — opening it first means `about.txt` then `projects`
- * each steal focus back in turn, leaving `projects` focused (as before this phase)
- * and the terminal not. Ordering the array is the whole mechanism; nothing else
+ * each steal focus back in turn, leaving `projects` focused and the terminal not.
+ * `viewer.exe` sits right behind it for the same reason. Ordering the array is the whole mechanism; nothing else
  * needs to special-case the terminal's focus. */
 const SEEDS: ReadonlyArray<{ path: string; seed: SeedFraction }> = [
   { path: '/bin/terminal.exe', seed: { x: 0.02, y: 0.62, w: 0.32, h: 0.34 } },
+  { path: '/bin/viewer.exe', seed: { x: 0.5, y: 0.42, w: 0.34, h: 0.48 } },
   { path: '/about.txt', seed: { x: 0.04, y: 0.06, w: 0.26, h: 0.42 } },
   { path: '/projects', seed: { x: 0.33, y: 0.06, w: 0.28, h: 0.42 } },
 ];
@@ -321,9 +320,11 @@ const Desktop = forwardRef<DesktopHandle, Props>(function Desktop({ onSkip, onSe
         Skip to text layout
       </button>
       {/* Map Hazards: an opaque `#desktop` background silently hides whatever sits
-          behind it — Phase 12's shared WebGL canvas will eventually go there. The
+          behind it — the shared WebGL canvas (`SceneLayer`, Phase 12) goes there. The
           ground fill belongs on an ancestor (`body`, `global.css`); this surface
-          stays transparent on purpose. */}
+          stays transparent on purpose. Before `#desktop` in the DOM so the fixed
+          canvas paints beneath it. */}
+      <SceneLayer desktopRef={desktopRef} />
       <div id="desktop" ref={desktopRef}>
         <DesktopIcons />
         {windows.map((win) => {

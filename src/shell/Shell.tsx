@@ -18,9 +18,12 @@ import { useShellStore } from './store';
 
 interface Props {
   tree: FsTree;
+  /** The build-time drone SVG and its HUD readout (D19): `viewer.exe`'s fallback. */
+  droneSvg: string;
+  droneReadout: string;
 }
 
-export default function Shell({ tree }: Props) {
+export default function Shell({ tree, droneSvg, droneReadout }: Props) {
   const [renderDesktop, setRenderDesktop] = useState<boolean>(
     () => !getLayoutOverride() && window.matchMedia(SHELL_QUERY).matches,
   );
@@ -41,6 +44,10 @@ export default function Shell({ tree }: Props) {
   useEffect(() => {
     useShellStore.getState().setTree(tree);
   }, [tree]);
+
+  useEffect(() => {
+    useShellStore.getState().setDroneFallback({ svg: droneSvg, readout: droneReadout });
+  }, [droneSvg, droneReadout]);
 
   useEffect(() => {
     useShellStore.getState().setSurface(renderDesktop ? 'shell' : 'linear');
