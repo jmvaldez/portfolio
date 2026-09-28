@@ -23,6 +23,18 @@ pnpm verify    # lint, typecheck, unit tests, build, e2e — the full repo gate
 
 `pnpm verify` needs Chromium once per machine: `pnpm exec playwright install chromium`.
 
+## Deployment
+
+The build runs in [GitHub Actions](.github/workflows/deploy.yml), not Cloudflare Pages' own
+git-connected builds: `pnpm build` renders `dist/resume.pdf` from `/resume/` with a real
+headless Chromium via Playwright, and Cloudflare Pages' build environment can't run one. The
+workflow builds `dist/` and deploys it with `wrangler pages deploy` on every push to `main`
+(and on manual dispatch), so Cloudflare only ever receives a finished static site.
+
+It needs two repo secrets, `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, for the
+Cloudflare Pages project `joe-valdez-portfolio`. Until they're set, the deploy step is
+skipped with a `::notice::` and the workflow still passes.
+
 ## Design record
 
 The design is specified in [`.scratch/retro-desktop-portfolio/map.md`](.scratch/retro-desktop-portfolio/map.md),

@@ -4,6 +4,10 @@
 @import './crt.css';
 @import './chrome.css';
 @import './transitions.css';
+/* Print-only (ticket 15): the media qualifier gates the whole file, so nothing in it
+   needs its own `@media print` wrapper. Applies to every page — a visitor may print
+   any of them — and is also the stylesheet Task 5.2's headless render uses. */
+@import './print.css' print;
 
 /* Ticket 06 / D14: map the visual-system tokens into Tailwind's theme so layout
    utilities (`bg-ink`, `text-accent`, `border-edge`, …) read the same custom

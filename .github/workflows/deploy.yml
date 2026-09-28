@@ -1,0 +1,45 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # The resume PDF is rendered by a real headless Chromium at build time
+      # (ticket 15), so the build step below needs it available.
+      - run: pnpm exec playwright install --with-deps chromium
+
+      - run: pnpm build
+
+      # Precondition 2: the deploy step must skip gracefully until Joe adds the
+      # Cloudflare secrets, so CI stays green before they exist and on forks.
+      - name: Deploy to Cloudflare Pages
+        if: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
+        uses: cloudflare/wrangler-action@v3
+        with:
+          command: pages deploy dist --project-name=joe-valdez-portfolio --branch=main
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Note skipped deploy
+        if: ${{ secrets.CLOUDFLARE_API_TOKEN == '' }}
+        run: echo "::notice::Cloudflare secrets not configured; skipping deploy"

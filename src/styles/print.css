@@ -1,0 +1,105 @@
+/*
+ * Print stylesheet (ticket 15 § The print stylesheet; ticket 19: `resume.pdf` <= 150 KB).
+ * Loaded on every page via `global.css`'s `@import './print.css' print;` — a visitor may
+ * print any page, and this is also literally the render Task 5.2's headless Chromium
+ * takes of `/resume/` to produce `dist/resume.pdf`, so what a visitor's own browser
+ * "Print" dialog shows and what ships as the PDF are the same document.
+ *
+ * Because this file only ever loads under the `print` media query, nothing here needs
+ * its own `@media print` wrapper — the whole stylesheet is already print-only.
+ */
+
+@page {
+  size: Letter;
+  margin: 0.6in;
+}
+
+/* Chrome that only makes sense on screen: the taskbar strip, the masthead's controls,
+   breadcrumbs, the spec block, prev/next, gallery and footage. The masthead title
+   itself (the frame's own heading) stays — it's content, not chrome. */
+.taskbar-strip,
+.ctl,
+nav[aria-label='Breadcrumb'],
+.specblock,
+.prevnext,
+nav[aria-label='Sibling pages'],
+.gallery,
+.footage {
+  display: none !important;
+}
+
+/* The DOWNLOAD PDF link makes no sense on a printed page (ticket 15). Its wrapping
+   paragraph goes with it so it doesn't leave a blank line. */
+a[download] {
+  display: none !important;
+}
+
+p:has(> a[download]) {
+  display: none !important;
+}
+
+/* CRT off, unconditionally (ticket 02, ticket 19): higher specificity than
+   `html[data-crt='on'] .scan::after` in crt.css, so `!important` guarantees the
+   override regardless of the stored preference. */
+.scan::after {
+  content: none !important;
+  display: none !important;
+}
+
+.bloom {
+  text-shadow: none !important;
+}
+
+/* Black on white, same mono face, no chrome bevel. The frame becomes plain flowing
+   content rather than a bordered chrome box (ticket 15). */
+html,
+body {
+  background: #fff !important;
+  color: #000 !important;
+}
+
+* {
+  text-shadow: none !important;
+  box-shadow: none !important;
+}
+
+.frame {
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  color: #000 !important;
+}
+
+.titlebar {
+  background: transparent !important;
+  border-bottom: 1px solid #000 !important;
+  color: #000 !important;
+}
+
+.prose {
+  background: transparent !important;
+  color: #000 !important;
+}
+
+.page-shell {
+  background: transparent !important;
+  padding: 0 !important;
+  min-height: auto !important;
+  display: block !important;
+}
+
+.page-shell > .frame {
+  width: auto !important;
+  max-width: none !important;
+  min-height: auto !important;
+  padding-bottom: 0 !important;
+}
+
+/* A printout can't be clicked, so a link prints its own target right after its text
+   (ticket 15). Excludes the DOWNLOAD PDF link, already hidden above, and the
+   breadcrumb/close-box links, already hidden with their containers. */
+a[href^='http']::after,
+a[href^='mailto:']::after {
+  content: ' (' attr(href) ')';
+}
