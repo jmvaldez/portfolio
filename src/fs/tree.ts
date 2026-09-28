@@ -1,9 +1,6 @@
-// The pure tree builder (ticket 05 § The filesystem, ticket 12 § URLs, D9, D10, D12).
-//
-// Takes plain data — collection entries, the mount table, and `/bin`'s nodes — and
-// returns the finished filesystem, keyed by path. No `astro:content` import here (see
-// `src/fs/load.ts` for the server-only glue): that's what makes this file directly
-// unit-testable (map Hazards: `getCollection()` is a hard build error outside the server).
+// The pure tree builder: turns collection entries, the mount table, and `/bin`'s nodes
+// into the finished filesystem keyed by path. Imports nothing from `astro:content` so it
+// can be unit-tested directly; `load.ts` supplies the entries.
 
 import type {
   BinMount,
@@ -16,9 +13,8 @@ import type {
 import type { FsNode, FsTree } from './types';
 
 /**
- * A collection entry, reduced to what the tree builder needs. Loosely typed on purpose —
- * covers the union of `project` / `drone` / `note` / `page` fields the schemas in
- * `src/content/schemas.ts` validate well before this runs.
+ * A collection entry reduced to what the tree builder needs. Loosely typed: it covers the
+ * union of project, drone, note, and page fields, already validated by the schemas.
  */
 export interface RawEntryData {
   type: 'project' | 'drone' | 'note' | 'page';
@@ -42,9 +38,7 @@ export interface RawEntry {
   data: RawEntryData;
 }
 
-/** D10's sort key, computed per node and consumed once children arrays are built. A
- * synthesized directory inherits its readme's (ticket 05 D10: "a directory inherits its
- * readme's"). */
+/** Listing sort key for a node. A synthesized directory inherits its readme's. */
 interface SortKey {
   isReadme: boolean;
   featured: boolean;
@@ -52,10 +46,9 @@ interface SortKey {
   title: string;
 }
 
-/** Directories whose children preserve their authored/mount-table order rather than D10 —
- * D10 is about listing order *inside a collection*, and neither of these is one. */
+/** Directories that keep their authored order instead of the collection listing order. */
 const UNSORTED_DIRS = new Set(['/', '/bin']);
-/** Directories with no page of their own (D12). */
+/** Directories with no page of their own. */
 const NO_URL_DIRS = new Set(['/', '/bin']);
 
 function dateKeyOf(entry: Pick<RawEntry, 'collection' | 'data'>): string | undefined {
@@ -83,14 +76,12 @@ function dropExtension(path: string): string {
   return path.replace(/\.[^./]+$/, '');
 }
 
-/** `readme.md` collapses to its directory's own URL; everything else drops its extension
- * (ticket 12 § URLs). */
+/** `readme.md` collapses to its directory's URL; other files drop their extension. */
 function fileUrl(path: string, name: string, dirUrl: string): string {
   return name === 'readme.md' ? dirUrl : withTrailingSlash(dropExtension(path));
 }
 
-/** D6: `{ start, end? }` renders as `2025–PRESENT` in chrome. Only the year survives in
- * the strip even when `start`/`end` carry a month. */
+/** Formats a period as `2025–PRESENT`; only the year is kept even if a month is set. */
 function formatPeriod(period: { start: string; end?: string | undefined }): string {
   const start = period.start.slice(0, 4);
   if (period.end === undefined) return start;
@@ -98,7 +89,7 @@ function formatPeriod(period: { start: string; end?: string | undefined }): stri
   return `${start}–${end}`;
 }
 
-/** Ticket 12 spec strip: `STATUS · PERIOD · ROLE`, uppercase, empty parts omitted. */
+/** Spec strip `STATUS · PERIOD · ROLE`, uppercase, with empty parts omitted. */
 function projectStrip(data: RawEntryData): string {
   const parts = [
     data.status?.toUpperCase(),
@@ -108,7 +99,7 @@ function projectStrip(data: RawEntryData): string {
   return parts.filter((part): part is string => part !== undefined).join(' · ');
 }
 
-/** Ticket 12 spec strip: `CLASS · <prop>" · <weight>G`, uppercase, empty parts omitted. */
+/** Spec strip `CLASS · <prop>" · <weight>G`, uppercase, with empty parts omitted. */
 function droneStrip(data: RawEntryData): string {
   const parts = [
     data.class?.toUpperCase(),
@@ -118,7 +109,7 @@ function droneStrip(data: RawEntryData): string {
   return parts.filter((part): part is string => part !== undefined).join(' · ');
 }
 
-/** D10: readme first, then featured desc, then date desc, then title. */
+/** Orders readme first, then featured, then newest date, then title. */
 function compareD10(a: SortKey, b: SortKey): number {
   if (a.isReadme !== b.isReadme) return a.isReadme ? -1 : 1;
   if (a.featured !== b.featured) return a.featured ? -1 : 1;
@@ -130,6 +121,7 @@ function compareD10(a: SortKey, b: SortKey): number {
   return a.title.localeCompare(b.title);
 }
 
+/** Builds the filesystem tree, keyed by absolute path, from entries, mounts, and `/bin`. */
 export function buildTree(entries: RawEntry[], mounts: Mount[], bin: FsNode[]): FsTree {
   const tree: FsTree = {};
   const sortKeys = new Map<string, SortKey>();

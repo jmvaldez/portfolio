@@ -1,10 +1,7 @@
 ---
-// The drone, without the island (ticket 11 § "The 3D layer, without the island"): a
-// build-time SVG from the same procedural geometry `viewer.exe` orbits, with the
-// viewer's crosshair and `.readout` drawn over it in plain HTML — one source for both
-// surfaces, so they cannot drift. Runs entirely in this component's frontmatter, which
-// only ever executes at build time (same as a `.astro` page's), so `renderDroneSvg` and
-// `getCollection` here are both build-time work, never shipped to the client.
+// Build-time SVG of the procedural drone that `viewer.exe` orbits, with the viewer's
+// crosshair and `.readout` drawn over it in plain HTML. Sharing the geometry keeps both
+// surfaces from drifting; nothing here ships to the client.
 import { renderDroneSvg } from '~/drone/svg';
 import { DRONE_FIGURE_SIZE, featuredReadout } from '~/drone/readout';
 
@@ -19,8 +16,7 @@ const svg = renderDroneSvg(DRONE_FIGURE_SIZE);
 </div>
 
 <style>
-  /* Ticket 11: the wireframe drone and its HUD overlay both drop under forced colours
-     — wireframe line art doesn't reliably survive that mode. */
+  /* Wireframe line art doesn't reliably survive forced colours, so the figure is dropped. */
   @media (forced-colors: active) {
     .drone-figure {
       display: none;
@@ -48,8 +44,7 @@ const svg = renderDroneSvg(DRONE_FIGURE_SIZE);
     height: 100%;
   }
 
-  /* Crosshair and readout, ported verbatim from the visual-system prototype's HUD
-     layer over the viewer (`prototype/visual-system`, `.cross` / `.readout`). */
+  /* Crosshair and readout HUD layered over the SVG. */
   .cross {
     position: absolute;
     inset: 0;

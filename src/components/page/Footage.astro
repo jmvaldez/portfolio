@@ -1,8 +1,7 @@
 ---
-// Rows of poster frame plus label, each linking out to the footage item's URL (ticket 12
-// § Gallery and footage). No `<iframe>` embeds — a YouTube embed alone brings roughly
-// 1 MB of third-party JS onto an otherwise near-zero page. A missing poster shows a
-// framed "play" glyph instead of an image (D7).
+// Rows of poster frame plus label, each linking out to the footage URL. No `<iframe>`
+// embeds: a YouTube embed alone adds about 1 MB of third-party JS. A missing poster shows
+// a framed "play" glyph.
 import { Image } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
 

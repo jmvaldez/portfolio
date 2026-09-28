@@ -1,8 +1,6 @@
-// Tab completion (ticket 08 § Keys: "Tab completes a command or path on a single match
-// and lists candidates on several"). Pure, like `interpret.ts` — no DOM/storage access,
-// just `line` + `cursor` in, a completion decision out. Task 11.2's UI turns a `single`
-// result into a new input value and a `multiple` result into a candidate list under the
-// prompt.
+// Tab completion for the terminal. Pure, like `interpret.ts`: no DOM or storage access.
+// The UI turns a `single` result into a new input value and a `multiple` result into a
+// candidate list under the prompt.
 
 import { listDir, resolvePath } from '~/fs/path';
 import type { FsTree } from '~/fs/types';
@@ -15,11 +13,8 @@ export interface CompleteCtx {
   wd: string;
 }
 
-/** `/bin`'s own children give the command set to complete against — the nine real
- * commands, the five eggs (`sudo rm arm disarm hack`) and the two apps
- * (`terminal.exe`, `viewer.exe`) are all nodes there (`src/fs/bin.ts`), so nothing here
- * needs its own hardcoded list. Eggs complete precisely because they're real entries,
- * same as ticket 08 says they're "present in `/bin` — found by exploring". */
+/** Returns the names of `/bin`'s children, which are the commands to complete against. The
+ * easter-egg commands and the apps are real nodes there, so they complete too. */
 function binCommandNames(tree: FsTree): string[] {
   const bin = tree['/bin'];
   if (!bin?.children) return [];
@@ -39,11 +34,13 @@ function splice(line: string, start: number, end: number, replacement: string): 
   return line.slice(0, start) + replacement + line.slice(end);
 }
 
-/** Completes the word touching `cursor` in `line`: the first word completes against
- * `/bin`'s command names, every later word against path segments resolved relative to
- * `ctx.wd` (ticket 08 § Keys). A single unambiguous match is spliced in whole; a
- * directory match gets a trailing `/` the way `ls -F` marks one. Several matches come
- * back as a candidate list for the UI to display, never auto-filled. */
+/**
+ * Completes the word touching `cursor` in `line`: the first word against `/bin`'s command
+ * names, later words against path segments relative to `ctx.wd`.
+ *
+ * Returns `single` with the whole new line for one match (a directory gets a trailing `/`),
+ * `multiple` with the sorted candidates for several, or `none`.
+ */
 export function complete(line: string, cursor: number, ctx: CompleteCtx): CompletionResult {
   const wordMatch = /\S*$/.exec(line.slice(0, cursor));
   const word = wordMatch ? wordMatch[0] : '';

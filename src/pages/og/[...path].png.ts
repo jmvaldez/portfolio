@@ -1,8 +1,6 @@
-// One OG image per URL-bearing node, plus the site default at `/og/index.png`
-// (Task 7.2; ticket 18 § OG images; D22: OG paths follow the node's *URL*, not its path
-// in the fake filesystem). Mirrors `src/pages/[...path].astro`'s directory/readme
-// collision rule and `src/pages/fs/body/[...path].html.ts`'s style (relative imports,
-// D8's `process.cwd()` read).
+// One OG image per URL-bearing node, plus the site default at `/og/index.png`. Paths
+// follow the node's URL, not its path in the fake filesystem, and a directory wins a URL
+// collision with its readme.md as in `src/pages/[...path].astro`.
 
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
@@ -27,16 +25,14 @@ type EntryData =
   | CollectionEntry<'drones'>['data']
   | CollectionEntry<'pages'>['data'];
 
-/** `~/projects/orbital-mesh`-style (ticket 18 § OG images): the node's own `path`
- * (never its URL — a directory's `path` already omits its readme's filename, which is
- * exactly the example ticket 18 gives), extension dropped, tilde in place of the
- * leading slash. */
+/** Returns the `~/projects/orbital-mesh`-style path for a node: its own `path` (not its
+ * URL) with the extension dropped and `~` in place of the leading slash. */
 function tildePath(rawPath: string): string {
   const withoutExtension = rawPath.replace(/\.[^./]+$/, '');
   return withoutExtension === '/' || withoutExtension === '' ? '~' : `~${withoutExtension}`;
 }
 
-/** D6, matching `src/fs/tree.ts` and `SpecBlock.astro`'s own formatting. */
+/** Formats a period like `SpecBlock.astro` and `src/fs/tree.ts` do. */
 function formatPeriod(period: { start: string; end?: string | undefined }): string {
   const start = period.start.slice(0, 4);
   if (period.end === undefined) return start;
@@ -44,9 +40,9 @@ function formatPeriod(period: { start: string; end?: string | undefined }): stri
   return `${start}–${end}`;
 }
 
-/** Project: role, first three tech entries, period. Drone: class, frame, prop size
- * (ticket 18 § OG images). `undefined` for anything else (notes, pages) — that card
- * shows the summary instead. */
+/** Returns project fields (role, first three tech entries, period) or drone fields
+ * (class, frame, prop size). Returns `undefined` for notes and pages, whose card shows
+ * the summary instead. */
 function specFieldsFor(entryData: EntryData): CardSpecField[] | undefined {
   if (entryData.type === 'project') {
     return [
@@ -68,8 +64,8 @@ function specFieldsFor(entryData: EntryData): CardSpecField[] | undefined {
   return undefined;
 }
 
-/** A directory never carries a body itself (glossary "Readme"): its card's spec fields
- * (or summary) come from its readme child, the same collapse `[...path].astro` performs. */
+/** Returns the node whose data feeds the card: the node itself, or for a directory its
+ * readme child (`undefined` if it has none). */
 function bodyNodeFor(node: FsNode, tree: FsTree): FsNode | undefined {
   if (node.kind !== 'dir') return node;
   const readmePath = node.children?.find((childPath) => tree[childPath]?.name === 'readme.md');
@@ -89,9 +85,8 @@ async function cardDataForNode(node: FsNode, tree: FsTree): Promise<CardData> {
   };
 }
 
-/** The drone SVG, coloured for a standalone data URI: Satori renders the `<img>` as its
- * own document, so the SVG's `currentColor` stroke (`src/drone/svg.ts`) has nothing to
- * inherit from — the shell's own `--ink` is baked in directly instead. */
+/** Returns the drone SVG as a data URI with `ink` baked in as the stroke: Satori renders
+ * the `<img>` as its own document, so `currentColor` has nothing to inherit from. */
 function droneDataUri(ink: string): string {
   const svg = renderDroneSvg({ width: DRONE_WIDTH, height: DRONE_HEIGHT }).replaceAll(
     'currentColor',
@@ -103,9 +98,8 @@ function droneDataUri(ink: string): string {
 export const getStaticPaths = (async () => {
   const [tree, fontBytes, tokensCss] = await Promise.all([
     getTree(),
-    // The endpoint's cache key must fold in the font bytes by hand (research 17 hazard
-    // 4): they're read from disk, which Astro's incremental-build dependency graph can't
-    // see.
+    // The cache key must include the font bytes: they're read from disk, which Astro's
+    // incremental-build dependency graph can't see.
     readFile(REGULAR_TTF_PATH),
     readFile(TOKENS_CSS_PATH, 'utf-8'),
   ]);
@@ -116,7 +110,7 @@ export const getStaticPaths = (async () => {
     return createHash('sha256').update(fontHash).update(JSON.stringify(data)).digest('hex');
   }
 
-  // Ticket 12 § URLs: a directory wins a URL collision with its own readme.md.
+  // A directory wins a URL collision with its own readme.md.
   const byUrl = new Map<string, FsNode>();
   for (const node of Object.values(tree)) {
     if (!node.url || node.url === '/') continue;
@@ -135,8 +129,8 @@ export const getStaticPaths = (async () => {
     }),
   );
 
-  // D22: `/` has no node with a URL of its own — the site default, the only card
-  // carrying the drone wireframe (ticket 18 § OG images).
+  // `/` has no node with a URL, so it gets the site default card, the only one with the
+  // drone wireframe.
   const indexData: CardData = {
     path: '~',
     title: SITE_NAME,

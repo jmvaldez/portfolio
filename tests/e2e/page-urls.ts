@@ -1,9 +1,8 @@
-// Every seed URL a content page should exist at (ticket 12 § URLs). Lives outside
-// `pages.spec.ts` (which re-exports it for compatibility) because Playwright refuses
-// to let one spec file import another; `zero-js.spec.ts` needs the same list. `filename`
-// is the masthead's expected text (ticket 12 § Anatomy): the routed node's own name, or
-// its readme.md's name when the route is a directory with one (a directory never
-// carries a body itself — glossary "Readme").
+// Every seed URL a content page should exist at. Lives outside `pages.spec.ts` (which
+// re-exports it for compatibility) because Playwright refuses to let one spec file import
+// another; `zero-js.spec.ts` needs the same list. `filename` is the masthead's expected
+// text: the routed node's own name, or its readme.md's name when the route is a
+// directory with one (a directory never carries a body itself).
 export const PAGE_URLS: { url: string; filename: string }[] = [
   { url: '/about/', filename: 'about.txt' },
   { url: '/contact/', filename: 'contact.txt' },

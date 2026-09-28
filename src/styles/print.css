@@ -1,12 +1,10 @@
 /*
- * Print stylesheet (ticket 15 § The print stylesheet; ticket 19: `resume.pdf` <= 150 KB).
- * Loaded on every page via `global.css`'s `@import './print.css' print;` — a visitor may
- * print any page, and this is also literally the render Task 5.2's headless Chromium
- * takes of `/resume/` to produce `dist/resume.pdf`, so what a visitor's own browser
- * "Print" dialog shows and what ships as the PDF are the same document.
+ * Print stylesheet, loaded on every page via `global.css`'s `@import './print.css' print;`.
+ * It is also the render headless Chromium takes of `/resume/` to produce
+ * `dist/resume.pdf`, so the browser's Print dialog and the shipped PDF match.
  *
- * Because this file only ever loads under the `print` media query, nothing here needs
- * its own `@media print` wrapper — the whole stylesheet is already print-only.
+ * It only loads under the `print` media query, so nothing here needs its own
+ * `@media print` wrapper.
  */
 
 @page {
@@ -14,9 +12,8 @@
   margin: 0.6in;
 }
 
-/* Chrome that only makes sense on screen: the taskbar strip, the masthead's controls,
-   breadcrumbs, the spec block, prev/next, gallery and footage. The masthead title
-   itself (the frame's own heading) stays — it's content, not chrome. */
+/* Screen-only chrome: the taskbar strip, the masthead's controls, breadcrumbs, the spec
+   block, prev/next, gallery and footage. The masthead title stays; it is content. */
 .taskbar-strip,
 .ctl,
 nav[aria-label='Breadcrumb'],
@@ -28,8 +25,8 @@ nav[aria-label='Sibling pages'],
   display: none !important;
 }
 
-/* The DOWNLOAD PDF link makes no sense on a printed page (ticket 15). Its wrapping
-   paragraph goes with it so it doesn't leave a blank line. */
+/* The DOWNLOAD PDF link is meaningless on paper; its paragraph goes too, to avoid a
+   blank line. */
 a[download] {
   display: none !important;
 }
@@ -38,9 +35,8 @@ p:has(> a[download]) {
   display: none !important;
 }
 
-/* CRT off, unconditionally (ticket 02, ticket 19): higher specificity than
-   `html[data-crt='on'] .scan::after` in crt.css, so `!important` guarantees the
-   override regardless of the stored preference. */
+/* CRT off unconditionally. `!important` beats the higher-specificity
+   `html[data-crt='on'] .scan::after` in crt.css whatever the stored preference. */
 .scan::after {
   content: none !important;
   display: none !important;
@@ -50,8 +46,8 @@ p:has(> a[download]) {
   text-shadow: none !important;
 }
 
-/* Black on white, same mono face, no chrome bevel. The frame becomes plain flowing
-   content rather than a bordered chrome box (ticket 15). */
+/* Black on white, same mono face, no chrome bevel: the frame becomes plain flowing
+   content. */
 html,
 body {
   background: #fff !important;
@@ -96,9 +92,8 @@ body {
   padding-bottom: 0 !important;
 }
 
-/* A printout can't be clicked, so a link prints its own target right after its text
-   (ticket 15). Excludes the DOWNLOAD PDF link, already hidden above, and the
-   breadcrumb/close-box links, already hidden with their containers. */
+/* A printout can't be clicked, so links print their target after the text. Excludes the
+   DOWNLOAD PDF link and the breadcrumb/close-box links, which are already hidden. */
 a[href^='http']::after,
 a[href^='mailto:']::after {
   content: ' (' attr(href) ')';

@@ -1,10 +1,7 @@
 ---
-// A terminal-style path (ticket 12 § Breadcrumbs): "/ projects / orbital-mesh / notes".
-// Each segment's visible text is the URL segment; each link's accessible name is the
-// target node's title (ticket 12/14: a screen reader hears "Orbital Mesh", not
-// "orbital-mesh"). The decorative "/" separators between segments are `aria-hidden` so
-// they don't clutter that reading. The final segment is the current page: not a link,
-// `aria-current="page"`.
+// Terminal-style path, e.g. "/ projects / orbital-mesh / notes". Segment text is the URL
+// segment; each link's accessible name is the target node's title. The "/" separators are
+// `aria-hidden`. The last segment is the current page: not a link, `aria-current="page"`.
 import type { FsNode, FsTree } from '~/fs/types';
 
 interface Props {
@@ -19,9 +16,8 @@ function lastUrlSegment(url: string | undefined): string {
   return segments[segments.length - 1] ?? '';
 }
 
-// Directory ancestors of `node`, root and `node` itself excluded — derived from the fs
-// path rather than the URL, since a directory's readme.md collapses onto the
-// directory's own URL (ticket 12 § URLs) and would otherwise double an ancestor up.
+// Directory ancestors of `node` (excluding root and `node`), taken from the fs path
+// because a directory's readme.md shares the directory's URL and would double it up.
 function ancestorDirs(path: string): FsNode[] {
   const segments = path.split('/').filter(Boolean);
   const dirs: FsNode[] = [];

@@ -6,8 +6,8 @@ interface Props {
   /** Omitted for `/` (see `Head.astro`). */
   node?: FsNode | undefined;
   tree: FsTree;
-  /** Ticket 09, D15: true on content pages, false (or omitted) on `/`. Gates the
-   * inbound half of the outbound-only view transition (CrtPrefScript). */
+  /** True on content pages, false or omitted on `/`. Enables the inbound half of the
+   * view transition (see `CrtPrefScript`). */
   page?: boolean;
 }
 

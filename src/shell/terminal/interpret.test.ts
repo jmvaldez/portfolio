@@ -6,9 +6,7 @@ import { run, type Effect, type InterpretCtx } from './interpret';
 const ctx: InterpretCtx = { tree, wd: '/', width: 80 };
 const at = (wd: string): InterpretCtx => ({ ...ctx, wd });
 
-/** No command, under any input, may ever ask to navigate — the interpreter's `Effect`
- * union has no such variant, so this is really just a type/shape assertion: nothing here
- * conflates `open` (a window) with a real navigation. */
+/** The effect types a command may return; none navigates, and `open` only opens a window. */
 const NAVIGATION_EFFECT_TYPES = new Set([
   'open',
   'fetchSrc',

@@ -1,8 +1,6 @@
 ---
-// A project's cover image (ticket 12 § Anatomy), when the entry sets one. Framed like
-// chrome (`.frame`, reused verbatim, D14), never `.scan` (ticket 02: no scanlines over
-// imagery any more than over prose). Explicit `width`/`height` so the image reserves its
-// box before it loads, keeping CLS inside ticket 19's budget.
+// A project's cover image, framed like chrome but without scanlines. Explicit `width` and
+// `height` reserve its box before load to avoid layout shift.
 import { Image } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
 

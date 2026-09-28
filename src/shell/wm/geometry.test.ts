@@ -4,8 +4,7 @@ import { magnetise, rescue, resize, seedToRect, snapRect, snapTarget } from './g
 const DESKTOP = { width: 1200, height: 800 };
 
 describe('seedToRect', () => {
-  it('converts D16 fractions into absolute pixels', () => {
-    // about.txt: (0.04, 0.06, 0.26x0.42)
+  it('converts desktop fractions into absolute pixels', () => {
     expect(seedToRect({ x: 0.04, y: 0.06, w: 0.26, h: 0.42 }, DESKTOP)).toEqual({
       x: 48,
       y: 48,

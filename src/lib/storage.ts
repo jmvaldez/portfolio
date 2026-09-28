@@ -1,31 +1,21 @@
-// The D13 storage contract: two `localStorage` keys (survive across tabs and
-// sessions) and three `sessionStorage` keys (per tab; a new tab is a new session,
-// ticket 10 § Mechanism). Every accessor below swallows storage exceptions —
-// private browsing and storage-disabled contexts can throw on both `getItem` and
-// `setItem` (same reasoning as `CrtPrefScript`) — and returns a safe fallback
-// instead of letting the throw reach the caller.
+// The storage contract: two `localStorage` keys (shared across tabs and sessions) and four
+// `sessionStorage` keys (per tab). Every accessor swallows storage exceptions, since
+// private browsing and storage-disabled contexts can throw on `getItem` and `setItem`,
+// and returns a safe fallback instead.
 //
-// `HeadGate.astro` interpolates the key names below into its inline script (it
-// can't `import` at runtime from an `is:inline` script), so this file stays the one
-// place each literal key string is written. Phase 10 is the one that actually
-// writes `vos:layout` with real window geometry; the gate here only ever reads it
-// to count `windows.length` for the Restore line.
+// `HeadGate.astro` interpolates the key names into its inline script, which can't import,
+// so this file is the one place each literal key is written.
 
 export const CRT_KEY = 'vos:crt';
 export const LAYOUT_OVERRIDE_KEY = 'vos:layout-override';
 export const BOOTED_KEY = 'vos:booted';
 export const LAYOUT_KEY = 'vos:layout';
 export const HISTORY_KEY = 'vos:history';
-/** Not one of D13's originally-enumerated keys — added by Phase 11 for ticket 08/10's
- * motd rule: printed on "a session's first open" of the terminal and never again,
- * including across a reload that restores an already-open terminal from `vos:layout`
- * (ticket 14: "not announced, because the terminal opens unfocused" implies it's still
- * in the log from the start on that first open, but absent on every later one).
- * `sessionStorage` is exactly "session" scope, same reasoning as `BOOTED_KEY`. */
+/** Session flag for the terminal's message of the day: printed on a session's first
+ * terminal open and never again, even when a reload restores an open terminal. */
 export const TERMINAL_MOTD_KEY = 'vos:terminal-motd';
 
-/** How many typed commands `vos:history` keeps (ticket 08 § Keys: "last 100
- * commands"). */
+/** How many typed commands `vos:history` keeps. */
 const HISTORY_LIMIT = 100;
 
 export interface StoredLayout {
@@ -46,7 +36,7 @@ export interface StoredLayout {
 }
 
 /** Safe read of `vos:layout`. Returns `null` on a missing, malformed, or
- * inaccessible entry — a bad stored shape is treated the same as no layout at all. */
+ * inaccessible entry. */
 export function readLayout(): StoredLayout | null {
   try {
     const raw = sessionStorage.getItem(LAYOUT_KEY);
@@ -68,13 +58,12 @@ export function readLayout(): StoredLayout | null {
   }
 }
 
-/** Safe write of `vos:layout`. Phase 10 calls this on every geometry change;
- * a throw (quota, private browsing) is dropped rather than surfaced. */
+/** Safe write of `vos:layout`. A throw (quota, private browsing) is dropped. */
 export function writeLayout(layout: StoredLayout): void {
   try {
     sessionStorage.setItem(LAYOUT_KEY, JSON.stringify(layout));
   } catch {
-    // Dropping the write is the safe fallback: the session simply re-seeds.
+    // Dropping the write is safe: the session simply re-seeds.
   }
 }
 
@@ -88,7 +77,7 @@ export function hasBooted(): boolean {
 }
 
 /** Marks the shell as booted for the rest of this session, so a reload mid-boot
- * does not replay it (ticket 10 § Mechanism). */
+ * does not replay it. */
 export function setBooted(): void {
   try {
     sessionStorage.setItem(BOOTED_KEY, '1');
@@ -97,8 +86,8 @@ export function setBooted(): void {
   }
 }
 
-/** The layout override (`vos:layout-override`, ticket 14 § Strategy): a visitor's
- * standing choice of the linear layout even above the breakpoint. */
+/** Whether the visitor chose the linear layout even above the breakpoint
+ * (`vos:layout-override`). */
 export function getLayoutOverride(): boolean {
   try {
     return localStorage.getItem(LAYOUT_OVERRIDE_KEY) === 'linear';
@@ -119,10 +108,7 @@ export function setLayoutOverride(on: boolean): void {
   }
 }
 
-/** Whether the terminal's motd (`valdez-os 1.0 · type 'help'`) has already printed
- * this session — the session's very first terminal open, and never again, including
- * across a reload that restores an already-open terminal (ticket 08, ticket 10 §
- * "The terminal's motd"). */
+/** Whether the terminal's motd has already printed this session. */
 export function hasShownTerminalMotd(): boolean {
   try {
     return sessionStorage.getItem(TERMINAL_MOTD_KEY) === '1';
@@ -139,8 +125,8 @@ export function setTerminalMotdShown(): void {
   }
 }
 
-/** Safe read of `vos:history` (ticket 08 § Keys: "kept in sessionStorage alongside
- * the window layout"). Returns `[]` on a missing, malformed, or inaccessible entry. */
+/** Safe read of `vos:history`. Returns `[]` on a missing, malformed, or inaccessible
+ * entry. */
 export function readHistory(): string[] {
   try {
     const raw = sessionStorage.getItem(HISTORY_KEY);
@@ -156,8 +142,7 @@ export function readHistory(): string[] {
 }
 
 /** Appends `line` to `vos:history`, capped at the last `HISTORY_LIMIT` entries. A
- * throw (quota, private browsing) is dropped rather than surfaced, same as every
- * other write in this file. */
+ * throw (quota, private browsing) is dropped. */
 export function appendHistory(line: string): void {
   try {
     const next = [...readHistory(), line].slice(-HISTORY_LIMIT);

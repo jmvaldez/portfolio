@@ -24,21 +24,21 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # Task 7.3: same incremental-build cache as ci.yml — see that file's comment.
+      # Same incremental-build cache as ci.yml; see the comment there.
       - uses: actions/cache@v4
         with:
           path: node_modules/.astro
           key: astro-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('src/assets/fonts/og/*') }}
 
-      # The resume PDF is rendered by a real headless Chromium at build time
-      # (ticket 15), so the build step below needs it available.
+      # The resume PDF is rendered by a headless Chromium at build time, so the build step
+      # needs it installed.
       - run: pnpm exec playwright install --with-deps chromium
 
       - run: pnpm build
 
-      # Precondition 2: the deploy step must skip gracefully until Joe adds the
-      # Cloudflare secrets, so CI stays green before they exist and on forks.
-      # `secrets` isn't allowed in a step-level `if`, so the check goes through env.
+      # The deploy step skips gracefully until the Cloudflare secrets exist, so CI stays
+      # green before then and on forks. `secrets` isn't allowed in a step-level `if`, so
+      # the check goes through env.
       - name: Check for Cloudflare secrets
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

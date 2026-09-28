@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test';
 
-// The linear layout (ticket 11): `/`'s one long scroll, exercised at the mobile and
-// desktop viewports it's meant to look identical at (ticket 11 § Wide viewports: "one
-// max-width from phone to wide screen, the reading order never changes with width").
+// The linear layout: `/`'s one long scroll, exercised at the mobile and desktop
+// viewports where it is meant to look identical (one max-width from phone to wide
+// screen; the reading order never changes with width).
 
 const SECTIONS = ['about', 'projects', 'drones', 'resume', 'contact'];
 
@@ -35,10 +35,10 @@ for (const [name, viewport] of Object.entries(VIEWPORTS)) {
     test('every Section has exactly one maximise link named "Open <title> page"', async ({
       page,
     }) => {
-      // Phase 8: above the breakpoint with JS on, the shell now hides `#linear`
-      // (`html.shell`), and a hidden element has no computed accessible name. The
-      // layout override keeps the linear layout the visible surface here, which is
-      // exactly the conforming-alternate-version mechanism ticket 14 relies on.
+      // Above the breakpoint with JS on, the shell hides `#linear` (`html.shell`), and a
+      // hidden element has no computed accessible name. The layout override keeps the
+      // linear layout visible, which is also how it works as the conforming alternate
+      // version.
       await page.addInitScript(() => localStorage.setItem('vos:layout-override', 'linear'));
       await page.goto('/');
       for (const id of SECTIONS) {
@@ -99,9 +99,8 @@ test('a Section’s max-width is identical at mobile and desktop (single column,
 });
 
 test('/ renders every Section with JavaScript disabled', async ({ browser }) => {
-  // The whole point of ticket 11: the linear layout is genuinely zero-JS, not merely
-  // "no-JS as a fallback" — proven directly rather than inferred from zero-js.spec.ts's
-  // static-HTML byte check.
+  // The linear layout is genuinely zero-JS, not merely "no-JS as a fallback": proven
+  // directly rather than inferred from zero-js.spec.ts's static-HTML byte check.
   const context = await browser.newContext({ javaScriptEnabled: false });
   const page = await context.newPage();
   await page.goto('/');

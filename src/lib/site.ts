@@ -1,7 +1,5 @@
-// Site-wide constants with no `astro:content`/`astro:config` dependency, so they stay
-// importable from pure lib code (`src/lib/meta.ts`) and from tests. Content is lorem
-// ipsum throughout (map "Standing preferences"), and the site-wide description is no
-// exception.
+// Site-wide constants with no `astro:content`/`astro:config` dependency, so pure lib code
+// and tests can import them. The description is lorem ipsum like the rest of the content.
 
 export const SITE_NAME = 'Joe Valdez';
 

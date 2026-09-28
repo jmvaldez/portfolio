@@ -20,10 +20,9 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # Task 7.3: Astro 7.2's incremental build cache lives in `node_modules/.astro`
-      # (research 17 § Caching); the font files are read from disk at build time and
-      # invisible to Astro's own dependency graph, so they're folded into the key by
-      # hand, same as the OG endpoint's own `cacheKey` (research 17 hazard 4).
+      # Astro's incremental build cache lives in `node_modules/.astro`. The font files are
+      # read from disk at build time and invisible to Astro's dependency graph, so they're
+      # folded into the key by hand, like the OG endpoint's own `cacheKey`.
       - uses: actions/cache@v4
         with:
           path: node_modules/.astro
@@ -45,8 +44,8 @@ jobs:
           path: dist/
           retention-days: 1
 
-  # Ticket 19: CLS and resource sizes block; LCP and TBT only warn. Reuses the `verify`
-  # job's `dist/` so the numbers are for the exact build that just passed the byte budgets.
+  # CLS and resource sizes block; LCP and TBT only warn. Reuses the `verify` job's
+  # `dist/` so the numbers are for the exact build that just passed the byte budgets.
   lighthouse:
     needs: verify
     runs-on: ubuntu-latest

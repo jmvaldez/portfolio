@@ -1,21 +1,14 @@
-// The build-time drone SVG (ticket 11 § "The 3D layer, without the island"): a fixed
-// three-quarter wireframe of the same procedural geometry `viewer.exe` orbits in
-// Phase 12, so the linear layout, the no-JS document and the crawler all draw from one
-// source instead of a second hand-drawn asset that could drift from it.
-//
-// This runs only at build time (`.astro` frontmatter, ticket-19 budget row: drone SVG
-// ≤ 15 KB), so bytes and determinism matter more than runtime cost: every dimension is
-// a literal, there is no `Math.random()` or `Date.now()` anywhere in this file or in
-// `geometry.ts`, and coordinates are rounded to keep the output small.
+// Build-time wireframe SVG of the same procedural geometry `viewer.exe` orbits, from a
+// fixed three-quarter view, so the linear layout, the no-JS page, and crawlers share one
+// source. Output must be small (drone SVG <= 15 KB) and deterministic: no clock or random
+// source is used here or in `geometry.ts`, and coordinates are rounded.
 import * as THREE from 'three';
 import { buildDrone } from './geometry';
 
-/** Matches drei's `<Edges>` default threshold (ticket 03/07's hazard: `<Edges>`, not
- * `LineBasicMaterial`, is how the wireframe survives — but this is a static build-time
- * projection, not a WebGL line, so this constant is only about matching the *look*). */
+/** Edge-detection angle, matching drei's `<Edges>` default so the look matches. */
 const EDGE_THRESHOLD_DEGREES = 15;
 
-/** Fixed three-quarter view (ticket 11: "a fixed three-quarter angle"). */
+/** Fixed three-quarter camera view. */
 const CAMERA_AZIMUTH_DEGREES = 35;
 const CAMERA_ELEVATION_DEGREES = 22;
 const CAMERA_FOV_DEGREES = 40;
@@ -26,8 +19,8 @@ const COORDINATE_PRECISION = 1;
 export interface RenderDroneSvgOptions {
   width: number;
   height: number;
-  /** Stroke width in SVG user units. Colour is always `currentColor` (never a param)
-   * so a caller's CSS custom properties/tokens colour the wireframe via inheritance. */
+  /** Stroke width in SVG user units. Colour is always `currentColor`, so callers colour
+   * the wireframe through CSS inheritance. */
   stroke?: number;
 }
 
@@ -69,8 +62,8 @@ function worldEdgeSegments(drone: THREE.Group): { a: THREE.Vector3; b: THREE.Vec
   return segments;
 }
 
-/** A camera fixed at the given spherical offset from the origin, backed off far enough
- * that `bounds`'s bounding sphere fits inside `width`x`height` with margin. */
+/** A camera at the fixed view angle, backed off until `bounds`'s bounding sphere fits
+ * inside `width` by `height` with margin. */
 function buildFittedCamera(
   bounds: THREE.Box3,
   width: number,
@@ -102,7 +95,7 @@ function buildFittedCamera(
   return camera;
 }
 
-/** NDC (`Vector3.project`'s output, y-up, [-1, 1]) to SVG pixel space (y-down). */
+/** Converts NDC (y-up, [-1, 1]) to SVG pixel space (y-down). */
 function toPixel(
   point: THREE.Vector3,
   camera: THREE.Camera,
@@ -130,10 +123,8 @@ function pathData(segments: Segment[]): string {
 }
 
 /**
- * Renders the procedural drone as a single-path SVG wireframe, viewed from a fixed
- * three-quarter angle. Deterministic: identical `options` always produce byte-identical
- * output (Task 6.2's test relies on this), since neither this function nor `buildDrone`
- * reads the clock or a random source.
+ * Renders the procedural drone as a single-path SVG wireframe from a fixed three-quarter
+ * angle. Deterministic: identical `options` produce byte-identical output.
  */
 export function renderDroneSvg({ width, height, stroke = 1.5 }: RenderDroneSvgOptions): string {
   const drone = buildDrone();

@@ -4,40 +4,31 @@
 @import './crt.css';
 @import './chrome.css';
 @import './transitions.css';
-/* The head-gate handover on `/` (ticket 10, ticket 11, Phase 8): boot vs. restore
-   vs. the linear layout, keyed off classes the gate sets on `<html>`. Loaded on
-   every page (small, class-gated, and inert unless `HeadGate` runs), same reasoning
-   as the other chrome files above. */
+/* Head-gate handover on `/`: boot vs. restore vs. the linear layout, keyed off classes
+   the gate sets on `<html>`. Small and inert unless `HeadGate` runs, so it loads on
+   every page. */
 @import './shell.css';
-/* The window manager's own chrome (Task 9.3): scoped to `.frame[data-window]`, see
-   the file's own header for why it isn't folded into `chrome.css` directly. */
+/* Window manager chrome, scoped to `.frame[data-window]`; see the file's header. */
 @import './wm.css';
-/* Phase 10's desktop icons, shell taskbar, gauges, spec strip and READ FULL PAGE bar
-   — see the file's own header for why these aren't folded into `chrome.css`
-   or `wm.css`. */
+/* Desktop icons, shell taskbar, gauges, spec strip and READ FULL PAGE bar; see the
+   file's header. */
 @import './desktop.css';
-/* Phase 11's terminal (`Terminal.tsx`) — scoped to `.terminal`, see the file's own
-   header for why it isn't folded into `desktop.css`. */
+/* Terminal chrome, scoped to `.terminal`; see the file's header. */
 @import './terminal.css';
-/* Phase 12's 3D layer chrome (`SceneLayer.tsx`, `Viewer.tsx`) — scoped to the scene
-   fallback floor and `.viewer`, see the file's own header. */
+/* 3D layer chrome (scene fallback floor and `.viewer`); see the file's header. */
 @import './scene.css';
-/* Print-only (ticket 15): the media qualifier gates the whole file, so nothing in it
-   needs its own `@media print` wrapper. Applies to every page — a visitor may print
-   any of them — and is also the stylesheet Task 5.2's headless render uses. */
+/* Print-only: the media qualifier gates the whole file, so nothing in it needs its own
+   `@media print`. Applies to every page and to the headless render of the resume PDF. */
 @import './print.css' print;
 
-/* Ticket 06 / D14: map the visual-system tokens into Tailwind's theme so layout
-   utilities (`bg-ink`, `text-accent`, `border-edge`, …) read the same custom
-   properties the hand-written chrome CSS reads. Nothing here hard-codes a colour.
+/* Maps the visual-system tokens into Tailwind's theme so layout utilities (`bg-ink`,
+   `text-accent`, ...) read the same custom properties as the hand-written chrome CSS.
    `inline` (not plain `@theme`) matters for `--font-mono`: Astro's <Font> component
-   (Task 3.4) already declares a real, concrete `--font-mono` on `:root` from its own
-   inline <style>. A plain `@theme` block would emit a *second*, competing `:root`
-   declaration for the same custom-property name, and if that copy ever won the
-   cascade its `var(--font-mono)` would resolve back to itself — a genuine cycle,
-   which CSS defines as invalid at computed-value time, silently dropping the whole
-   font stack. `@theme inline` avoids the competing declaration entirely by
-   substituting the referenced variable directly into each generated utility. */
+   already declares a concrete `--font-mono` on `:root`. A plain `@theme` block would
+   emit a second, competing `:root` declaration, and if that copy won the cascade its
+   `var(--font-mono)` would resolve to itself, a cycle that CSS treats as invalid at
+   computed-value time, silently dropping the font stack. `@theme inline` substitutes
+   the referenced variable directly into each utility instead. */
 @theme inline {
   --color-bg: var(--bg);
   --color-bg-sunk: var(--bg-sunk);
@@ -59,8 +50,8 @@
 
 body {
   background: var(--bg);
-  /* The default every `color: inherit` (taskbar buttons, folder rows) resolves to;
-     without it those fell through to the UA's black, on a near-black surface. */
+  /* The value every `color: inherit` (taskbar buttons, folder rows) resolves to;
+     otherwise those fall through to the UA's black on a near-black surface. */
   color: var(--ink);
   font-family: var(--font-mono);
 }

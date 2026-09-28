@@ -1,18 +1,11 @@
-// The terminal window (ticket 08 § Keys, § Voice and prompt; ticket 14 § Terminal).
-// This is the one place `interpret.ts`'s `Result`/`Effect`s actually get performed —
-// see that file's own header for the split. Every side effect it can ask for is
-// handled here: `open` via `launch()`, `fetchSrc` via a direct fetch against
-// `node.srcUrl` (D9's raw-source endpoint, distinct from `bodies.ts`'s rendered-body
-// one `ContentWindow.tsx` fetches), `clear`, `exit`, `toast`, `arm`/`disarm`,
-// `typeLines` and `hexWall`.
+// The terminal window. It performs the effects that `interpret.ts` requests: `open` via
+// `launch()`, `fetchSrc` via a fetch of `node.srcUrl` (the raw source, not the rendered
+// body from `bodies.ts`), `clear`, `exit`, `toast`, `arm`/`disarm`, `typeLines`, `hexWall`.
 //
-// Output is `role="log"` (ticket 14: polite, one unit per command). Each committed
-// `LogEntry` is one DOM child of the log region — the prompt line the command was
-// typed against, plus its output — appended once the command is fully resolved,
-// never line by line. `typeLines`/`hexWall`'s typing animation renders in a
-// transient, `aria-hidden` staging slot outside the log while it plays, and only the
-// finished result ever becomes a real log child (Task 11.2 step 4's "commits to the
-// log once complete" rule, generalised from the interpreter's own doc comment).
+// Output is a polite `role="log"` in which each `LogEntry` (the prompt line plus its output)
+// is one DOM child, appended once the command has fully resolved, never line by line. The
+// typing animation of `typeLines`/`hexWall` renders in a transient `aria-hidden` slot
+// outside the log, and only the finished result becomes a log child.
 import { useEffect, useRef, useState } from 'react';
 import type { FsNode } from '~/fs/types';
 import {
@@ -29,14 +22,10 @@ import { appRegistry } from '../apps/registry';
 import { complete } from './complete';
 import { run, type Line } from './interpret';
 
-/** ~40ms per line (Task 11.2 step 2), instant under reduced motion. */
+/** Delay between typed lines; skipped under reduced motion. */
 const TYPE_INTERVAL_MS = 40;
 
-/** `hack`'s "Fallout-style hex-dump wall" (ticket 08 § Easter eggs) — flavour only,
- * ticket 08 doesn't quote its content the way it quotes `TERMINAL LOCKED` and the
- * line after it (both already carried in `interpret.ts`'s own `Result.lines`, so
- * they aren't repeated here). A judgment call: the exact bytes of a hex dump aren't
- * spec, only that it reads like one. */
+/** The hex-dump wall that `hack` types out; decorative. */
 const HEX_WALL_LINES: Line[] = [
   '0x4C1F  76 61 6C 64 65 7A 2D 6F  73 00 00 00 00 00 00 00',
   '0x4C2F  DE AD BE EF 00 13 37 42  FF FF FF FF 00 00 00 00',
@@ -45,16 +34,13 @@ const HEX_WALL_LINES: Line[] = [
   '0x4C5F  4C 4F 43 4B 45 44 00 00  00 00 00 00 00 00 00 00',
 ].map((text) => ({ text, tone: 'dim' as const }));
 
-/** A default column budget for `ls`'s packing before the first real measurement
- * lands (Task 11.2's `width` field on `InterpretCtx`) — 80 is the traditional
- * terminal default, and nothing renders against it for more than a frame. */
+/** The column budget for `ls` until the log has been measured. */
 const DEFAULT_COLS = 80;
 
 interface LogEntry {
   id: number;
-  /** The echoed `guest@valdez:<wd>$ <line>` row, or `''` for the session-opening
-   * motd, which was never typed against a prompt. Empty means "don't render a
-   * prompt row for this entry" (Task 11.2 step 4). */
+  /** The echoed `guest@valdez:<wd>$ <line>` row, or `''` for the session-opening motd,
+   * which renders no prompt row. */
   promptText: string;
   lines: Line[];
 }
@@ -109,10 +95,8 @@ export default function Terminal({ windowId }: AppProps) {
     scrollToEntrySoon(id);
   }
 
-  // Ticket 08 § `cat`: "after a long print, scroll so the first line of output is at
-  // the top of the view" — the opposite of the usual scroll-to-bottom, so a long
-  // `cat`/`ls` starts where its own first line is, not its tail. Short output still
-  // scrolls to the bottom, same as any other command.
+  // Output taller than the log scrolls to its first line rather than its tail, so a long
+  // `cat` starts at the top. Shorter output scrolls to the bottom.
   function scrollToEntrySoon(id: number): void {
     requestAnimationFrame(() => {
       const container = logRef.current;
@@ -162,8 +146,8 @@ export default function Terminal({ windowId }: AppProps) {
 
   function doArm(armed: boolean): void {
     const node = tree?.['/bin/viewer.exe'];
-    // Ticket 08 § `arm`/`disarm`: "opens or raises viewer.exe". Under the fallback
-    // (D19: reduced motion or no WebGL) there is nothing to spin, so arming only toasts.
+    // Opens or raises `viewer.exe`, unless the scene gate is closed (reduced motion or no
+    // WebGL): then there is nothing to spin and arming only toasts.
     if (
       sceneGateOpen() &&
       node &&
@@ -179,11 +163,8 @@ export default function Terminal({ windowId }: AppProps) {
 
   function doExit(): void {
     useShellStore.getState().close(windowId);
-    // `close()` only returns a focus descriptor (`store.ts`) — resolving it into a
-    // real DOM focus call is `Desktop.tsx`'s job for every other window (via its own
-    // `titleRefs`), which this component has no access to. Falling back to the
-    // first desktop icon (ticket 14's own ultimate fallback) is the reasonable
-    // stand-in here rather than reaching into `Desktop.tsx`'s private refs.
+    // `Desktop.tsx` resolves focus for other windows' closes via refs this component can't
+    // reach, so focus the first desktop icon instead.
     requestAnimationFrame(() => {
       document.querySelector<HTMLElement>('.desktop-icon')?.focus();
     });
@@ -326,13 +307,9 @@ export default function Terminal({ windowId }: AppProps) {
     }
   }
 
-  // Task 11.2 step 4: printed once, the first time a terminal opens THIS session —
-  // including across a reload that restores an already-open terminal from
-  // `vos:layout` (that's a fresh `Terminal` mount, same session, so the
-  // `sessionStorage` flag set the first time already blocks it here). Declared
-  // after `commit` (function declarations hoist, but the lint rule that flags
-  // reading a not-yet-declared `const`/function-expression binding wants the
-  // effect that calls it textually below it too).
+  // Prints the motd once per session, so a terminal restored by a reload (a fresh mount in
+  // the same session) doesn't repeat it. Placed after `commit` because the lint rule
+  // against using a binding before its declaration wants the caller textually below it.
   useEffect(() => {
     historyRef.current = readHistory();
     if (!hasShownTerminalMotd()) {
@@ -343,10 +320,8 @@ export default function Terminal({ windowId }: AppProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // `ls`'s column budget (Task 11.2, `InterpretCtx.width`): measured in characters,
-  // not pixels, off a hidden monospace probe span so it tracks the real font rather
-  // than a guessed advance width, and re-measured on every resize of the log itself
-  // (the window can be resized, ticket 04).
+  // Measures `ls`'s column budget in characters, using a hidden monospace probe span so it
+  // tracks the real font, and re-measures whenever the log resizes.
   useEffect(() => {
     const container = logRef.current;
     const probe = measureRef.current;
@@ -361,9 +336,8 @@ export default function Terminal({ windowId }: AppProps) {
     return () => observer.disconnect();
   }, []);
 
-  // A click anywhere in the terminal lands on the prompt, as in a real terminal — the
-  // input itself is only the one line beside the prompt. A drag that selected log
-  // text is left alone so it can still be copied.
+  // A click anywhere in the terminal focuses the prompt, unless it ended a text selection,
+  // which is left alone so it can be copied.
   function focusInputOnClick(): void {
     if (window.getSelection()?.isCollapsed === false) return;
     inputRef.current?.focus();

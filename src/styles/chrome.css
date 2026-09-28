@@ -1,6 +1,6 @@
 /*
- * Chrome primitives (ticket 06 § chrome geometry, D14: plain classes shared verbatim
- * by Astro and React components; Tailwind is layout utilities only).
+ * Chrome primitives: plain classes shared verbatim by Astro and React components.
+ * Tailwind is used for layout utilities only.
  */
 
 .frame {
@@ -23,14 +23,13 @@
   background: var(--chrome);
   border-bottom: var(--border-w) solid var(--edge);
   color: var(--accent);
-  /* Slashed zero on chrome and terminal only (ticket 13): the body typeface stays
-     plain and this is where numerals actually appear (window titles, gauges). */
+  /* Slashed zero on chrome and terminal only, where numerals actually appear (window
+     titles, gauges); the body typeface stays plain. */
   font-feature-settings: 'zero';
 }
 
-/* The title (always the bar's first child, `Window.tsx` and `chrome/Frame.astro`
-   alike) takes the slack, so the controls sit flush right. A long title truncates
-   rather than pushing them off the bar. */
+/* The title (always the bar's first child) takes the slack so the controls sit flush
+   right. A long title truncates rather than pushing them off the bar. */
 .titlebar > :first-child {
   margin-inline-end: auto;
   min-width: 0;
@@ -67,8 +66,8 @@
   color: var(--accent);
 }
 
-/* Long-form body copy (ticket 06): mono, 15px / 1.75 / 58ch, and explicitly never
-   given `.scan` — scanlines are per-surface chrome, never over long-form prose. */
+/* Long-form body copy: mono, 15px / 1.75 / 58ch. Never combined with `.scan`, so
+   scanlines don't cover long-form prose. */
 .prose {
   max-width: var(--body-measure);
   font-family: var(--font-body);
@@ -79,17 +78,15 @@
 }
 
 .speckey {
-  /* Never the CSS small-caps variant property (ticket 13 hazard: a browser-simulated
-     small cap scales the advance too and breaks the mono column). Plain uppercase
-     plus tracking instead. */
+  /* Not the CSS small-caps property: browser-simulated small caps scale the advance
+     too and break the mono column. Plain uppercase plus tracking instead. */
   text-transform: uppercase;
   font-size: 0.8em;
   letter-spacing: 0.06em;
   color: var(--accent);
 }
 
-/* Folder listing rows (ticket 12 § Folder pages): shared verbatim between the page's
-   `FolderListing.astro` and Phase 10's React folder window, D14. */
+/* Folder listing rows, shared by the folder page and the folder window. */
 .folder-listing-head,
 .folder-row-link {
   display: grid;
@@ -139,12 +136,9 @@ a.folder-row-link:hover {
   }
 }
 
-/* The skip-link pattern (ticket 14 § Strategy: "first in the tab order and visible
-   on focus"), shared verbatim between the shell's "Skip to text layout" link
-   (`Desktop.tsx`, D14 primitive) and any other skip link this site adds. Standard
-   off-screen-until-focused technique: `position: fixed` rather than `absolute` so
-   it survives sitting inside a positioned ancestor. Never hidden by anything other
-   than this rule (map Hazards). */
+/* Off-screen until focused, so it is first in the tab order and visible on focus.
+   `position: fixed` rather than `absolute` so it works inside a positioned
+   ancestor. Nothing else may hide it. */
 .skip-link {
   position: fixed;
   top: 0;

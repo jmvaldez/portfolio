@@ -1,13 +1,9 @@
-// One open window's chrome and gestures (ticket 04 § Behaviour, ticket 14 § Round 2,
-// ticket 06 § focus signalling). Pointer events only — `pointerdown` +
-// `setPointerCapture` — never mouse events and never a drag library (map Hazards).
-// Geometry math itself lives in `./geometry`; this component's job is turning a
-// pointer gesture into calls against that pure module and the store, and rendering
-// the result.
+// One open window's chrome and gestures. Uses pointer events with `setPointerCapture`, not
+// mouse events or a drag library. The geometry math lives in `./geometry`; this component
+// turns pointer gestures into calls against it and the store.
 //
-// Z-order (ticket 14 § "Z-order never reorders the DOM"): this component never moves
-// itself in the DOM. `Desktop.tsx` maps `windows` in open order every render; only
-// the `zIndex` inline style here changes on focus/raise.
+// Z-order never reorders the DOM: `Desktop.tsx` renders windows in open order, and only the
+// inline `zIndex` here changes on focus or raise.
 import { useCallback, useEffect, useRef } from 'react';
 import {
   magnetise,
@@ -22,9 +18,8 @@ import {
 } from './geometry';
 import { useShellStore, type ShellWindow } from '../store';
 
-/** How far a pointer must move, in px, before a press on the title bar counts as an
- * intentional drag rather than a click — and, for an already-snapped window, before
- * it tears free (ticket 04: "the first pointer movement past some small threshold"). */
+/** How far a pointer must move, in px, before a title-bar press counts as a drag rather
+ * than a click, and before a snapped window tears free. */
 const DRAG_THRESHOLD = 4;
 
 const RESIZE_HANDLES: ResizeHandle[] = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'];
@@ -58,31 +53,21 @@ type Gesture =
 
 interface Props {
   win: ShellWindow;
-  /** Every open window, including this one — the drag handler filters out itself,
-   * anything snapped, and anything minimised before calling `magnetise` (ticket 04:
-   * magnetism is free-windows-only, and the caller is what excludes snapped ones). */
+  /** Every open window, including this one. Dragging excludes itself and any snapped or
+   * minimised window from magnetism. */
   allWindows: ShellWindow[];
   desktopSize: { width: number; height: number };
-  /** The desktop surface's own element, read (not stored) on each gesture so a
-   * pointer's `clientX`/`clientY` can be converted into the desktop-relative
-   * coordinates every geometry function expects. */
+  /** The desktop element, used to convert pointer coordinates to desktop-relative ones. */
   desktopRef: React.RefObject<HTMLDivElement | null>;
-  /** Reports the live snap zone during a drag, or `null` once it's not armed —
-   * `Desktop.tsx` renders `SnapPreview` off this. */
+  /** Reports the snap zone armed during a drag, or `null` when none is. */
   onDragSnapChange: (zone: SnapZone | null) => void;
-  /** Resolves ticket 14's focus-on-close priority, which needs the DOM node this
-   * component owns — `close()` itself only returns a descriptor (`store.ts`). */
+  /** Called with the window's id when its close box is activated. */
   onClose: (id: string) => void;
-  /** Registers/unregisters this window's `h2` so `Desktop.tsx` can move focus to it
-   * (ticket 14: opening moves focus to the title; closing may return it to another
-   * window's title). */
+  /** Registers this window's title `h2` (`null` on unmount) so `Desktop.tsx` can focus it. */
   headingRef: (el: HTMLHeadingElement | null) => void;
-  /** Phase 10's real maximise link, present iff the underlying node has a URL
-   * (ticket 09). Phase 9's windows hold placeholder bodies and never pass this. */
+  /** The maximise link, present only when the node has a URL. */
   maximiseSlot?: React.ReactNode;
-  /** The window's body content (Phase 10: `WindowBody.tsx` picks `ContentWindow` /
-   * `FolderWindow` / a registered app by node kind). Rendered inside the same
-   * scrollable `.window-body` Phase 9 already built the keyboard focus stop for. */
+  /** The window's body content, rendered inside the scrollable `.window-body`. */
   children?: React.ReactNode;
 }
 
@@ -107,9 +92,7 @@ export default function Window({
   const setBodyScroll = useShellStore((state) => state.setBodyScroll);
 
   const node = tree?.[win.path];
-  // The filename shown in a title bar (Frame's own convention, `Section.astro`:
-  // `title={node.name}` — human titles are for the maximise box's accessible name,
-  // never the chrome).
+  // Title bars show the filename, not the human title, matching `Section.astro`.
   const title = node?.name ?? win.path.split('/').filter(Boolean).pop() ?? win.path;
 
   const gestureRef = useRef<Gesture | null>(null);
@@ -125,9 +108,8 @@ export default function Window({
     [],
   );
 
-  // Tracks `.window-body`'s own scroll position for `persist.ts`'s `serializeLayout`
-  // (Task 10.3 § body scroll persistence). rAF-throttled the same way drag/resize
-  // rects are above — a scroll fires far more often than a frame needs it recorded.
+  // Records `.window-body`'s scroll position for `persist.ts`, throttled to one update per
+  // animation frame like drag and resize.
   const handleBodyScroll = useCallback(
     (e: React.UIEvent<HTMLDivElement>) => {
       const scrollTop = e.currentTarget.scrollTop;
@@ -184,26 +166,16 @@ export default function Window({
 
     if (win.snapped && !g.torn) {
       if (Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
-      // Ticket 04: the first movement past the threshold tears a snapped/maximised
-      // window free, back to its pre-snap size centred under the cursor.
+      // The first movement past the threshold tears a snapped or maximised window free,
+      // back to its pre-snap size centred under the cursor.
       const restoreSize = win.restoreRect ?? win.rect;
       const pointer = toDesktopPoint(e);
-      // `tearOff` centres the restored rect on the pointer with no bounds check, so a
-      // tear starting near an edge/corner of a maximised window can place the result
-      // (and its title bar) off-screen. That can put the whole pointer-captured
-      // element outside the viewport, which risks `pointercancel` in Chromium and
-      // stranding the gesture (found while testing Phase 10's maximise link).
-      //
-      // The fix has to be careful: everything after this point tracks the pointer by
-      // adding `dx`/`dy` onto `g.startRect`, which is what keeps the window's centre
-      // exactly under the cursor for the rest of the drag (ticket 04). If `startRect`
-      // itself were clamped, that clamp's offset would never wash out — it would
-      // follow the window for the rest of the gesture, landing it away from the
-      // cursor at release. So `startRect` stays the TRUE, unclamped tear-off result
-      // (correct math, what the rest of this function already assumed); only the
-      // rect actually rendered for this one frame is clamped, purely so the title
-      // bar's DOM node isn't fully off-screen the instant it tears free. The very
-      // next `pointermove` recomputes from the true `startRect` and overwrites it.
+      // `tearOff` applies no bounds, so a tear near an edge of a maximised window can put
+      // the title bar off-screen, and Chromium may then fire `pointercancel` and strand the
+      // gesture. Only the rect rendered for this first frame is clamped: `g.startRect` keeps
+      // the unclamped result, because later moves add `dx`/`dy` to it to hold the window
+      // centred under the cursor, and a clamped start would offset it for the whole drag.
+      // The next `pointermove` overwrites the clamped rect.
       const torn = tearOff(win.rect, restoreSize, pointer);
       unsnap(win.id);
       g.torn = true;
@@ -241,8 +213,8 @@ export default function Window({
       snap(win.id, zone, snapRect(zone, desktopSize));
       return;
     }
-    // Only free (unsnapped) windows magnetise (ticket 04) — `g.torn` covers a
-    // window that started this gesture snapped and tore free mid-drag.
+    // Only free windows magnetise; this includes one that started snapped and tore free
+    // mid-drag.
     const magnetised = magnetise(pendingRectRef.current, freeOtherRects(), desktopSize);
     setRect(win.id, magnetised);
   }
@@ -344,10 +316,8 @@ export default function Window({
           X
         </button>
       </div>
-      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- ticket 14:
-          "a body that scrolls is its own focus stop" (WCAG technique G202 for
-          keyboard access to scrollable content). Phase 10's content/folder bodies are
-          exactly what can overflow this. */}
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- a scrollable body is
+          its own focus stop for keyboard users (WCAG technique G202) */}
       <div className="window-body" tabIndex={0} onScroll={handleBodyScroll}>
         {children}
       </div>

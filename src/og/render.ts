@@ -1,6 +1,5 @@
-// Renders one OG card to a PNG (Task 7.2; research 17 § The endpoint, § Font handling, §
-// Cost). Ties together the font load, the glyph-presence check, Satori, and resvg-js —
-// the endpoint (`src/pages/og/[...path].png.ts`) calls only `renderOgImage`.
+// Renders one OG card to a PNG: loads the fonts, checks glyph coverage, then runs Satori
+// and resvg-js. The endpoint (`src/pages/og/[...path].png.ts`) calls only `renderOgImage`.
 
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -14,10 +13,9 @@ import { buildCard, type CardData, type CardTokens } from './card';
 const CARD_WIDTH = 1200;
 const CARD_HEIGHT = 630;
 
-// D8/hazard 8: read fonts against `process.cwd()`, never a path built from
-// `import.meta.url` — at build time that resolves into `dist/.prerender/chunks/`, not
-// the source tree. Kept out of `public/` (research 17 § Font handling): nothing at
-// runtime needs the TTF, and anything in `public/` ships.
+// Read fonts against `process.cwd()`, not `import.meta.url`: at build time the latter
+// resolves into `dist/.prerender/chunks/`. Kept out of `public/` since nothing at runtime
+// needs the TTF and anything in `public/` ships.
 const FONT_DIR = join(process.cwd(), 'src/assets/fonts/og');
 export const REGULAR_TTF_PATH = join(FONT_DIR, 'valdez-mono-regular.ttf');
 const BOLD_TTF_PATH = join(FONT_DIR, 'valdez-mono-bold.ttf');
@@ -38,8 +36,7 @@ function loadFonts(): Promise<LoadedFonts> {
   return fontsPromise;
 }
 
-/** Ticket 18 § OG images: half the shell's `--scan-alpha`; the rest of the palette
- * parsed straight out of `tokens.css` rather than re-typed (Task 7.2). */
+/** Parses the card palette out of `tokens.css`; scanline alpha is half the shell's. */
 function loadTokens(tokensCss: string): CardTokens {
   const hex = parseHexTokens(tokensCss);
   const scanAlpha = parseNumberToken(tokensCss, 'scan-alpha');
@@ -62,9 +59,8 @@ function loadTokens(tokensCss: string): CardTokens {
   };
 }
 
-/** Every distinct character the card will render: title, path, spec fields/summary
- * (research 17 hazard 3: Satori drops a missing glyph silently, with no tofu and no
- * warning, so every string that reaches Satori has to be accounted for here). */
+/** Returns every distinct character the card renders. Satori silently drops a glyph
+ * missing from the font, so every string that reaches it must be checked. */
 function textOf(data: CardData): string[] {
   const strings = [data.path, data.title];
   for (const field of data.fields ?? []) strings.push(field.key, field.value);
@@ -72,9 +68,8 @@ function textOf(data: CardData): string[] {
   return strings;
 }
 
-/** Throws, naming the missing character, rather than letting Satori drop it
- * (research 17 hazard 3). `fontkit.create` types a single-font file as `Font |
- * FontCollection`; a `.ttf` is never a collection, but the guard keeps that assumption
+/** Throws, naming the missing character, rather than letting Satori drop it. `fontkit`
+ * types a single-font file as `Font | FontCollection`; the guard keeps that assumption
  * from becoming a silent `undefined`. */
 function assertGlyphsPresent(fontBuffer: Buffer, texts: string[]): void {
   const parsed = fontkit.create(fontBuffer);
@@ -96,7 +91,7 @@ function assertGlyphsPresent(fontBuffer: Buffer, texts: string[]): void {
   }
 }
 
-/** Renders one card to a 1200×630 PNG (ticket 18 § OG images). */
+/** Renders one card to a 1200×630 PNG. */
 export async function renderOgImage(data: CardData): Promise<Buffer> {
   const [{ regular, bold }, tokensCss] = await Promise.all([
     loadFonts(),
@@ -117,8 +112,8 @@ export async function renderOgImage(data: CardData): Promise<Buffer> {
     ],
   });
 
-  // Hazard 9: resvg-js scans system fonts by default (~70-80 ms/image, measured); Satori
-  // has already turned every glyph into a path, so resvg needs none of them.
+  // resvg-js scans system fonts by default (~70-80 ms per image); Satori has already
+  // turned every glyph into a path, so resvg needs none.
   const resvg = new Resvg(svg, { font: { loadSystemFonts: false } });
   return resvg.render().asPng();
 }

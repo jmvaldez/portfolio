@@ -1,14 +1,9 @@
-// A window holding a `dir` node's listing (glossary "Folder window"; ticket 12 §
-// Folder pages: "the same template... as the folder window"). Same rows and class
-// names as `FolderListing.astro` (D10 order — `node.children` is already sorted that
-// way by `buildTree`) — D14: shared verbatim between the Astro and React sides — but
-// each row is a `<button>` rather than a link, since inside the shell launching goes
-// through `launch()`, never a real navigation.
+// A window holding a `dir` node's listing, in `node.children` order. Rows and class names
+// match `FolderListing.astro`, but each row is a `<button>`, since launching goes through
+// `launch()` rather than a navigation.
 //
-// A single click only focuses/selects the row (native `<button>` behaviour needs no
-// code for that); double-click or Enter launches. Space is deliberately not bound
-// here (unlike `DesktopIcons.tsx`) — matching typical file-manager row semantics,
-// where Space toggles selection rather than opening.
+// A single click only focuses the row; double-click or Enter launches. Space is deliberately
+// not bound (unlike `DesktopIcons.tsx`), as in file managers where it toggles selection.
 import { useEffect, useRef } from 'react';
 import type { FsNode } from '~/fs/types';
 import { prefetchBody } from '../bodies';
@@ -19,7 +14,7 @@ interface Props {
   node: FsNode;
 }
 
-/** `ls -F`-style marker: a directory's name gets a trailing slash (D10). */
+/** Returns the `ls -F`-style marker for `child`: a trailing slash for a directory. */
 function markerOf(child: FsNode): string {
   return child.kind === 'dir' ? '/' : '';
 }
@@ -32,9 +27,8 @@ export default function FolderWindow({ node }: Props) {
     .map((path) => tree?.[path])
     .filter((child): child is FsNode => child !== undefined);
 
-  // A folder window's listing is available synchronously (it's just `tree`, already
-  // in the store) — unlike `ContentWindow`'s fetched body, there's no load state to
-  // wait on, so this restores the saved scroll position (Task 10.3) on mount.
+  // The listing comes from the store synchronously, so there is no load to wait on:
+  // restore the saved scroll position on mount.
   useEffect(() => {
     const container = rootRef.current?.parentElement;
     const pending = useShellStore.getState().consumePendingScroll(node.path);

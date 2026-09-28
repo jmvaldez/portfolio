@@ -1,10 +1,7 @@
 ---
-// One route per URL-bearing node (ticket 12 § URLs, § Folder pages): every collection
-// entry, every note, every `pages` entry, and every directory that holds any of them. A
-// directory's `readme.md` shares the directory's own URL (glossary "Readme": a directory
-// never carries a body itself) — the directory node is the one route that serves both, so
-// `getStaticPaths` collapses that collision onto the directory rather than emitting two
-// routes for the same URL.
+// One route per URL-bearing node: every collection entry, note, and `pages` entry, plus
+// each directory that holds any. A directory's `readme.md` shares the directory's URL, so
+// `getStaticPaths` emits one route for the pair, served by the directory node.
 import type { GetStaticPaths, ImageMetadata, InferGetStaticPropsType } from 'astro';
 import PageLayout from '~/layouts/PageLayout.astro';
 import Frame from '~/components/chrome/Frame.astro';
@@ -24,7 +21,7 @@ export const getStaticPaths = (async () => {
   for (const node of Object.values(tree)) {
     if (!node.url || node.url === '/') continue;
     const existing = byUrl.get(node.url);
-    // A directory wins a URL collision with its own readme.md (ticket 12 § URLs).
+    // A directory wins a URL collision with its own readme.md.
     if (!existing || node.kind === 'dir') byUrl.set(node.url, node);
   }
 
@@ -41,8 +38,8 @@ const tree = await getTree();
 const node = tree[path];
 if (!node) throw new Error(`pages/[...path]: no node at "${path}"`);
 
-// A directory never carries a body itself (glossary "Readme"); if it has one, it lives on
-// its readme.md child, which is also the source for the masthead filename below.
+// A directory has no body itself; its body is its readme.md child, which also supplies
+// the masthead filename.
 const readmeChildPath =
   node.kind === 'dir'
     ? node.children?.find((childPath) => tree[childPath]?.name === 'readme.md')
@@ -50,10 +47,8 @@ const readmeChildPath =
 const bodyNode = node.kind === 'dir' ? (readmeChildPath ? tree[readmeChildPath] : undefined) : node;
 const entry = bodyNode ? await getEntryForNode(bodyNode.path) : undefined;
 
-// `src/content/schemas.ts`'s `ImageSchema` is deliberately typed loosely (its own
-// comment: "typed loosely enough for a test double"), so Zod infers `image()` fields as
-// an untyped `{}` here rather than `ImageMetadata`. The runtime shape is exactly
-// `ImageMetadata` — Astro's own `image()` helper produces it — so the cast is safe.
+// `ImageSchema` is typed loosely, so Zod infers `image()` fields as `{}` here. The
+// runtime shape is `ImageMetadata`, so the cast is safe.
 type FootageItem = { label: string; url: string; poster?: ImageMetadata | undefined };
 
 const filename = bodyNode?.name ?? node.name;

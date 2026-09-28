@@ -1,9 +1,8 @@
 import { expect, test, type Page } from '@playwright/test';
 import { mounts } from '../../src/fs/mounts';
 
-// The launch/continuity subsystem (ticket 09 § The transition, § State across the
-// round trip; ticket 05 § Terminal and desktop surfaces; Task 10.3). 1440x900, same
-// as `wm.spec.ts`, unless a test says otherwise.
+// The launch/continuity subsystem. 1440x900, same as `wm.spec.ts`, unless a test says
+// otherwise.
 const DESKTOP = { width: 1440, height: 900 };
 
 test.use({ viewport: DESKTOP });
@@ -20,11 +19,9 @@ async function launchIcon(page: Page, label: string): Promise<void> {
 test('desktop icons and taskbar launchers match the mount table', async ({ page }) => {
   await waitReady(page);
 
-  // Spot check a few of D11's launcher/icon mounts (`about.txt`, `projects`,
-  // `resume.txt`) rather than every mount — the mount table itself is what both
-  // `DesktopIcons.tsx` and `Taskbar.tsx` are built from (ticket 05: "derived from
-  // the same mount table... cannot disagree"), so agreement on a sample is
-  // agreement on the mechanism.
+  // Spot check a few launcher/icon mounts rather than every mount: both
+  // `DesktopIcons.tsx` and `Taskbar.tsx` are built from the same mount table, so
+  // agreement on a sample is agreement on the mechanism.
   const spotChecks = ['about.txt', 'projects', 'resume.txt'];
   for (const name of spotChecks) {
     await expect(page.locator('.desktop-icon-label', { hasText: name })).toBeVisible();
@@ -52,9 +49,9 @@ test('opening orbital-mesh from the projects folder shows the body and the spec 
   await waitReady(page);
   await launchIcon(page, 'projects');
 
-  // `orbital-mesh` is a directory (it nests a `notes.md`, D5), so it opens a folder
-  // window of its own; its `readme.md` row is the one carrying the project's body
-  // and spec strip (D10: a readme sorts first in its directory's listing).
+  // `orbital-mesh` is a directory (it nests a `notes.md`), so it opens a folder window;
+  // its `readme.md` row carries the project's body and spec strip (a readme sorts first
+  // in its directory's listing).
   await page
     .locator('[data-window="/projects"] .folder-row-link', { hasText: 'orbital-mesh' })
     .dblclick();
@@ -66,18 +63,16 @@ test('opening orbital-mesh from the projects folder shows the body and the spec 
   const content = page.locator('[data-window="/projects/orbital-mesh/readme.md"]');
   await expect(content).toBeVisible();
   await expect(content.locator('.prose')).not.toBeEmpty();
-  // `projectStrip` (`src/fs/tree.ts`): `STATUS · PERIOD · ROLE`, uppercase — the
-  // entry's own frontmatter is `status: wip`, `period.start: 2025-03`,
-  // `period.end: present`, `role: Lead engineer`.
+  // `projectStrip` (`src/fs/tree.ts`) renders `STATUS · PERIOD · ROLE` in uppercase from
+  // the entry's frontmatter (`status: wip`, `period.start: 2025-03`,
+  // `period.end: present`, `role: Lead engineer`).
   await expect(content.locator('.spec-strip')).toHaveText('WIP · 2025–PRESENT · LEAD ENGINEER');
 });
 
 test('a node with no URL opens a window with no maximise box', async ({ page }) => {
   await waitReady(page);
-  // `/bin` has neither an icon nor a launcher in this phase (no terminal yet to
-  // browse into it, Phase 11) — `readme.txt` is the desktop's own reachable stand-in
-  // for "a node with no URL": a `text` mount, and `text` nodes never carry a `url`
-  // (D12), same as `/bin`'s own children would.
+  // `/bin` has neither an icon nor a launcher, so `readme.txt` stands in for "a node
+  // with no URL": it is a `text` mount, and `text` nodes never carry a `url`.
   await launchIcon(page, 'readme.txt');
 
   const win = page.locator('[data-window="/readme.txt"]');
@@ -90,13 +85,11 @@ test('a maximise box click names exactly one element page-frame and lands on the
 }) => {
   await waitReady(page);
 
-  // The name is applied synchronously in the click handler, immediately before the
-  // real `<a>` navigation (ticket 09 § The transition), so it can't be read back
-  // from *this* page once the click has fired — the navigation tears the DOM down
-  // in the same tick. A `pagehide` listener is the one hook that's guaranteed to
-  // run after the click handler and before the old document is gone; it stashes
-  // the count in `sessionStorage`, which survives the navigation (same tab, same
-  // origin), for the next page to read back.
+  // The name is applied synchronously in the click handler, right before the real `<a>`
+  // navigation, so it can't be read back from this page: the navigation tears the DOM
+  // down in the same tick. A `pagehide` listener runs after the click handler and before
+  // the old document is gone; it stashes the count in `sessionStorage`, which survives
+  // the same-tab, same-origin navigation, for the next page to read.
   await page.evaluate(() => {
     window.addEventListener('pagehide', () => {
       const named = Array.from(document.querySelectorAll<HTMLElement>('*')).filter(

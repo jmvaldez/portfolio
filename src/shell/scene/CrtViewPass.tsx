@@ -1,14 +1,14 @@
 /* eslint-disable react-hooks/immutability -- three.js objects (uniforms, transforms, the
    renderer) are mutated in effects and frame callbacks by design; that is R3F's model. */
-// The bracketed CRT pass (ticket 07 § The post-process finding). drei's `<View>` only sets
-// viewport and scissor and calls `gl.render()`; it never binds a render target. So the
-// pass brackets `View.Port` by `useFrame` priority instead of replacing it:
+// The CRT post-process pass. drei's `<View>` only sets viewport and scissor and calls
+// `gl.render()`; it never binds a render target. So the pass brackets `View.Port` by
+// `useFrame` priority instead of replacing it:
 //
 //   0.5   bind the offscreen target, clear it
 //   1     the <View>s scissor-render into it, untouched (their default index)
-//   10    unbind, RESET THE VIEWPORT, draw the fullscreen CRT quad
+//   10    unbind, reset the viewport, draw the fullscreen CRT quad
 //
-// Enabled iff `html[data-crt="on"]` (observed, so the taskbar's toggle takes effect live).
+// Enabled iff `html[data-crt="on"]`, observed so the taskbar's toggle takes effect live.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -75,7 +75,7 @@ export default function CrtViewPass() {
   useFrame(() => {
     if (!boundRef.current) return;
     gl.setRenderTarget(null);
-    // drei's `finishSkissor` turns the scissor test off but leaves the VIEWPORT on the
+    // drei's `finishSkissor` turns the scissor test off but leaves the viewport on the
     // last view's rect; without this the composite is squashed into that rect.
     gl.setScissorTest(false);
     gl.setViewport(0, 0, size.width, size.height);

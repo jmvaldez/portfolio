@@ -3,14 +3,14 @@ import { join } from 'node:path';
 import { expect, test } from '@playwright/test';
 import { PAGE_URLS } from './page-urls';
 
-// Re-exported so this stays the file any suite reaches for `PAGE_URLS` (ticket 12 §
-// URLs); the list itself lives in `page-urls.ts` because Playwright refuses to let one
-// spec file import another, and `zero-js.spec.ts` needs it too. "dist matches
-// PAGE_URLS" below, and any later suite, can't silently miss a new seed page this way.
+// Re-exported so this stays the file any suite reaches for `PAGE_URLS`; the list itself
+// lives in `page-urls.ts` because Playwright refuses to let one spec file import
+// another, and `zero-js.spec.ts` needs it too. "dist matches PAGE_URLS" below, and any
+// later suite, can't silently miss a new seed page this way.
 export { PAGE_URLS };
 
-// Breadcrumb accessible names, spot-checked (ticket 12 § Breadcrumbs, ticket 14): the
-// visible text is the URL segment, the accessible name is the target node's title.
+// Breadcrumb accessible names, spot-checked: the visible text is the URL segment, the
+// accessible name is the target node's title.
 const BREADCRUMB_TITLES: Record<string, { segment: string; title: string }[]> = {
   '/projects/orbital-mesh/notes/': [
     { segment: 'projects', title: 'Projects' },
@@ -71,7 +71,7 @@ test('the built dist directories match PAGE_URLS exactly', () => {
   expect(found).toEqual(expected);
 });
 
-// Task 4.2: spec block field presence/omission, no iframes, and the prose/.scan split.
+// Spec block field presence/omission, no iframes, and the prose/.scan split.
 
 test('the nazgul drone page shows a HARDWARE label', async ({ page }) => {
   await page.goto('/drones/nazgul/');
@@ -104,10 +104,10 @@ test('.prose has no ancestor carrying .scan', async ({ page }) => {
   expect(scanAncestors).toBe(0);
 });
 
-// Task 4.3: D10 order in the folder listing, a directory's readme + children together,
-// and prev/next between siblings.
+// Order in the folder listing, a directory's readme + children together, and prev/next
+// between siblings.
 
-test('/projects/ lists the three projects in D10 order', async ({ page }) => {
+test('/projects/ lists the three projects in curated order', async ({ page }) => {
   await page.goto('/projects/');
   const names = await page.locator('.folder-listing-rows .folder-col-name').allTextContents();
   expect(names).toEqual(['orbital-mesh/', 'signal-relay/', 'ledger-lite.md']);
@@ -121,10 +121,12 @@ test('/projects/orbital-mesh/ shows its own body and lists its child notes.md', 
   await expect(page.locator('.folder-listing-rows')).toContainText('notes.md');
 });
 
-test('prev/next on /projects/ledger-lite/ points at its D10 neighbour', async ({ page }) => {
+test('prev/next on /projects/ledger-lite/ points at its curated-order neighbour', async ({
+  page,
+}) => {
   await page.goto('/projects/ledger-lite/');
   const nav = page.locator('nav[aria-label="Sibling pages"]');
-  // D10 order is orbital-mesh, signal-relay, ledger-lite: ledger-lite is last, so it has
+  // The order is orbital-mesh, signal-relay, ledger-lite: ledger-lite is last, so it has
   // a prev (signal-relay) and no next.
   await expect(nav.locator('.prevnext-prev')).toHaveText('← Signal Relay');
   await expect(nav.locator('.prevnext-next')).toHaveCount(0);

@@ -1,31 +1,22 @@
-// The terminal's pure command interpreter (ticket 08 § Commands, § Errors, § Easter
-// eggs). `run` never touches the DOM, storage or the network — it only ever reads the
-// already-built `FsTree` it's handed and returns data for Task 11.2's UI to render and
-// act on. That UI owns every side effect an `Effect` names (opening a window, fetching a
-// source file, clearing the log, closing the window, toasting, arming/disarming the
-// viewer, typing the `rm -rf /` lines, painting the hex wall) — this file only decides
-// *what* should happen, never performs it.
+// The terminal's pure command interpreter. `run` never touches the DOM, storage or the
+// network: it reads the `FsTree` it is given and returns data for the UI to render and act
+// on. The UI performs every `Effect`; this file only decides what should happen.
 
 import { HELP_TEXT } from '~/fs/bin';
 import { listDir, resolvePath } from '~/fs/path';
 import type { FsNode, FsTree } from '~/fs/types';
 
-/** One line of terminal output. `tone` is the only styling channel (ticket 14 §
- * Terminal: tones map to `--ink` / `--ink-dim`, never amber). `parts`, when present, is
- * `ls`'s packed-column case: a single row can mix directories (`ink`, ticket 08's "full
- * phosphor brightness") with everything else (`dim`), which a single line-level `tone`
- * can't express. `text`/`tone` still carry a flattened fallback — the plain-text join of
- * `parts`, tone-less callers (tests, copy/paste) can just read `text`. */
+/** One line of terminal output. `tone` is the only styling channel. `parts`, when present,
+ * lets `ls` mix tones within one row (directories `ink`, the rest `dim`); `text` is then
+ * the plain-text join of `parts` and `tone` is the first part's. */
 export interface Line {
   text: string;
   tone: 'ink' | 'dim';
   parts?: { text: string; tone: 'ink' | 'dim' }[];
 }
 
-/** Every side effect a command can ask for. Deliberately closed — there is no `navigate`
- * variant, and there must never be one (ticket 09: the terminal never navigates). `open`
- * only ever raises/opens a *window*, via the shell's own `launch()` (Task 11.2), never
- * the document's URL. */
+/** Every side effect a command can ask for. There is deliberately no `navigate` variant:
+ * the terminal never changes the document's URL, and `open` only opens a window. */
 export type Effect =
   | { type: 'open'; path: string }
   | { type: 'fetchSrc'; node: FsNode }
@@ -39,8 +30,7 @@ export type Effect =
 
 export interface Result {
   lines: Line[];
-  /** Present only when the working directory changes (`cd`). Absent, not unchanged-echoed,
-   * on every other command. */
+  /** The new working directory; present only when `cd` changes it. */
   wd?: string;
   effects?: Effect[];
 }
@@ -61,10 +51,9 @@ function hasFlag(args: string[]): boolean {
   return args.some((arg) => arg.startsWith('-'));
 }
 
-/** Ticket 08's one universal error row: "any argument starting with `-`, on any
- * command". Checked before every other validation in each of the nine base commands —
- * the eggs (`sudo`, `rm`, `arm`, `disarm`, `hack`) are exempt, since `rm -rf /`'s own
- * flag *is* its trigger. */
+/** The error result for any argument starting with `-`. The base commands check it before
+ * any other validation; the easter-egg commands are exempt, since `rm -rf /` is triggered
+ * by a flag. */
 function flagsError(cmd: string): Result {
   return {
     lines: [
@@ -74,11 +63,8 @@ function flagsError(cmd: string): Result {
   };
 }
 
-/** The shared `ENOENT`/`ENOTDIR` shape ticket 08's error table names for `cd`, and says
- * is "the same shape for `cat`, `open`" (ENOENT); ENOTDIR (a non-directory mid-path)
- * isn't in the table but is the same coreutils phrasing by construction. Uses the raw
- * typed argument, matching every example row (`cd nope` → `...nope...`, not a resolved
- * path). */
+/** The "No such file or directory" / "Not a directory" error line for a path argument,
+ * quoting `arg` as typed rather than as resolved. */
 function pathError(cmd: string, arg: string, error: 'ENOENT' | 'ENOTDIR'): Line {
   const message = error === 'ENOENT' ? 'No such file or directory' : 'Not a directory';
   return mkLine(`${cmd}: ${arg}: ${message}`);
@@ -97,9 +83,8 @@ function displaySuffix(node: FsNode): string {
   }
 }
 
-/** `ls`'s simple multi-column packing: column width from the longest entry, column
- * count from `width`, laid out column-major (traditional `ls` order — down each column,
- * then across), directories `ink`, everything else `dim` (ticket 08 § `ls`). */
+/** Packs `items` into columns for `ls`: column width from the longest entry, column count
+ * from `width`, laid out column-major (down each column, then across). */
 function packColumns(items: { display: string; tone: Line['tone'] }[], width: number): Line[] {
   const colWidth = Math.max(...items.map((item) => item.display.length)) + 2;
   const cols = Math.max(1, Math.min(items.length, Math.floor(width / colWidth)));
@@ -191,11 +176,8 @@ function cmdCat(args: string[], ctx: InterpretCtx): Result {
     case 'text':
       return { lines: (node.text ?? '').split('\n').map((text) => mkLine(text)) };
     case 'file':
-      // Pure function, no fetch: a placeholder line plus the effect Task 11.2 resolves
-      // against `node.srcUrl`. Ticket 08 also wants a trailing dim hint — "open <name>
-      // to read it properly." — appended once the real source has printed; that's the
-      // UI's job (it owns the fetch and therefore knows when the source is in), so it
-      // isn't produced here.
+      // No fetch here: return a placeholder line and let the UI fetch the source. The UI
+      // also appends the "open <name> to read it properly." hint once the source is in.
       return { lines: [mkLine('…', 'dim')], effects: [{ type: 'fetchSrc', node }] };
   }
 }
@@ -206,8 +188,7 @@ function cmdOpen(args: string[], ctx: InterpretCtx): Result {
 
   const arg = args[0];
   if (arg === undefined) {
-    // Ticket 08 § `open`: "Bare `open` opens the working directory" — an action, not a
-    // print (that's `pwd`'s job); it raises/opens the wd's own window.
+    // Bare `open` opens the working directory's window; it prints nothing (that's `pwd`).
     return { lines: [], effects: [{ type: 'open', path: ctx.wd }] };
   }
 
@@ -233,8 +214,7 @@ function cmdExit(args: string[]): Result {
   return { lines: [], effects: [{ type: 'exit' }] };
 }
 
-/** `sudo <anything>`: the whole rest of the line is the "anything" — no flag handling,
- * ticket 08 doesn't carve out an exception for `sudo -x`. */
+/** `sudo` with any arguments, including flags, is denied the same way. */
 function cmdSudo(): Result {
   return {
     lines: [mkLine('guest is not in the sudoers file. This incident will be reported.')],
@@ -242,10 +222,8 @@ function cmdSudo(): Result {
   };
 }
 
-/** Flavour text for `rm -rf /`'s six typed lines (ticket 08: "~6 lines of `removing
- * /projects/…`"). Fixed rather than derived from `ctx.tree` — it's a dry theatrical
- * beat, not a real listing, so it stays identical regardless of the content seeded into
- * any given tree. */
+/** The lines typed out by `rm -rf /`. Fixed rather than derived from the tree, since it is
+ * theatre, not a real listing. */
 const REMOVAL_LINES: Line[] = [
   '/projects',
   '/projects/orbital-mesh',
@@ -255,8 +233,8 @@ const REMOVAL_LINES: Line[] = [
   '/resume.txt',
 ].map((path) => mkLine(`removing ${path}`));
 
-/** Only the exact invocation `rm -rf /` runs the removal theatre; anything else
- * (`rm foo`, bare `rm`, `rm -rf /projects`) gets the flat read-only line. */
+/** Runs the removal theatre only for the exact invocation `rm -rf /`; anything else gets
+ * the plain read-only error. */
 function cmdRm(args: string[]): Result {
   if (args.length === 2 && args[0] === '-rf' && args[1] === '/') {
     return {
@@ -291,8 +269,8 @@ function commandNotFound(cmd: string): Result {
   };
 }
 
-/** Runs one typed line against `ctx` and returns what happened. Pure: same inputs,
- * same output, no DOM/storage/network access anywhere in this module. */
+/** Runs one typed line against `ctx` and returns the output lines and requested effects.
+ * A blank line returns no lines. */
 export function run(line: string, ctx: InterpretCtx): Result {
   const tokens = line.trim().split(/\s+/).filter(Boolean);
   if (tokens.length === 0) return { lines: [] };
@@ -328,9 +306,8 @@ export function run(line: string, ctx: InterpretCtx): Result {
     case 'hack':
       return cmdHack();
     default: {
-      // Ticket 08 § `open`: "Typing an app's name (`viewer.exe`) launches it, same as
-      // `open`." Only when it's the whole command (no arguments) — `viewer.exe foo`
-      // isn't a documented shape, so it falls through to "command not found" below.
+      // Typing an app's name alone (`viewer.exe`) opens it, like `open`; with arguments it
+      // is "command not found".
       if (args.length === 0) {
         const node = ctx.tree[`/bin/${cmd}`];
         if (node?.kind === 'app')

@@ -1,11 +1,10 @@
-// Lighthouse CI, mobile preset (ticket 19 § Lab vitals, § Enforcement). Content pages and the
-// linear layout (`/` at a mobile viewport). The desktop-preset run of `/` lives in
-// lighthouserc.desktop.cjs, because one LHCI collect has one preset; `pnpm lighthouse`
-// runs both.
+// Lighthouse CI, mobile preset: content pages and the linear layout (`/` at a mobile
+// viewport). The desktop-preset run of `/` lives in lighthouserc.desktop.cjs, because one
+// LHCI collect has one preset; `pnpm lighthouse` runs both.
 //
-// Blocking (error): CLS and resource sizes. Warning only: LCP and TBT, which are too noisy on
-// shared CI runners to gate on. A CLS failure on a content page means the fallback metrics in
-// `src/styles/fonts.css` are wrong (ticket 19), not that the budget is.
+// Blocking (error): CLS and resource sizes. Warning only: LCP and TBT, which are too noisy
+// on shared CI runners to gate on. A CLS failure on a content page means the fallback
+// metrics in `src/styles/fonts.css` are wrong, not that the budget is.
 const KB = 1024;
 
 const CONTENT = '/(about|projects/orbital-mesh|drones/nazgul)/$';
@@ -39,7 +38,7 @@ module.exports = {
           },
         },
         {
-          // Content pages ship no external script at all (ticket 19).
+          // Content pages ship no external script at all.
           aggregationMethod: 'median',
           matchingUrlPattern: CONTENT,
           assertions: {

@@ -1,9 +1,8 @@
 /*
- * The hand-rolled window manager's own chrome (ticket 04 § Behaviour; `Window.tsx`,
- * `SnapPreview.tsx`). Scoped to `.frame[data-window]` rather than `.frame` itself —
- * `.frame` is D14's shared primitive, also used by the Astro `Frame.astro` component
- * for ordinary in-flow Sections and page frames, and this file's absolute-positioning
- * and flex layout must never leak onto those.
+ * Window manager chrome (`Window.tsx`, `SnapPreview.tsx`). Scoped to
+ * `.frame[data-window]` rather than `.frame`, which is also used by `Frame.astro` for
+ * in-flow sections and page frames; this file's absolute positioning and flex layout
+ * must not leak onto those.
  */
 
 .frame[data-window] {
@@ -22,10 +21,9 @@
   color: var(--accent);
 }
 
-/* The 8 invisible edge/corner resize handles (ticket 04 § Shared: "8-way resize").
-   Each sits just inside the frame's own border so it never steals clicks from the
-   3px bevel itself, and never renders — the cursor is the only affordance, same as
-   every other OS's own window manager. */
+/* The 8 invisible edge/corner resize handles. Each sits just inside the frame's border
+   so it never steals clicks from the 3px bevel, and never renders: the cursor is the
+   only affordance. */
 .resize-handle {
   position: absolute;
   z-index: 1;
@@ -89,8 +87,8 @@
   left: 0;
 }
 
-/* The snap-zone preview (ticket 04: "a dashed preview of the target shows during the
-   drag"). Amber, dashed, never solid — it must never be mistaken for a real frame. */
+/* The dashed snap-zone preview shown while dragging. Never solid, so it can't be
+   mistaken for a real frame. */
 .snap-preview {
   border: 2px dashed var(--edge-hot);
   border-radius: var(--radius);

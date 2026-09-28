@@ -1,14 +1,12 @@
 /*
- * The head-gate handover (ticket 10 § Mechanism, ticket 11 § Crossing it mid-session,
- * D13): pure class-driven show/hide, all keyed off classes `HeadGate.astro`'s inline
- * script sets on `<html>` before first paint. No selector here ever needs to know
- * *why* a class is present — that decision lives entirely in the gate script.
+ * The head-gate handover: class-driven show/hide keyed off classes that the
+ * `HeadGate.astro` inline script sets on `<html>` before first paint. Nothing here
+ * needs to know why a class is present.
  *
- * `html.shell` means "the desktop shell owns `/`, not the linear layout": both the
- * linear layout and the taskbar strip it renders on `/` disappear. `#boot` and
- * `#restore` (Task 8.2) are the two possible states shown in their place, each gated
- * on its own class, and both drop out again once `html.shell-ready` says the island
- * has taken over.
+ * `html.shell` means the desktop shell owns `/` rather than the linear layout, so both
+ * the linear layout and its taskbar strip disappear. `#boot` and `#restore` are the two
+ * states shown instead, each gated on its own class, and both drop out once
+ * `html.shell-ready` says the island has taken over.
  */
 
 html.shell #linear,
@@ -29,10 +27,9 @@ html.shell-ready #restore {
   display: none;
 }
 
-/* Skip mid-boot (ticket 10 § Skip, Task 8.2): jumping to the end must never leave a
-   blank screen. If the island has not mounted yet (`html.shell-ready` absent), skip
-   swaps `#boot` out for the Restore line as a holding state instead. Same
-   specificity as the rules above; this sits after them so it wins the cascade. */
+/* Skip mid-boot must never leave a blank screen. If the island hasn't mounted
+   (`html.shell-ready` absent), skip swaps `#boot` for the Restore line as a holding
+   state. Sits after the rules above at equal specificity so it wins the cascade. */
 html.boot-skipped:not(.shell-ready) #boot {
   display: none;
 }
@@ -41,11 +38,9 @@ html.boot-skipped:not(.shell-ready) #restore {
   display: flex;
 }
 
-/* The desktop surface (Task 8.3, `Desktop.tsx`; map Hazards on opaque surfaces):
-   fills the viewport so there's something to click/focus into once the shell is
-   ready, but stays transparent on purpose — the ground fill is `body`'s own
-   background (`global.css`), and Phase 12's shared WebGL canvas will eventually
-   sit behind this same element. */
+/* The desktop surface fills the viewport so there is something to click or focus into,
+   but stays transparent: the ground fill is `body`'s background and the shared WebGL
+   canvas sits behind this element. */
 #desktop {
   position: relative;
   min-height: 100dvh;

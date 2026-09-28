@@ -1,5 +1,5 @@
-// Task 7.3: self-canonical + a working `og:image` on every URL, plus the sitemap and
-// robots that sit on top of them (ticket 18 § Meta, § Sitemap and robots).
+// Self-canonical plus a working `og:image` on every URL, and the sitemap and robots
+// that sit on top of them.
 import { expect, test } from '@playwright/test';
 import { PAGE_URLS } from './page-urls';
 
@@ -20,8 +20,8 @@ for (const { url } of URLS) {
     const ogImage = await page.locator('meta[property="og:image"]').getAttribute('content');
     expect(ogImage).not.toBeNull();
 
-    // `og:image` is absolute against `site` (D3's placeholder domain, which doesn't
-    // resolve here) — the path is what actually matters, served by the same preview.
+    // `og:image` is absolute against `site` (a placeholder domain that doesn't resolve
+    // here); the path is what matters, served by the same preview.
     const response = await page.request.get(new URL(ogImage!).pathname);
     expect(response.status()).toBe(200);
     expect(response.headers()['content-type']).toBe('image/png');

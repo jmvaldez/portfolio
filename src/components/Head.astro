@@ -1,6 +1,6 @@
 ---
-// Task 3.4 kept this minimal (title, description); Phase 7 (ticket 18 § Meta) adds the
-// rest of the meta layer here: canonical, OG image, and the `/`-only Person JSON-LD.
+// Document head: title, description, canonical and OG tags, fonts, and the CRT script.
+// `/` also gets Person JSON-LD.
 import { Font } from 'astro:assets';
 import CrtPrefScript from './CrtPrefScript.astro';
 import { pageMeta } from '~/lib/meta';
@@ -9,18 +9,16 @@ import type { FsNode, FsTree } from '~/fs/types';
 import '~/styles/global.css';
 
 interface Props {
-  /** Omitted for `/` (ticket 18 § Meta: it has no collection entry to derive a title
-   * from and gets the fixed root title/description instead). */
+  /** Omitted for `/`, which gets the fixed root title and description. */
   node?: FsNode | undefined;
   tree: FsTree;
-  /** D15: forwarded to `CrtPrefScript` to gate the inbound half of the view transition. */
+  /** Forwarded to `CrtPrefScript` to keep the inbound view transition. */
   page?: boolean;
 }
 
 const { node, tree, page = false } = Astro.props;
 
-// `site-guard` (astro:config:done) already fails the build if `Astro.site` is unset or
-// points at localhost, so this non-null assertion is safe by the time any page renders.
+// `site-guard` fails the build if `Astro.site` is unset or localhost, so `!` is safe.
 const meta = pageMeta(node, tree, Astro.site!.toString());
 
 const personSchema = {
@@ -28,7 +26,7 @@ const personSchema = {
   '@type': 'Person',
   name: SITE_NAME,
   jobTitle: 'Software Engineer',
-  // Lorem placeholders (map "Standing preferences": content is lorem ipsum throughout).
+  // Lorem placeholders, like the rest of the content.
   sameAs: ['https://github.com/joe-valdez-lorem', 'https://www.linkedin.com/in/joe-valdez-lorem'],
 };
 ---
@@ -47,15 +45,13 @@ const personSchema = {
 <meta property="og:image:alt" content={meta.ogImageAlt} />
 <meta property="og:type" content="website" />
 <meta name="twitter:card" content="summary_large_image" />
-{/* Ticket 13: only Regular is preloaded; Bold and Italic swap in on demand. */}
+{/* Only Regular is preloaded; Bold and Italic swap in on demand. */}
 <Font cssVariable="--font-mono" preload={[{ weight: '400', style: 'normal' }]} />
 {!node && (
-  // `/` only (ticket 18 § Meta): data, never executable JS — zero-js.spec.ts excludes
-  // `application/ld+json` from its inline-script byte count for exactly this tag.
+  // `/` only. Data, not executable JS: `zero-js.spec.ts` excludes `application/ld+json`
+  // from its inline-script byte count.
   <script type="application/ld+json" set:html={JSON.stringify(personSchema)} />
 )}
 <CrtPrefScript page={page} />
-{/* Extra head content a specific page needs (Phase 8: `/`'s `HeadGate`, `/`-only
-    and unrelated to the title/description/page props above). Empty on every page
-    that doesn't fill it. */}
+{/* Extra head content for a specific page (e.g. `/`'s `HeadGate`). */}
 <slot />

@@ -1,9 +1,7 @@
 ---
-// The linear layout's masthead (ticket 11 § "What `/` is: one long scroll"): name and
-// one-line role over the grid floor. Not a Section — no title bar, no bevel box, just
-// text over `GridFloor`. Carries the page's single `h1` (Sections use `h2`, ticket 14
-// § Shell structure convention mirrored here), `tabindex="-1"` so Phase 8 can move focus
-// here on a live layout swap without adding a second focus target now.
+// Name and one-line role over the grid floor; not a Section, so no title bar. Carries the
+// page's single `h1` (Sections use `h2`). `tabindex="-1"` lets a live layout swap move
+// focus here.
 import GridFloor from '~/components/GridFloor.astro';
 ---
 
@@ -26,7 +24,7 @@ import GridFloor from '~/components/GridFloor.astro';
     margin: 0 0 8px;
     font-size: 2rem;
     color: var(--accent);
-    /* Slashed zero on chrome (ticket 13); this heading reads as chrome, not body copy. */
+    /* Slashed zero: this heading reads as chrome, not body copy. */
     font-feature-settings: 'zero';
   }
 

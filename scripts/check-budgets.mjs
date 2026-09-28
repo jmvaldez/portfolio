@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 /**
- * Byte-budget check over `dist/` (ticket 19 § Byte budgets, § Enforcement). Run after
- * `pnpm build`; one check per row of the table, prints a table and exits non-zero on any
- * failure.
+ * Byte-budget check over `dist/`. Run after `pnpm build`; checks each budget, prints a
+ * table and exits non-zero on any failure.
  *
  * Units: file weights (JS, CSS, fonts, SVG, PDF) are gzip bytes, `1 KB = 1024`. Inline
  * script budgets are raw UTF-8 bytes, matching `tests/e2e/zero-js.spec.ts`, its e2e twin.

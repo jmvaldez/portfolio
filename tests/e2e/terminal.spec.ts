@@ -1,9 +1,9 @@
 import { expect, test, type Page } from '@playwright/test';
 import { HELP_TEXT } from '../../src/fs/bin';
 
-// The toy shell (ticket 08, ticket 14 § Terminal). 1440x900, same as `wm.spec.ts` —
-// `terminal.exe` is D16's own seed window as of this phase, open but unfocused, so
-// every test here starts from that seeded window rather than launching it itself.
+// The toy shell. 1440x900, same as `wm.spec.ts`. `terminal.exe` is a seed window, open
+// but unfocused, so every test here starts from that seeded window rather than launching
+// it itself.
 const DESKTOP = { width: 1440, height: 900 };
 
 test.use({ viewport: DESKTOP });
@@ -83,9 +83,9 @@ test('sudo x shows the sudoers line and triggers a toast', async ({ page }) => {
 
 test('backtick minimises the focused terminal and restores focus on reopen', async ({ page }) => {
   await waitReady(page);
-  // The seeded terminal opens unfocused (D16) — focus it first the same way the
-  // backtick's own "already open" branch does, so the first press below exercises
-  // the "already focused" branch deterministically.
+  // The seeded terminal opens unfocused: focus it the same way the backtick's "already
+  // open" branch does, so the first press below exercises the "already focused" branch
+  // deterministically.
   await input(page).focus();
   await page.keyboard.press('`');
   await expect(page.locator(TERMINAL)).toBeHidden();

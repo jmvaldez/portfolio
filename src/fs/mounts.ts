@@ -1,13 +1,7 @@
-// The mount table (ticket 05 § The filesystem, D11, D12): declares where each collection
-// and each synthetic node attaches to the root. Order here is D11's launcher / Section
-// order — about, projects, drones, resume, contact — with `resume.pdf`, `readme.txt` and
-// `/bin` filling in around them.
-//
-// This file only says *where* things attach. A collection mount's contents (the
-// directories and files an entry's id implies) are synthesised by `buildTree` from the
-// entries it's given; `/bin`'s contents (`src/fs/bin.ts`, Task 2.3) are likewise passed to
-// `buildTree` as a separate argument and attached under the `/bin` mount there — neither
-// lives in this table.
+// The mount table: where each collection and synthetic node attaches to the root. Order
+// is the launcher and Section order (about, projects, drones, resume, contact). Only
+// attachment points live here; `buildTree` synthesises collection contents from the
+// entries it is given and attaches `/bin`'s nodes from `bin.ts`.
 
 export interface RootFileMount {
   kind: 'file';

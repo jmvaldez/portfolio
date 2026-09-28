@@ -1,10 +1,10 @@
-// The canvas half of the CRT treatment (ticket 07 § The post-process finding; ticket 06's
-// soft-edged scanline ramp). A fullscreen quad shader: cheap bloom, then scanlines matched
-// to the DOM's `--scan-alpha` / `--scan-period` so the canvas reads as the same material
-// as the chrome around it. Built per mount by `CrtViewPass` rather than at module scope —
-// a module-level material is a Fast Refresh hazard (research 01, pitfall 6).
+// The canvas half of the CRT treatment: a fullscreen quad shader with cheap bloom, then
+// scanlines matched to the DOM's `--scan-alpha` and `--scan-period` so the canvas reads as
+// the same material as the chrome. Built per mount by `CrtViewPass` rather than at module
+// scope, since a module-level material is a Fast Refresh hazard.
 import * as THREE from 'three';
 
+/** Returns a new CRT shader material; the caller sets its uniforms and disposes it. */
 export function createCrtMaterial(): THREE.ShaderMaterial {
   return new THREE.ShaderMaterial({
     uniforms: {
@@ -36,7 +36,7 @@ export function createCrtMaterial(): THREE.ShaderMaterial {
       void main() {
         vec4 base = texture2D(tDiffuse, vUv);
 
-        // cheap bloom: a few offset taps, brighter pixels smear further
+        // Cheap bloom: a few offset taps, so brighter pixels smear further.
         vec2 px = 1.0 / resolution;
         vec4 bloom = base;
         bloom += texture2D(tDiffuse, vUv + vec2(px.x * 1.5, 0.0)) * 0.5;
@@ -46,9 +46,9 @@ export function createCrtMaterial(): THREE.ShaderMaterial {
         bloom /= 3.0;
         vec3 color = max(base.rgb, bloom.rgb * 0.6);
 
-        // Soft-edged bands matching the CSS ramp (transparent 0, dark at 34%,
-        // transparent at 68%): a ramp, not a hard stop, so it cannot beat against
-        // device pixels at fractional DPR (ticket 06).
+        // Soft-edged bands matching the CSS ramp (transparent 0, dark at 34%, transparent at
+        // 68%): a ramp, not a hard stop, so it cannot beat against device pixels at
+        // fractional DPR.
         float y = mod(gl_FragCoord.y, scanPeriod) / scanPeriod;
         float band = smoothstep(0.0, 0.34, y) - smoothstep(0.34, 0.68, y);
         color *= (1.0 - scanAlpha * band);

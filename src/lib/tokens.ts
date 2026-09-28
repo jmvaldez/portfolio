@@ -1,10 +1,8 @@
-// Shared `tokens.css` scraper (ticket 06 § Tokens). CSS custom properties are not
-// values Node can evaluate, so anything outside the browser that needs a token's actual
-// value — `src/styles/contrast.test.ts`'s WCAG checks, and Task 7.2's OG card, which has
-// to paint the same palette Satori cannot read from a stylesheet — scrapes it out of the
-// same file with the same two regexes, rather than each keeping its own copy.
+// Scrapes `tokens.css` for code that runs outside the browser, which can't evaluate CSS
+// custom properties: the WCAG contrast tests and the OG card, since Satori can't read a
+// stylesheet.
 
-/** Every `--token-name: #rrggbb;` declaration in `source`, keyed without the `--`. */
+/** Returns every `--token-name: #rrggbb;` declaration in `source`, keyed without `--`. */
 export function parseHexTokens(source: string): Record<string, string> {
   const tokens: Record<string, string> = {};
   for (const match of source.matchAll(/--([\w-]+):\s*#([0-9a-fA-F]{6});/g)) {
@@ -14,7 +12,7 @@ export function parseHexTokens(source: string): Record<string, string> {
   return tokens;
 }
 
-/** The bare numeric value of a `--token-name: <number>;` declaration (e.g. `--scan-alpha`). */
+/** Returns the numeric value of `--<name>: <number>;`; throws if it isn't declared. */
 export function parseNumberToken(source: string, name: string): number {
   const match = source.match(new RegExp(`--${name}:\\s*([\\d.]+);`));
   if (!match) throw new Error(`token --${name} not found in tokens.css`);

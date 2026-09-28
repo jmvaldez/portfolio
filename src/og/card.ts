@@ -1,21 +1,16 @@
-// The one OG card template (ticket 18 § OG images, research 17 § Can Satori render the
-// chrome): built as plain `{ type, props }` object literals, not JSX — Satori's own
-// runtime takes a React-element-shaped tree without needing the JSX transform, and this
-// file carries no `astro:content`/`astro:config` import (same discipline as `fs/tree.ts`
-// and `lib/meta.ts`), so it stays directly unit-testable and Task 7.2's endpoint owns all
-// the server-only lookups.
+// The single OG card template, built as plain `{ type, props }` objects rather than JSX
+// (Satori accepts a React-element-shaped tree without the JSX transform). Imports nothing
+// from `astro:content` or `astro:config`, so it can be unit-tested; the endpoint does the
+// server-only lookups.
 //
-// Map Hazards / research 17 hazards this file is built around:
-//   - No z-index, `calc`, 3D transforms, or `inset`/`outset` borders — paint order is
-//     document order, so the scanline overlay is the tree's last child (hazard 11).
-//   - No style value may be `undefined` (hazard 10) — optional pieces are omitted by
-//     building the `children` array conditionally, never by spreading `undefined` keys.
-//   - Whitespace collapses like CSS `white-space: normal` (hazard 11): none of this
-//     card's text depends on run-length whitespace, so nothing sets `whiteSpace: 'pre'`.
+// Satori constraints this file works around:
+//   - No z-index, `calc`, 3D transforms, or `inset`/`outset` borders. Paint order is
+//     document order, so the scanline overlay is the tree's last child.
+//   - No style value may be `undefined`, so optional pieces are omitted by building the
+//     `children` array conditionally.
+//   - Whitespace collapses like CSS `white-space: normal`, so no text relies on it.
 
-/** A node in the plain object tree Satori's core API accepts (its own type is `ReactNode`
- * from `react`; this is the shape actually needed here, without pulling the JSX runtime
- * into a file that never uses JSX syntax). */
+/** A node in the plain object tree Satori accepts (a `ReactNode` in its own types). */
 export interface SatoriElement {
   type: string;
   props: Record<string, unknown>;
@@ -28,21 +23,21 @@ export interface CardSpecField {
 
 export interface CardData {
   /** Tilde-prefixed, slash-separated node path for the title bar, e.g.
-   * `~/projects/orbital-mesh` (ticket 18 § OG images). */
+   * `~/projects/orbital-mesh`. */
   path: string;
   title: string;
-  /** Up to three amber-key/green-value fields (project/drone). Mutually exclusive with
-   * `summary` — a card shows one or the other, never both (ticket 18 § OG images). */
+  /** Up to three amber-key/green-value fields (project/drone). A card shows these or
+   * `summary`, never both. */
   fields?: CardSpecField[] | undefined;
   /** Shown instead of `fields` for pages, notes, and folders without spec fields. */
   summary?: string | undefined;
-  /** Only the site default card (`/`) carries the drone wireframe (ticket 18: "no other
-   * card includes this drone image"), as a `data:image/svg+xml;base64,...` URI. */
+  /** Site default card (`/`) only: the drone wireframe as a `data:image/svg+xml;base64,...`
+   * URI. */
   droneSvgDataUri?: string | undefined;
 }
 
-/** The palette and treatment numbers the card paints with, parsed once from
- * `tokens.css` by the caller (`src/og/render.ts`) rather than re-typed here. */
+/** The palette and treatment numbers the card paints with, parsed from `tokens.css` by
+ * `src/og/render.ts`. */
 export interface CardTokens {
   chrome: string;
   chromeHi: string;
@@ -51,8 +46,7 @@ export interface CardTokens {
   accent: string;
   edge: string;
   bgSunk: string;
-  /** Half the shell's `--scan-alpha` (ticket 18 § OG images: "at half the shell's
-   * scanline strength"). */
+  /** Half the shell's `--scan-alpha`. */
   scanAlpha: number;
 }
 
@@ -73,10 +67,8 @@ function el(type: string, props: Record<string, unknown> = {}): SatoriElement {
   return { type, props };
 }
 
-/** The scanline overlay (research 17 § Can Satori render the chrome, measured): an
- * absolute layer with the shell's own `repeating-linear-gradient` formula
- * (`src/styles/crt.css`'s `.scan::after`), at half `--scan-alpha`, painted last so it
- * sits on top of everything else (hazard 11: paint order is document order). */
+/** The scanline overlay: an absolute layer using the shell's `.scan::after` gradient at
+ * half `--scan-alpha`, painted last so it sits on top. */
 function scanlineOverlay(scanAlpha: number): SatoriElement {
   const halfAlpha = scanAlpha / 2;
   return el('div', {
@@ -91,8 +83,7 @@ function scanlineOverlay(scanAlpha: number): SatoriElement {
   });
 }
 
-/** The amber title bar: the node's tilde path, slashed-zero numerals (ticket 13's rule,
- * matched here via `fontFeatureSettings` the way `chrome.css`'s `.titlebar` does it). */
+/** The amber title bar showing the node's tilde path, with slashed-zero numerals. */
 function titleBar(path: string, tokens: CardTokens): SatoriElement {
   return el('div', {
     style: {
@@ -110,9 +101,7 @@ function titleBar(path: string, tokens: CardTokens): SatoriElement {
   });
 }
 
-/** The title, large in phosphor green, with a two-layer bloom faked as two stacked
- * `textShadow` values at different blur radii and opacities (research 17, measured:
- * `textShadow` works in Satori 0.33; ticket "Bloom" glossary: "drawn as a text-shadow"). */
+/** The large green title with a two-layer bloom faked as stacked `textShadow` values. */
 function titleBlock(title: string, tokens: CardTokens): SatoriElement {
   return el('div', {
     style: {
@@ -127,8 +116,7 @@ function titleBlock(title: string, tokens: CardTokens): SatoriElement {
   });
 }
 
-/** Up to three amber-key/green-value spec fields (project: role/tech/period; drone:
- * class/frame/prop size — ticket 18 § OG images). */
+/** Up to three amber-key/green-value spec fields. */
 function specFields(fields: CardSpecField[], tokens: CardTokens): SatoriElement {
   return el('div', {
     style: { display: 'flex', flexDirection: 'column', gap: 14 },
@@ -153,8 +141,7 @@ function specFields(fields: CardSpecField[], tokens: CardTokens): SatoriElement 
   });
 }
 
-/** Pages, notes, and folders with no spec fields show the summary instead
- * (ticket 18 § OG images). */
+/** The summary shown for pages, notes, and folders with no spec fields. */
 function summaryBlock(summary: string, tokens: CardTokens): SatoriElement {
   return el('div', {
     style: {
@@ -168,7 +155,7 @@ function summaryBlock(summary: string, tokens: CardTokens): SatoriElement {
   });
 }
 
-/** Site default only (ticket 18: "no other card includes this drone image"). */
+/** The drone wireframe image, on the site default card only. */
 function droneImage(dataUri: string): SatoriElement {
   return el('img', {
     src: dataUri,
@@ -178,11 +165,9 @@ function droneImage(dataUri: string): SatoriElement {
   });
 }
 
-/** Builds the full 1200×630 Satori tree for one card (ticket 18 § OG images, research 17
- * § Can Satori render the chrome). One template for every URL: a bevelled frame (per-side
- * border colours fake the bevel — hazard 11: no `inset`/`outset` border styles), the
- * title bar, the title with its bloom, spec fields or a summary, the drone SVG on the
- * site default only, and the scanline overlay painted last. */
+/** Builds the full 1200×630 Satori tree for one card: a bevelled frame, the title bar,
+ * the title, spec fields or a summary, the drone SVG on the site default only, and the
+ * scanline overlay painted last. */
 export function buildCard(data: CardData, tokens: CardTokens): SatoriElement {
   const bodyChildren: SatoriElement[] = [titleBlock(data.title, tokens)];
   if (data.fields && data.fields.length > 0) {
@@ -209,9 +194,8 @@ export function buildCard(data: CardData, tokens: CardTokens): SatoriElement {
       background: tokens.chrome,
       color: tokens.ink,
       fontFamily: 'Valdez Mono',
-      // Per-side border colours fake the bevel `chrome.css`'s `.frame` draws with
-      // `box-shadow: var(--bevel)` — Satori has no inset box-shadow (hazard 11), so the
-      // light/dark split moves to the border itself: lit top-left, sunk bottom-right.
+      // Per-side border colours fake the frame's bevel, since Satori has no inset
+      // box-shadow: lit top-left, sunk bottom-right.
       borderTop: `6px solid ${tokens.chromeHi}`,
       borderLeft: `6px solid ${tokens.chromeHi}`,
       borderBottom: `6px solid ${tokens.bgSunk}`,

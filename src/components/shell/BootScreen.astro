@@ -1,18 +1,11 @@
 ---
-// The boot screen (ticket 10 § Lines, § Look and handoff, § Timing, § Reduced
-// motion, § Skip; D23): server-rendered HTML whose reveal is entirely CSS-timed,
-// shown by `shell.css` only while `html.boot` is set. `HeadGate.astro`'s inline
-// script (Task 8.1) fills the two real-state `[data-slot]` spans before this is
-// ever visible, and later flips `html.shell-ready` to reveal the final line's `OK`.
-// `aria-hidden` throughout (ticket 14 § Boot and resume): the desktop-ready status
-// is a single announcement from the island, not from this screen.
+// Server-rendered boot log revealed purely by CSS timing; `shell.css` shows it only while
+// `html.boot` is set. `HeadGate.astro`'s inline script fills the two `[data-slot]` spans
+// with real state and later sets `html.shell-ready`, which reveals the final line's `OK`.
+// `aria-hidden` throughout: the island makes the single desktop-ready announcement.
 //
-// The mount line is generated from the real mount table rather than hardcoded
-// (ticket 10 § Lines: "the real mount table"): every mount whose `kind` is
-// `'collection'` is an actual directory the filesystem mounts a collection at
-// (`/projects`, `/drones`); the `pages` collection has no directory of its own —
-// each of its entries mounts as an individual root file (`/about.txt`, …) — so it
-// never appears in this list.
+// The mount line lists the real `collection` mounts (`/projects`, `/drones`). The `pages`
+// collection has no directory of its own, so it never appears.
 import { mounts, type CollectionMount } from '~/fs/mounts';
 
 function isCollectionMount(mount: (typeof mounts)[number]): mount is CollectionMount {
@@ -38,14 +31,12 @@ const mountLine = `MOUNTING ${collectionPaths.join(' ')} .. OK`;
   #boot {
     position: fixed;
     inset: 0;
-    /* Above the taskbar strip's `z-index: 1` (`TaskbarStrip.astro`) — belt and
-       braces, since `html.shell` already hides that strip whenever `#boot` can
-       show at all. */
+    /* Above the taskbar strip's `z-index: 1`, in case that strip is ever visible. */
     z-index: 2;
     background: #000;
     color: var(--ink);
     font-family: var(--font-mono);
-    /* Slashed zero (ticket 13): this is chrome/log output, not body copy. */
+    /* Slashed zero: this is chrome/log output, not body copy. */
     font-feature-settings: 'zero';
   }
 
@@ -90,20 +81,15 @@ const mountLine = `MOUNTING ${collectionPaths.join(' ')} .. OK`;
     }
   }
 
-  /* Ticket 10 § Reduced motion: the whole log renders in one frame. Ticket 10 §
-     Skip: any key/click/tap jumps straight to this same end state — `boot-skipped`
-     gets the identical override rather than a second animation. Neither this nor
-     the reduced-motion case is itself an *animation*, so ticket 02's static-CRT
-     constraint isn't in tension here: this only ever changes whether a delay
-     applies, never the CRT scan/bloom treatment. */
+  /* Reduced motion and skipping (`boot-skipped`) both jump to the fully revealed log by
+     removing the delays; neither adds an animation or changes the CRT treatment. */
   :global(html.reduced) #boot .boot-line,
   :global(html.boot-skipped) #boot .boot-line {
     animation: none;
     opacity: 1;
   }
 
-  /* The final line's completion marker only appears once the island has actually
-     taken over (ticket 10 § Timing: "held until the island mounts"). */
+  /* The final line's `OK` appears only once the island has taken over. */
   .loading-ok {
     visibility: hidden;
   }

@@ -1,5 +1,5 @@
-// Lighthouse CI, desktop preset: `/` with the shell (ticket 19 § Lab vitals). The boot screen
-// is the LCP element. Mobile-preset runs live in lighthouserc.cjs.
+// Lighthouse CI, desktop preset: `/` with the shell. The boot screen is the LCP element.
+// Mobile-preset runs live in lighthouserc.cjs.
 const KB = 1024;
 
 module.exports = {

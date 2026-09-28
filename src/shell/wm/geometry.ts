@@ -1,15 +1,7 @@
-// Pure geometry for the hand-rolled window manager (ticket 04 § Behaviour, as settled).
-// DOM-free on purpose — nothing here touches `document` or `window` — so it can be
-// exercised head-on by Vitest and driven from React (`Window.tsx`, Phase 9.3) without
-// either side owning the math. Every unit is CSS pixels relative to the desktop rect;
-// callers own turning a pointer event into `{ x, y }` and a `#desktop`
-// `getBoundingClientRect()` into `{ width, height }`.
-//
-// Ported from the throwaway prototype's variant B (branch `prototype/window-manager`,
-// `snapZone`/`zoneRect`/`magnet`/resize's inline math), generalised into named pure
-// functions and given the two behaviours the prototype only sketched: `tearOff` (the
-// prototype inlined tear-off into its drag handler) and `rescue` (the prototype's
-// `startDrag` clamp, lifted out so it can also run from a `ResizeObserver`, Task 9.4).
+// Pure geometry for the hand-rolled window manager. DOM-free, so it can be unit tested and
+// driven from React without either side owning the math. Every unit is CSS pixels relative
+// to the desktop rect; callers convert pointer events to `{ x, y }` and `#desktop`'s box to
+// `{ width, height }`.
 
 /** A window's geometry, in CSS px relative to the desktop's own rect. */
 export interface Rect {
@@ -22,15 +14,12 @@ export interface Rect {
 /** The eight resize handles (n/s/e/w edges, plus the four corners). */
 export type ResizeHandle = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
 
-/** The regions a drag can release into (ticket 04: "left and right edges give
- * halves, corners give quarters, the top edge maximises"). There is no plain
- * `'bottom'` zone — the prototype's own `snapZone` never produces one, and ticket 04
- * doesn't ask for a bottom-edge tile. */
+/** The regions a drag can release into: left and right halves, corner quarters, and the top
+ * edge to maximise. There is no plain bottom zone. */
 export type SnapZone =
   'left' | 'right' | 'top' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 
-/** D16's seed layout, expressed as fractions 0-1 of the desktop — never fixed pixels
- * (map Hazards: "a fixed-pixel seed layout is a trap"). */
+/** A window rect expressed as fractions 0-1 of the desktop, so it scales with its size. */
 export interface SeedFraction {
   x: number;
   y: number;
@@ -38,26 +27,17 @@ export interface SeedFraction {
   h: number;
 }
 
-/** How close a pointer must be to an edge, in px, before it arms a snap zone
- * (ticket 04: "release within 26px of an edge"). */
+/** How close a pointer must be to an edge, in px, to arm a snap zone. */
 const EDGE_ZONE = 26;
 
-/** Window-to-window and window-to-desktop-edge magnetism, in px, on each axis
- * independently (ticket 04: "8px window-to-window and window-to-edge, on both
- * axes, while free"). */
+/** Magnetism distance, in px, to another window or a desktop edge, applied per axis. */
 const MAGNET = 8;
 
-/** The floor every resize respects (ticket 04 § Shared: "8-way resize (min
- * 200x120)"). */
+/** The minimum size any resize allows. */
 const MIN_WIDTH = 200;
 const MIN_HEIGHT = 120;
 
-/** D14's title-bar height (ticket 06: "30px title bars") and how much of its width
- * `rescue` insists on keeping reachable — "enough to grab", not the whole bar (the
- * prototype's own clamp used the same 80px). This is the floor ticket 04's honest
- * note describes as minimal by design: it repositions, it never resizes, and a
- * badly-shrunk desktop can still leave a window mostly overflowing it. The mobile
- * breakpoint is what actually owns not rendering the shell that small. */
+/** The title-bar height and how much of its width `rescue` keeps reachable, enough to grab. */
 const TITLE_BAR_HEIGHT = 30;
 const MIN_VISIBLE_TITLE_WIDTH = 80;
 
@@ -65,7 +45,7 @@ function clamp(value: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, value));
 }
 
-/** D16: converts a fraction-of-desktop seed into an absolute-pixel `Rect`. */
+/** Converts a fraction-of-desktop seed into an absolute-pixel `Rect`. */
 export function seedToRect(seed: SeedFraction, desktop: { width: number; height: number }): Rect {
   return {
     x: seed.x * desktop.width,
@@ -75,9 +55,9 @@ export function seedToRect(seed: SeedFraction, desktop: { width: number; height:
   };
 }
 
-/** Which snap zone a released pointer lands in, or `null` if it's nowhere near an
- * edge. Corner detection takes priority over a plain edge — a pointer within 26px of
- * both the left edge and the top edge is `'top-left'`, never `'left'`. */
+/** Returns the snap zone a pointer lands in, or `null` if it is not near an edge. Corners
+ * take priority over plain edges, so a pointer near both the left and top edges is
+ * `'top-left'`. */
 export function snapTarget(
   pointer: { x: number; y: number },
   desktop: { width: number; height: number },
@@ -97,7 +77,7 @@ export function snapTarget(
   return null;
 }
 
-/** The absolute rect a given snap zone resolves to on this desktop. */
+/** Returns the absolute rect that `target` occupies on this desktop. */
 export function snapRect(target: SnapZone, desktop: { width: number; height: number }): Rect {
   const halfWidth = desktop.width / 2;
   const halfHeight = desktop.height / 2;
@@ -119,10 +99,9 @@ export function snapRect(target: SnapZone, desktop: { width: number; height: num
   }
 }
 
-/** Snaps `rect`'s position to within 8px of a neighbour's edge or the desktop's own
- * edge, independently on each axis. Pure geometry only — it has no notion of
- * "snapped" window state; the caller (Task 9.3's drag handler) is what excludes
- * already-tiled windows from `others` before calling this, per ticket 04. */
+/** Returns `rect` moved so its edges sit flush with a neighbour's edge or the desktop's edge
+ * when within `MAGNET` px, independently on each axis. `others` should hold only free
+ * windows; the caller excludes snapped ones. */
 export function magnetise(
   rect: Rect,
   others: Rect[],
@@ -132,8 +111,7 @@ export function magnetise(
   const yTargets: number[] = [0, desktop.height - rect.height];
 
   for (const other of others) {
-    // Every alignment that puts one of rect's edges flush with one of other's edges:
-    // left-to-right, right-to-left, left-to-left, right-to-right.
+    // Every alignment that puts one of rect's edges flush with one of other's edges.
     xTargets.push(
       other.x + other.width,
       other.x - rect.width,
@@ -167,11 +145,9 @@ export function magnetise(
   return { ...rect, x, y };
 }
 
-/** Applies a resize delta from one of the 8 handles, respecting the 200x120 floor.
- * A handle touching the top or left edge moves the origin as it shrinks or grows;
- * `'se'` only ever changes width/height. If a delta would shrink past the minimum,
- * the delta is clamped so the result is exactly the minimum and the origin never
- * overshoots where that minimum would put it. */
+/** Returns `rect` resized by the delta `dx`, `dy` applied at `handle`, never below the
+ * minimum size. Handles on the top or left edge also move the origin; when clamped to the
+ * minimum, the origin stays where that minimum size puts it. */
 export function resize(rect: Rect, handle: ResizeHandle, dx: number, dy: number): Rect {
   let { x, y, width, height } = rect;
 
@@ -198,11 +174,8 @@ export function resize(rect: Rect, handle: ResizeHandle, dx: number, dy: number)
   return { x, y, width, height };
 }
 
-/** A snapped or maximised window starting to drag tears free back to its pre-snap
- * size, recentred under the pointer (ticket 04: "restores its pre-snap size, centred
- * under the cursor"). `snapped` isn't needed for the math — the restore size and the
- * pointer are all a tear-off needs — but it's kept in the signature since the caller
- * always has it in hand and it documents what's being torn off. */
+/** Returns the rect for a snapped window torn free by a drag: `restoreSize`, centred on
+ * `pointer`. The `_snapped` rect is unused and kept for documentation. */
 export function tearOff(
   _snapped: Rect,
   restoreSize: { width: number; height: number },
@@ -216,12 +189,9 @@ export function tearOff(
   };
 }
 
-/** Keeps a window's title bar reachable within the desktop (ticket 04's floor
- * requirement, map Hazards: "a window lost outside a shrinking desktop"). Only ever
- * repositions — it never resizes — and only guarantees `MIN_VISIBLE_TITLE_WIDTH` of
- * the bar's width plus its full height stay on-screen. Ticket 04's own honest note is
- * that this is minimal and it shows at very small sizes; the mobile breakpoint not
- * rendering the shell at all is what actually carries the rest. */
+/** Returns `rect` repositioned so its title bar stays reachable when the desktop shrinks.
+ * It never resizes, and guarantees only `MIN_VISIBLE_TITLE_WIDTH` of the bar's width and its
+ * full height stay on-screen, so very small desktops can still overflow a window. */
 export function rescue(rect: Rect, desktop: { width: number; height: number }): Rect {
   const x = clamp(
     rect.x,

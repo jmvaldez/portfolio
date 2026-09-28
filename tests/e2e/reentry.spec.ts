@@ -1,9 +1,9 @@
 import { expect, test } from '@playwright/test';
 
-// Ticket 19 § Timing budgets: re-entry after a round trip to a page reaches an interactive,
-// layout-restored shell within 800 ms of navigation start. Timing on shared runners is noisy,
-// so 800 ms is warn-only (an annotation); the hard failure is 3000 ms, which means something
-// is broken rather than slow.
+// Re-entry after a round trip to a page reaches an interactive, layout-restored shell
+// within 800 ms of navigation start. Timing on shared runners is noisy, so 800 ms is
+// warn-only (an annotation); the hard failure is 3000 ms, which means something is
+// broken rather than slow.
 const WARN_MS = 800;
 const FAIL_MS = 3000;
 
@@ -29,8 +29,8 @@ test('re-entry after promote and close box reaches shell-ready within budget', a
   await page.goto('/');
   await expect(page.locator('html')).toHaveClass(/shell-ready/, { timeout: 7000 });
 
-  // The D16 seed opens four windows; two more launches make sure at least three are open
-  // and one of them is not from the seed.
+  // The seed opens four windows; two more launches make sure at least three are open and
+  // one of them is not from the seed.
   for (const label of ['resume.txt', 'contact.txt']) {
     await page.locator('.desktop-icon', { hasText: label }).first().dblclick();
   }
@@ -54,7 +54,7 @@ test('re-entry after promote and close box reaches shell-ready within budget', a
   if (ms > WARN_MS) {
     test.info().annotations.push({
       type: 'warning',
-      description: `re-entry took ${ms} ms, over the ${WARN_MS} ms budget (warn-only, ticket 19)`,
+      description: `re-entry took ${ms} ms, over the ${WARN_MS} ms budget (warn-only)`,
     });
   }
   console.log(`re-entry: shell-ready at ${ms} ms after navigation start`);

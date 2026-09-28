@@ -1,6 +1,6 @@
-// The shell's side of the 3D layer (Task 12.1): decides whether the lazy `Scene` chunk is
-// fetched at all, and paints the fallback when it is not (D19). Three-free by
-// construction; `Scene` is the only door to it, via `React.lazy`.
+// The shell's side of the 3D layer: decides whether the lazy `Scene` chunk is fetched at
+// all, and paints the fallback when it is not. Three-free; `Scene` is the only door to it,
+// via `React.lazy`.
 //
 // Once the gate has passed the scene stays mounted for the shell's lifetime: a live
 // reduced-motion change only stops it (`Scene`'s `frameloop="never"`) and swaps the

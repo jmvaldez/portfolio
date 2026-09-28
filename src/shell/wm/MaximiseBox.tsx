@@ -1,14 +1,7 @@
-// The React equivalent of `MaximiseBox.astro`, for a shell window (glossary
-// "Promotion"; ticket 09; ticket 14 § The maximise and close boxes: the accessible
-// name says where it goes, and the glyph itself is `aria-hidden`). `Window.tsx`
-// renders this into its `maximiseSlot` iff `node.url` is set — "a window has a
-// maximise box iff its node has a URL" is enforced by the caller (`Desktop.tsx`)
-// never passing this component a node without one, not by a check in here, but the
-// early return covers it either way.
-//
-// Hovering it prefetches the destination page (ticket 09 § Prefetch, D4: the shell
-// does its own hover prefetch since content pages carry no JS of their own to
-// prefetch with).
+// The React equivalent of `MaximiseBox.astro`, for a shell window: a link to the node's
+// page whose accessible name says where it goes (the glyph is `aria-hidden`). Renders
+// nothing for a node without a URL. Hovering prefetches the page, since the shell does its
+// own prefetching.
 import type { FsNode } from '~/fs/types';
 import { handlePromotionClick } from '../promote';
 

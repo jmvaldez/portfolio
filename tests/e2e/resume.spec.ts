@@ -1,7 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-// Task 5.2: the PDF `pnpm build` renders alongside the site, and the page's link to it
-// (ticket 15 § Shell and page behaviour).
+// The PDF `pnpm build` renders alongside the site, and the page's link to it.
 
 test('/resume.pdf is served as a PDF', async ({ request }) => {
   const response = await request.get('/resume.pdf');

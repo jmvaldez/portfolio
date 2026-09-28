@@ -1,15 +1,14 @@
 /*
- * CRT / phosphor treatment (ticket 02, ticket 06 § the scanline gradient).
+ * CRT / phosphor treatment, active only under `html[data-crt="on"]` (set by CrtPrefScript
+ * before first paint).
  *
- * Everything here keys off `html[data-crt="on"]`, set by CrtPrefScript before first
- * paint. Two refusals, both from the map's Hazards section and load-bearing for the
- * window manager and the compositor budget: no CSS `filter` (a non-none filter on a
- * wrapper becomes a containing block for absolutely/fixed positioned descendants,
- * breaking window geometry — same reasoning rules out filtering anything behind a
- * translucent surface) and no compositor blend modes (measured ~6x compositor cost
- * over a full-viewport overlay for pixel-identical output against pure black). The
- * treatment is static: no CSS animation of any kind in this file (ticket 02: an
- * animated CRT would trigger WCAG 2.2.2's pause/stop/hide requirement).
+ * Two things are deliberately absent. No CSS `filter`: a non-none filter on a wrapper
+ * becomes the containing block for absolute/fixed descendants and breaks window geometry
+ * (the same applies to filtering anything behind a translucent surface). No compositor
+ * blend modes: they cost about 6x more compositing over a full-viewport overlay for
+ * pixel-identical output against pure black.
+ *
+ * No animation here: animated scanlines would need a pause control under WCAG 2.2.2.
  */
 
 /* Zero specificity via `:where()`: `.scan` only needs *a* containing block for its
@@ -25,12 +24,10 @@ html[data-crt='on'] .scan::after {
   inset: 0;
   pointer-events: none;
   /*
-   * SOFT-EDGED bands only — never two hard colour stops. Map hazard: a hard stop
-   * snaps to a whole device pixel at DPR 1.25/1.5 and the bands alternate between 1
-   * and 2 device pixels, producing a visible moire that no amount of "tidying" the
-   * gradient back to two stops will fix. A ramp has no edge to snap, so the artefact
-   * cannot form at any DPR. The triangle's area over one period matches the old 1px
-   * band, so perceived darkness is unchanged.
+   * Soft-edged bands only, never two hard colour stops. A hard stop snaps to a whole
+   * device pixel at DPR 1.25/1.5, so the bands alternate between 1 and 2 device pixels
+   * and produce visible moire. A ramp has no edge to snap. The triangle's area over one
+   * period matches a 1px band, so perceived darkness is unchanged.
    */
   background: repeating-linear-gradient(
     to bottom,
@@ -45,14 +42,14 @@ html[data-crt='on'] .bloom {
   text-shadow: var(--bloom);
 }
 
-/* `background-image` (and therefore the gradient above) is ignored inside
-   `::selection`, so bloom is switched off explicitly instead of relying on that. */
+/* `background-image` (and so the scanline gradient) is ignored inside `::selection`,
+   so bloom is switched off explicitly. */
 .bloom::selection {
   text-shadow: none;
 }
 
-/* Ticket 02 / ticket 14: forced colours turns the whole treatment off, regardless of
-   the stored `data-crt` preference — scanlines and bloom both disappear. */
+/* Forced colours turns the whole treatment off regardless of the stored `data-crt`
+   preference. */
 @media (forced-colors: active) {
   .scan::after {
     display: none;

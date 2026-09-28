@@ -1,8 +1,5 @@
-// The shell's own taskbar (glossary "Taskbar"; ticket 06 § gauges; ticket 14 §
-// taskbar buttons; D18). A separate React component from `TaskbarStrip.astro`
-// (Phase 4/11's linear-layout/page strip) even though both are "the fixed bottom
-// strip": that one has no shell to report on (no gauges, no window buttons, per its
-// own doc comment) and is server-rendered; this one is live shell state.
+// The shell's taskbar: launchers, window buttons, gauges, CRT toggle, and clock. Separate
+// from the server-rendered `TaskbarStrip.astro`, which has no shell state to report.
 import { useEffect, useState } from 'react';
 import { mounts, type CollectionMount, type RootFileMount } from '~/fs/mounts';
 import type { FsNode, FsTree } from '~/fs/types';
@@ -17,23 +14,17 @@ function isLauncherMount(mount: (typeof mounts)[number]): mount is RootFileMount
   return (mount.kind === 'file' || mount.kind === 'collection') && Boolean(mount.launcher);
 }
 
-/** Mirrors `DesktopIcons.tsx`'s own guard: an unregistered `app` node is not
- * launchable, so it gets no launcher either (ticket 05, D16's rule generalised). */
+/** Returns whether `node` can be launched; an `app` node with no registered app cannot. */
 function isLaunchable(node: FsNode): boolean {
   return node.kind !== 'app' || (node.app !== undefined && node.app in appRegistry);
 }
 
-/** D18: 5 bars running, 0 standby. Takes the union as a parameter (rather than
- * comparing the module-level constant below inline) so TS doesn't narrow the
- * always-`'standby'` constant down to its literal type and flag the `'running'`
- * branch as unreachable — this reads as live state once Task 10.4 wires the real
- * `effects.vector` field in. */
+/** Returns the number of lit `VEC` gauge bars: all of them when running, none on standby. */
 function vectorBars(vector: 'running' | 'standby'): number {
   return vector === 'running' ? MAX_GAUGE_BARS : 0;
 }
 
-/** A fixed-width bar gauge (ticket 06 § gauges, D18): `lit` of `MAX_GAUGE_BARS`
- * segments lit, clamped both ends. */
+/** A fixed-width bar gauge with `lit` of `MAX_GAUGE_BARS` segments lit, clamped to range. */
 function Gauge({ label, lit }: { label: string; lit: number }) {
   const clamped = Math.max(0, Math.min(MAX_GAUGE_BARS, lit));
   return (
@@ -48,13 +39,11 @@ function Gauge({ label, lit }: { label: string; lit: number }) {
   );
 }
 
-/** Reads/writes the same `vos:crt` key and `data-crt` attribute as
- * `CrtPrefScript.astro`'s inline script (Task 3.x), so the astro-side toggle (on
- * content pages, and on the linear layout hidden behind the shell) and this
- * shell-side toggle never disagree. Unlike `CrtToggle.astro` this needs no
- * `hidden`-until-`DOMContentLoaded` dance: the shell is a `client:only` island, so by
- * the time this ever renders the inline head script has already run and stamped
- * `data-crt` on `<html>`. */
+/**
+ * The CRT effect toggle. Shares the `vos:crt` key and `data-crt` attribute with
+ * `CrtPrefScript.astro` so the astro-side toggle and this one agree. It renders immediately
+ * because the island mounts after the head script has stamped `data-crt`.
+ */
 function CrtToggle() {
   const [on, setOn] = useState(() => document.documentElement.dataset.crt !== 'off');
 
@@ -76,8 +65,7 @@ function CrtToggle() {
   );
 }
 
-/** 24-hour, minute granularity — plenty for a HUD clock, and cheaper than
- * per-second re-renders. */
+/** A 24-hour `HH:MM` clock that refreshes every 15 seconds. */
 function Clock() {
   const [now, setNow] = useState(() => new Date());
 
@@ -103,8 +91,6 @@ export default function Taskbar() {
   const focus = useShellStore((state) => state.focus);
   const minimise = useShellStore((state) => state.minimise);
   const restore = useShellStore((state) => state.restore);
-  // Task 10.4: the `effects` slice now exists, so `VEC` reads the live value —
-  // `'standby'` until Phase 12 ever sets it to `'running'`.
   const vector = useShellStore((state) => state.effects.vector);
 
   const launchers = mounts
@@ -116,8 +102,7 @@ export default function Taskbar() {
     if (win.minimised) {
       restore(win.id);
       focus(win.id);
-      // The window's title only becomes focusable again once its `display: none` is
-      // lifted by the re-render the two calls above trigger.
+      // The title is focusable only after the re-render lifts its `display: none`.
       requestAnimationFrame(() => {
         document.getElementById(`${win.id}-title`)?.focus();
       });

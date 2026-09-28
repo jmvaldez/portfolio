@@ -1,24 +1,24 @@
-// Schema pieces for the three content collections (ticket 05 § Schemas, D6, D7).
+// Schema pieces for the `projects`, `drones`, and `pages` collections.
 //
-// This file imports only `astro/zod`, never `astro:content`, so it can be unit-tested
-// directly (`schemas.test.ts`) without pulling in Astro's content-layer machinery. The
-// real `image()` schema helper is supplied by Astro's collection `schema` function at
-// build time; here it is just a parameter typed loosely enough for a test double.
+// Imports only `astro/zod`, never `astro:content`, so it can be unit-tested without
+// Astro's content layer. The `image()` helper is passed in by Astro's collection `schema`
+// function at build time, typed loosely enough here for a test double.
 
 import { z } from 'astro/zod';
 
 /** The shape of Astro's `image()` schema helper, narrowed to what this file needs. */
 export type ImageSchema = () => z.ZodType;
 
-/** D6: `{ start: 'YYYY' | 'YYYY-MM', end?: 'YYYY' | 'YYYY-MM' | 'present' }`. */
+/** A `YYYY` or `YYYY-MM` string. */
 const yearOrMonth = z.string().regex(/^\d{4}(-(0[1-9]|1[0-2]))?$/, 'expected YYYY or YYYY-MM');
 
+/** A `start` and optional `end`; `end` may also be `'present'`. */
 export const period = z.object({
   start: yearOrMonth,
   end: z.union([yearOrMonth, z.literal('present')]).optional(),
 });
 
-/** D7: a footage item, with an optional poster frame (a framed ▶ glyph otherwise). */
+/** A footage item with an optional poster frame. */
 export function footageItem(image: ImageSchema) {
   return z.object({
     label: z.string(),
@@ -72,7 +72,7 @@ export function droneSchema(image: ImageSchema) {
   });
 }
 
-/** A supporting entry nested under a project or drone build (ticket 05 § Nesting). */
+/** A supporting entry nested under a project or drone build. */
 export function noteSchema() {
   return z.object({
     type: z.literal('note'),

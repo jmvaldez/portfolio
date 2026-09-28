@@ -1,10 +1,6 @@
-// Dispatches a window's body content by node kind (ticket 05 § "the window holds the
-// full body... a directory opens a folder window... one component, but it is a
-// second window type"). Kept separate from `launch.ts`: that module decides whether
-// something can be opened at all, this one decides how the open window's body
-// renders — a `dir`/`file`/`text` node always reaches here once its window exists,
-// but an `app` node's actual component comes from the registry, and a `link` node
-// never gets a window in the first place (`launch.ts` never opens one).
+// Renders a window's body according to its node's kind. Separate from `launch.ts`, which
+// decides whether something can be opened at all. An `app` node's component comes from the
+// registry, and a `link` node never gets a window.
 import { Suspense } from 'react';
 import type { FsNode } from '~/fs/types';
 import { appRegistry } from '../apps/registry';
@@ -30,15 +26,13 @@ export default function WindowBody({ node, windowId }: Props) {
     case 'app': {
       const registration = node.app !== undefined ? appRegistry[node.app] : undefined;
       if (!registration) {
-        // `launch()` refuses an unregistered app before a window like this one could
-        // even open — reaching here means a window was opened some other way. Phase
-        // 11/12 register `terminal`/`viewer`; nothing does yet.
+        // `launch()` refuses an unregistered app, so reaching here means a window was
+        // opened some other way.
         return <p className="body-error">This app isn&rsquo;t available yet.</p>;
       }
       const App = registration.component;
-      // `component` may be a `React.lazy()` value (`AppRegistration`'s own type),
-      // which requires a `Suspense` boundary somewhere above it or an unmounted
-      // dynamic import throws instead of suspending quietly.
+      // `component` may be a `React.lazy()` value, which needs a `Suspense` boundary above
+      // it.
       return (
         <Suspense
           fallback={

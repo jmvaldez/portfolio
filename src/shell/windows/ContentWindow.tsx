@@ -1,12 +1,7 @@
-// A window holding a `file` or `text` node's body (ticket 05 § "the window holds the
-// full body"; ticket 12 § Window versus page). Carries the one-line spec strip
-// (`node.strip`) under the title bar, the fetched (or inline, for `text`) body, the
-// resume window's `DOWNLOAD PDF` link (ticket 15), and — when the body overflows the
-// window — the persistent `READ FULL PAGE` bar to the node's page (ticket 09).
-//
-// What this component does NOT carry, on purpose (ticket 12 § "the page alone
-// carries"): breadcrumbs, the full spec block, cover, gallery, footage, children
-// listing, prev/next. Those are the page's job.
+// A window holding a `file` or `text` node's body: the one-line spec strip, the fetched (or
+// inline, for `text`) body, the resume window's download link, and, when the body overflows
+// the window, a persistent "read full page" bar linking to the node's page. Breadcrumbs, the
+// full spec block, and other page-only content are deliberately left to the page.
 import { useEffect, useRef, useState } from 'react';
 import type { FsNode } from '~/fs/types';
 import { fetchBody } from '../bodies';
@@ -40,12 +35,9 @@ export default function ContentWindow({ node }: Props) {
     };
   }, [node, isText]);
 
-  // Overflow detection for the `READ FULL PAGE` bar (ticket 12: "a body taller than
-  // its window shows a persistent amber READ FULL PAGE bar"). `wrapRef`'s own parent
-  // is `Window.tsx`'s `.window-body` — the scrollable container with the fixed
-  // content-area height — so both elements are watched: the wrapper's box changes
-  // when content loads or reflows, the container's box changes when the window is
-  // resized, and either can flip whether the content overflows.
+  // Detects overflow for the "read full page" bar. The wrapper's parent is `Window.tsx`'s
+  // scrollable `.window-body`. Both are observed: the wrapper resizes when content loads or
+  // reflows, the container when the window resizes, and either can flip the overflow.
   useEffect(() => {
     const el = wrapRef.current;
     const container = el?.parentElement;
@@ -60,12 +52,9 @@ export default function ContentWindow({ node }: Props) {
 
   const isResume = node.entry?.collection === 'pages' && node.entry.id === 'resume';
 
-  // Restores this window's saved scroll position (Task 10.3, ticket 09 § State
-  // across the round trip) once its body is actually ready — before then, the
-  // scrollable ancestor (`Window.tsx`'s `.window-body`) hasn't grown to its real
-  // `scrollHeight` yet, so setting `scrollTop` any earlier would just clamp to 0.
-  // `text` nodes render their content synchronously, so `isText` counts as ready
-  // immediately.
+  // Restores the saved scroll position once the body is ready. Earlier, the scrollable
+  // ancestor hasn't reached its real `scrollHeight`, so the position would clamp to 0.
+  // `text` nodes render synchronously and are ready immediately.
   const ready = isText || state.status === 'loaded' || state.status === 'error';
   useEffect(() => {
     if (!ready) return;

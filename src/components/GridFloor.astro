@@ -1,13 +1,9 @@
 ---
-// The ambient grid, without the island (ticket 11 § "The 3D layer, without the island";
-// D19: one source for the grid on every surface that isn't the shell's WebGL canvas). A
-// pure-CSS, perspective-transformed `linear-gradient` floor in Commodore blue (`--grid`).
-// Confined to whatever positioned ancestor hosts it — the linear layout's masthead band
-// (`Masthead.astro`), or a page's margins around its frame (`PageLayout.astro`) — never
-// placed inside a Section or a page's `.prose`, so it's never rendered behind body copy.
-// Global (not scoped) so the shell's fallback floor (`SceneLayer.tsx`, D19) renders the
-// same rules from the same source. `aria-hidden`, decorative only, and never animated (map Hazards: an animated static
-// overlay would trigger WCAG 2.2.2's pause/stop/hide requirement).
+// Decorative pure-CSS perspective grid floor in `--grid` blue. Place it inside a
+// positioned ancestor that has no body copy over it (the masthead band, a page's margins).
+// Global rather than scoped so the shell's fallback floor renders the same rules.
+// `aria-hidden` and never animated: an animated overlay would need a pause control under
+// WCAG 2.2.2.
 ---
 
 <div class="grid-floor" aria-hidden="true"></div>

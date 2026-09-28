@@ -1,9 +1,6 @@
 ---
-// Siblings in D10 (folder-listing) order (ticket 12 § Prev/next). Notes are out of their
-// parent's sequence: they neither occupy a position nor interrupt one, which falls out
-// naturally here from filtering them out of `siblings` before finding this node's index.
-// No wraparound. Absent entirely on `pages` entries — the caller in `[...path].astro`
-// simply never renders this component for them.
+// Previous and next siblings in folder-listing order, without wraparound. Notes are
+// filtered out, so they neither occupy nor interrupt the sequence.
 import type { FsNode, FsTree } from '~/fs/types';
 
 interface Props {

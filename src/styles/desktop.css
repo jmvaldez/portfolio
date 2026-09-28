@@ -1,9 +1,7 @@
 /*
- * Phase 10's own shell chrome: desktop icons, the shell's `Taskbar.tsx` (distinct
- * from `TaskbarStrip.astro`'s linear-layout strip, D14), the taskbar gauges (ticket
- * 06 § gauges, D18), a window's spec strip and `READ FULL PAGE` bar (ticket 12), and
- * the folder-window row reset (`FolderWindow.tsx` reuses `.folder-row-link` from
- * `chrome.css` but on a `<button>`, which needs its native chrome stripped).
+ * Shell chrome: desktop icons, the shell taskbar (`Taskbar.tsx`) and its gauges, a
+ * window's spec strip and READ FULL PAGE bar, the kill-feed toasts, and the folder-row
+ * reset for `FolderWindow.tsx`, which reuses `.folder-row-link` on a `<button>`.
  */
 
 .desktop-icons {
@@ -23,8 +21,8 @@
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  /* Sized to the longest label rather than a fixed 72px: filenames are short, and a
-     fixed width broke every one of them at the dot ("about.tx / t"). */
+  /* Sized to the longest label: a fixed width broke filenames at the dot ("about.tx /
+     t"). */
   min-width: 72px;
   width: 100%;
   padding: 6px 4px;
@@ -53,8 +51,7 @@
   white-space: nowrap;
 }
 
-/* `Taskbar.tsx` — the shell's own strip, live shell state (`TaskbarStrip.astro`'s
-   linear-layout strip has neither gauges nor window buttons, by its own design). */
+/* The shell's own taskbar strip, showing live shell state (gauges and window buttons). */
 .taskbar {
   position: fixed;
   inset-inline: 0;
@@ -144,8 +141,7 @@
   font-feature-settings: 'zero';
 }
 
-/* The window's one-line spec strip (ticket 12 § Window versus page): condensed,
-   uppercase, already formatted by `src/fs/tree.ts`. */
+/* The window's one-line spec strip: condensed, uppercase. */
 .spec-strip {
   margin: 0 0 var(--pad);
   padding-bottom: 0.5em;
@@ -168,10 +164,8 @@
   color: var(--ink-faint);
 }
 
-/* Inside a window, the window's own (resizable) width is the reading measure:
-   `.prose`'s 58ch cap is for the standalone content pages, and in a window it left
-   a narrow dark column in one corner of an otherwise empty body. The body takes
-   the prose surface colour so the reading area is the whole window. */
+/* Inside a window, the window's own width is the reading measure. `.prose`'s 58ch cap
+   left a narrow dark column in one corner of an otherwise empty body. */
 .window-body:has(> .content-window) {
   background: var(--body-bg);
 }
@@ -180,15 +174,12 @@
   max-width: none;
 }
 
-/* Persistent, not a transient toast (ticket 12: "a persistent amber READ FULL PAGE
-   bar"). `position: sticky` within `.window-body`'s own `overflow: auto` keeps it at
-   the bottom of the visible content area while the body scrolls, with no JS
-   positioning of its own. */
+/* Persistent bar, not a transient toast. `position: sticky` keeps it at the bottom of
+   the visible content area while `.window-body` scrolls, with no JS positioning. */
 .read-full-page {
   position: sticky;
-  /* Sticks to the scrollport's edge, not the top of `.window-body`'s bottom
-     padding — at `bottom: 0` body text scrolled visibly through that padding
-     strip underneath the bar. The negative margins make it span the full body. */
+  /* Sticks to the scrollport's edge: at `bottom: 0`, body text scrolled visibly through
+     the padding strip beneath the bar. The negative margins make it span the body. */
   bottom: calc(-1 * var(--pad));
   display: block;
   margin: var(--pad) calc(-1 * var(--pad)) calc(-1 * var(--pad));
@@ -205,10 +196,8 @@
   color: var(--ink);
 }
 
-/* The kill-feed toast stack (ticket 06 § the FPS layer, Task 10.4): top-right,
-   newest at the bottom of the DOM order but visually stacked so the newest reads
-   closest to the top — `column-reverse` keeps the newest toast's entrance the one
-   that doesn't reflow everything already on screen. */
+/* The kill-feed toast stack, top-right. `column-reverse` stacks the newest toast at
+   the top, and its entrance is the one that doesn't reflow the toasts already shown. */
 .toasts {
   position: fixed;
   top: var(--pad);
@@ -241,9 +230,7 @@
   color: var(--ink);
 }
 
-/* `FolderWindow.tsx` reuses `.folder-row-link` (`chrome.css`, shared with
-   `FolderListing.astro`) on a `<button>` instead of an `<a>`/`<span>` — this resets
-   the native button chrome the other two usages never had. */
+/* Strips the native button chrome that `.folder-row-link` never needed on `<a>`/`<span>`. */
 button.folder-row-link {
   all: unset;
   display: grid;

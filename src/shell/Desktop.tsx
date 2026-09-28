@@ -1,13 +1,9 @@
-// The desktop surface (ticket 14 § Shell structure, § Round 2; map Hazards: the skip
-// link and the opaque-surface trap). Phase 9 grows `#desktop` into the window
-// manager itself — Phase 10 adds the desktop icons and the taskbar on top of it.
+// The desktop surface: window manager, desktop icons, taskbar, and skip link.
 //
-// The shared `role="status"` region lives in `Shell.tsx`, not here, even though the
-// phase doc lists it under `Desktop`: narrowing past the breakpoint unmounts this
-// component in the same tick it announces "Switched to text layout" (ticket 14
-// § Live swap), and a status region that's removed before a screen reader observes
-// the mutation never gets read out. `Shell.tsx` always exists (it's the island root),
-// so hosting the region there is the only way that announcement survives.
+// The shared `role="status"` region lives in `Shell.tsx`, not here: narrowing past the
+// breakpoint unmounts this component in the same tick it announces "Switched to text
+// layout", and a status region removed before a screen reader observes the mutation is
+// never read out. `Shell.tsx` is the island root and always exists.
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { setLayoutOverride } from '~/lib/storage';
 import DesktopIcons from './DesktopIcons';
@@ -24,10 +20,8 @@ import Window from './wm/Window';
 import WindowBody from './windows/WindowBody';
 import { useShellStore } from './store';
 
-/** The Konami code (Task 10.4, ticket 08 § Easter eggs), matched on `KeyboardEvent`'s
- * layout-independent `code` rather than `key` — `ArrowUp` etc. are already
- * layout-independent, but `KeyB`/`KeyA` are not the same as `key === 'b'/'a'` under a
- * non-QWERTY layout. */
+/** The Konami code, matched on `KeyboardEvent.code` because `key` for B and A varies
+ * under non-QWERTY layouts. */
 const KONAMI_CODE = [
   'ArrowUp',
   'ArrowUp',
@@ -42,38 +36,24 @@ const KONAMI_CODE = [
 ];
 
 export interface DesktopHandle {
-  /** Focuses the desktop's own h1 — the widen fallback (ticket 14 § Live swap:
-   * "else the desktop h1") when there's no counterpart window yet to focus, and
-   * ticket 14's own "first desktop icon" fallback for `close()`'s focus target
-   * (Phase 9 has no desktop icons yet — Phase 10 — so this heading stands in). */
+  /** Focuses the desktop's own h1: the fallback focus target when no window is available. */
   focusHeading: () => void;
 }
 
 interface Props {
-  /** Called when the skip link is activated: `Shell.tsx` stops rendering `Desktop`
-   * from then on. `Desktop` itself only sets the override and drops the `shell`
-   * class; it never decides whether it keeps rendering. */
+  /** Called when the skip link is activated; the parent stops rendering `Desktop`. */
   onSkip: () => void;
-  /** Fires once this mount's window set is settled — either D16's seed, a restored
-   * `vos:layout`, or (a widen remount, ticket 11 § Crossing it mid-session) skipped
-   * outright because windows from the previous mount are still in the store.
-   * `Shell.tsx`'s readiness announcement (ticket 14 § Boot and resume) waits on this
-   * so it never reads `windows.length` before the async `ResizeObserver` round trip
-   * that gates this effect has actually run (Task 10.3). */
+  /** Called once this mount's window set is settled: seeded, restored from `vos:layout`, or
+   * left alone because windows from a previous mount are still in the store. */
   onSeeded?: () => void;
 }
 
-/** D16's seed layout, as fractions of the desktop — never fixed pixels (map Hazards).
- * `viewer.exe` (Phase 12) and `terminal.exe` (Phase 11) are both registered, so both
- * seeds are in, at D16's own fractions. `about.txt`/`projects` sit a few points right of
- * D16's originals so neither opens over the desktop icon column.
+/**
+ * The first-visit window layout, as fractions of the desktop rather than fixed pixels.
  *
- * Listed FIRST, not last: `store.open()` always focuses whatever it just opened
- * (`store.ts`), and D16 requires the terminal "unfocused" while the other seeds
- * carry no such requirement — opening it first means `about.txt` then `projects`
- * each steal focus back in turn, leaving `projects` focused and the terminal not.
- * `viewer.exe` sits right behind it for the same reason. Ordering the array is the whole mechanism; nothing else
- * needs to special-case the terminal's focus. */
+ * Order matters: `store.open()` focuses whatever it opens, so the terminal and viewer are
+ * listed first to leave `projects` focused and the terminal unfocused.
+ */
 const SEEDS: ReadonlyArray<{ path: string; seed: SeedFraction }> = [
   { path: '/bin/terminal.exe', seed: { x: 0.02, y: 0.62, w: 0.32, h: 0.34 } },
   { path: '/bin/viewer.exe', seed: { x: 0.5, y: 0.42, w: 0.34, h: 0.48 } },
@@ -101,9 +81,7 @@ const Desktop = forwardRef<DesktopHandle, Props>(function Desktop({ onSkip, onSe
     focusHeading: () => headingRef.current?.focus(),
   }));
 
-  // Tracks `#desktop`'s own box live (Task 9.4 § rescue clamp) — the same
-  // measurement both the seed effect converts D16's fractions against and the
-  // rescue effect below reacts to.
+  // Tracks `#desktop`'s box; the seed and rescue effects below both depend on it.
   useEffect(() => {
     const el = desktopRef.current;
     if (!el) return;
@@ -117,10 +95,8 @@ const Desktop = forwardRef<DesktopHandle, Props>(function Desktop({ onSkip, onSe
     return () => observer.disconnect();
   }, []);
 
-  // Task 9.4: a floor ahead of ticket 11's own breakpoint listener — every window's
-  // title bar stays reachable through the moments before that listener fires. Reads
-  // `windows` fresh from the store rather than depending on it, so the pass this
-  // effect itself causes (via `setRect`) never re-triggers itself.
+  // Keeps every window's title bar reachable when the desktop shrinks. Reads `windows`
+  // from the store rather than depending on it, so its own `setRect` calls don't retrigger it.
   useEffect(() => {
     if (desktopSize.width === 0 && desktopSize.height === 0) return;
     for (const win of useShellStore.getState().windows) {
@@ -131,15 +107,10 @@ const Desktop = forwardRef<DesktopHandle, Props>(function Desktop({ onSkip, onSe
     }
   }, [desktopSize, setRect]);
 
-  // D16's seed layout, or Task 10.3's restored `vos:layout` — opened once the
-  // desktop has both a real size to convert fractions (or rescue stored rects)
-  // against and a tree to check registration against. Deliberately calls `open()`/
-  // `applyStoredLayout()` directly rather than moving focus to any window afterward
-  // — ticket 14 § Boot and resume: "focus is not moved" on the passive ready path,
-  // and this seeding is part of that same first paint, not an interactive open. A
-  // widen remount (ticket 11) re-runs this effect against a fresh `seededRef`, but
-  // the store's own `windows` survive the remount — the length check below is what
-  // stops it from re-seeding or re-restoring on top of what's already there.
+  // Opens the stored layout, or the seeds, once the desktop has a measured size and the
+  // tree is loaded. Focus is deliberately not moved afterward: this is part of the first
+  // paint, not an interactive open. A widen remount gets a fresh `seededRef` but the store's
+  // windows survive it, so the length check stops a second seeding.
   useEffect(() => {
     if (seededRef.current || !tree) return;
     if (desktopSize.width === 0 && desktopSize.height === 0) return;
@@ -151,7 +122,7 @@ const Desktop = forwardRef<DesktopHandle, Props>(function Desktop({ onSkip, onSe
         applyStoredLayout(stored, tree, desktopSize);
       } else {
         for (const { path, seed } of SEEDS) {
-          if (!tree[path]) continue; // D16: an unregistered app's seed is skipped
+          if (!tree[path]) continue; // Seeds for unregistered apps are skipped.
           open(path);
           setRect(path, seedToRect(seed, desktopSize));
         }
@@ -160,22 +131,18 @@ const Desktop = forwardRef<DesktopHandle, Props>(function Desktop({ onSkip, onSe
     onSeeded?.();
   }, [tree, desktopSize, open, setRect, onSeeded]);
 
-  // Task 10.3: writes `vos:layout` on every committed windows-related change
-  // (debounced) and synchronously on `pagehide`. Re-wired on every mount/unmount —
-  // cheap, and it keeps a narrow/widen remount from ever holding two subscriptions.
+  // Persists the layout to `vos:layout`; re-wired per mount so remounts never hold two
+  // subscriptions.
   useEffect(() => initPersistence(), []);
 
-  // Map Hazards: a leftover inline `view-transition-name` from a promotion click
-  // must be cleared if the visitor navigates back into a bfcache-restored `/`
-  // (Task 10.3), or it collides with the next promotion's own assignment.
+  // A `view-transition-name` left over from a promotion click must be cleared when a
+  // bfcache-restored `/` is shown, or it collides with the next promotion's.
   useEffect(() => {
     window.addEventListener('pageshow', clearStalePromotionName);
     return () => window.removeEventListener('pageshow', clearStalePromotionName);
   }, []);
 
-  // The Konami code (Task 10.4, ticket 08 § Easter eggs): ignored while focus is in
-  // a text input/textarea/contenteditable element, reset on any wrong key. Delivers
-  // only the state change and the toast here — the visual grid tint is Phase 12's.
+  // Konami code: ignored while focus is in an editable element, reset on any wrong key.
   useEffect(() => {
     let progress = 0;
 
@@ -204,24 +171,16 @@ const Desktop = forwardRef<DesktopHandle, Props>(function Desktop({ onSkip, onSe
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Backtick, Quake-style (Task 11.3, ticket 08 § Keys): opens or focuses the
-  // terminal; if it's already the focused window, minimises it and returns focus to
-  // whatever held it before. Never fires during the boot (the inline head script's
-  // own capture-phase listener swallows keys there too, but that lives in a
-  // separate `<script>` this React listener can't see, so it needs its own guard),
-  // and never fires while focus is in a text field OTHER than the terminal's own
-  // input (ticket 14 § Terminal) — typing a literal backtick into the terminal
-  // still toggles it, exactly like Quake's own console key.
+  // Backtick toggles the terminal: opens or focuses it, or minimises it when already
+  // focused and returns focus to its previous holder. Ignored during boot and while focus
+  // is in a text field other than the terminal's own input.
   useEffect(() => {
     let previouslyFocused: HTMLElement | null = null;
 
     function handleKeyDown(e: KeyboardEvent): void {
       if (e.key !== '`') return;
-      // `html.boot` (`HeadGate.astro`) marks "this tab went through a boot", not
-      // "a boot is playing right now" — it's never removed on the passive
-      // ready path (only a narrowing swap or the 6s hard timeout clears it), so a
-      // boot is actually still in progress only while it's set *and* `shell-ready`
-      // hasn't landed yet.
+      // `html.boot` means this tab went through a boot and is not always cleared afterward,
+      // so a boot is in progress only while it is set and `shell-ready` is not.
       const html = document.documentElement;
       if (html.classList.contains('boot') && !html.classList.contains('shell-ready')) return;
 
@@ -271,24 +230,17 @@ const Desktop = forwardRef<DesktopHandle, Props>(function Desktop({ onSkip, onSe
     else titleRefs.current.delete(id);
   }, []);
 
-  // Resolves ticket 14's focus-on-close priority into a real `.focus()` call —
-  // `store.close()` only returns a descriptor, since it has no DOM nodes to call
-  // `.focus()` on itself.
+  // Turns the focus target that `store.close()` returns into a real `.focus()` call.
   const handleClose = useCallback(
     (id: string) => {
       const target = close(id);
       if (target.type === 'icon') {
-        // Ticket 14's own fallback ("first desktop icon") doesn't exist yet
-        // (Phase 10) — the desktop heading is the best available stand-in.
+        // The desktop heading stands in for an icon as the focus target.
         headingRef.current?.focus();
         return;
       }
-      // Phase 9 has no shell taskbar yet either (Phase 10), so a `taskbar` target
-      // resolves the same way a `window` target does: focus now lives on the
-      // window itself, which is exactly what a taskbar button or the reopened
-      // opener would otherwise hand focus to — unless that window is minimised,
-      // in which case its title is hidden (`display: none`) and unfocusable, so
-      // the desktop heading is the fallback instead.
+      // A `taskbar` target resolves like a `window` target: focus the window's title,
+      // unless it is minimised (title is `display: none`), then the desktop heading.
       const win = useShellStore.getState().windows.find((w) => w.id === target.id);
       if (win && !win.minimised) {
         titleRefs.current.get(target.id)?.focus();
@@ -300,8 +252,7 @@ const Desktop = forwardRef<DesktopHandle, Props>(function Desktop({ onSkip, onSe
   );
 
   function handleSkip(): void {
-    // Ticket 14 § Strategy: sets the layout override, which is what makes the
-    // linear layout a conforming alternate version rather than a mobile-only view.
+    // The override makes the linear layout a persistent alternate, not a mobile-only view.
     setLayoutOverride(true);
     document.documentElement.classList.remove('shell', 'shell-ready');
     onSkip();
@@ -312,27 +263,19 @@ const Desktop = forwardRef<DesktopHandle, Props>(function Desktop({ onSkip, onSe
       <h1 className="sr-only" tabIndex={-1} ref={headingRef}>
         valdez-os desktop
       </h1>
-      {/* The literal first Tab stop (ticket 14 § "carries a skip link, first in the
-          tab order"): the `h1` above is only programmatically focusable
-          (`tabIndex={-1}`), so this button is genuinely first in the natural tab
-          sequence. Never hidden by anything other than its own focus-visibility
-          CSS (map Hazards). */}
+      {/* First in the natural tab order: the `h1` above is only programmatically focusable.
+          Hidden only by its own focus-visibility CSS. */}
       <button type="button" className="skip-link" onClick={handleSkip}>
         Skip to text layout
       </button>
-      {/* Map Hazards: an opaque `#desktop` background silently hides whatever sits
-          behind it — the shared WebGL canvas (`SceneLayer`, Phase 12) goes there. The
-          ground fill belongs on an ancestor (`body`, `global.css`); this surface
-          stays transparent on purpose. Before `#desktop` in the DOM so the fixed
-          canvas paints beneath it. */}
+      {/* `#desktop` stays transparent so the shared WebGL canvas shows through; the ground
+          fill lives on `body`. The canvas precedes `#desktop` in the DOM so it paints beneath. */}
       <SceneLayer desktopRef={desktopRef} />
       <div id="desktop" ref={desktopRef}>
         <DesktopIcons />
         {windows.map((win) => {
           const node = tree?.[win.id];
-          // `exactOptionalPropertyTypes`: an absent maximise box must be an absent
-          // key, not an explicit `undefined` value (same convention as `store.ts`'s
-          // own `opener`).
+          // `exactOptionalPropertyTypes`: an absent maximise box must be an absent key.
           const maximiseProps = node?.url ? { maximiseSlot: <MaximiseBox node={node} /> } : {};
           return (
             <Window

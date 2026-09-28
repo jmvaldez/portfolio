@@ -9,8 +9,7 @@ function node(partial: Partial<FsNode> & Pick<FsNode, 'path' | 'name' | 'kind' |
   return partial;
 }
 
-// A hand-built tree standing in for `buildTree`'s output (kept independent of `fs/tree`
-// so this file tests `pageMeta` in isolation, per the same discipline as `fs/tree.test.ts`).
+// A hand-built tree standing in for `buildTree`'s output, to test `pageMeta` in isolation.
 const tree: FsTree = {
   '/': node({ path: '/', name: '', kind: 'dir', title: 'Root', children: ['/projects'] }),
   '/projects': node({
@@ -37,7 +36,7 @@ const tree: FsTree = {
     url: '/projects/orbital-mesh/',
     summary: 'A distributed mesh scheduler.',
   }),
-  // A note with no summary of its own (ticket 18 § Meta: falls back to the parent's).
+  // A note with no summary of its own falls back to the parent's.
   '/projects/orbital-mesh/notes.md': node({
     path: '/projects/orbital-mesh/notes.md',
     name: 'notes.md',
@@ -45,8 +44,7 @@ const tree: FsTree = {
     title: 'Scheduler tuning notes',
     url: '/projects/orbital-mesh/notes/',
   }),
-  // A folder with no readme and no summary anywhere in the chain — the "else" case,
-  // must fall all the way to SITE_DESCRIPTION without throwing.
+  // A folder with no readme and no summary in the chain falls back to SITE_DESCRIPTION.
   '/empty-folder': node({
     path: '/empty-folder',
     name: 'empty-folder',
@@ -117,7 +115,7 @@ describe('pageMeta', () => {
     expect(meta.canonical).toBe(`${SITE}/`);
   });
 
-  it('builds the OG image path from the URL per D22, not the node path', () => {
+  it('builds the OG image path from the page URL, not the node path', () => {
     const meta = pageMeta(tree['/projects/orbital-mesh/readme.md'], tree, SITE);
     expect(meta.ogImage).toBe(`${SITE}/og/projects/orbital-mesh.png`);
   });
@@ -132,7 +130,7 @@ describe('pageMeta', () => {
     expect(meta.ogImageAlt).toBe(meta.title);
   });
 
-  it('never implies noindex anywhere in the emitted meta (ticket 18: nothing is hidden)', () => {
+  it('never emits noindex: every page is meant to be indexed', () => {
     for (const candidate of [undefined, tree['/about.txt'], tree['/empty-folder']]) {
       const meta = pageMeta(candidate, tree, SITE);
       expect(JSON.stringify(meta).toLowerCase()).not.toContain('noindex');

@@ -1,10 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { useShellStore } from '../store';
 
-// zustand's own recommended test pattern for a module-level store: snapshot the
-// store's initial state once, then reset to it before each test rather than
-// reconstructing a fresh store per test (the store is a singleton — `Shell.tsx`
-// imports the same `useShellStore` this file does, per D17).
+// The store is a module-level singleton, so snapshot its initial state and reset to it
+// before each test.
 const INITIAL_STATE = useShellStore.getState();
 
 beforeEach(() => {
