@@ -1,0 +1,99 @@
+/*
+ * The hand-rolled window manager's own chrome (ticket 04 § Behaviour; `Window.tsx`,
+ * `SnapPreview.tsx`). Scoped to `.frame[data-window]` rather than `.frame` itself —
+ * `.frame` is D14's shared primitive, also used by the Astro `Frame.astro` component
+ * for ordinary in-flow Sections and page frames, and this file's absolute-positioning
+ * and flex layout must never leak onto those.
+ */
+
+.frame[data-window] {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.window-body {
+  flex: 1;
+  overflow: auto;
+  padding: var(--pad);
+}
+
+.minbox {
+  color: var(--accent);
+}
+
+/* The 8 invisible edge/corner resize handles (ticket 04 § Shared: "8-way resize").
+   Each sits just inside the frame's own border so it never steals clicks from the
+   3px bevel itself, and never renders — the cursor is the only affordance, same as
+   every other OS's own window manager. */
+.resize-handle {
+  position: absolute;
+  z-index: 1;
+}
+
+.resize-n,
+.resize-s {
+  left: 8px;
+  right: 8px;
+  height: 6px;
+}
+
+.resize-n {
+  top: 0;
+}
+
+.resize-s {
+  bottom: 0;
+}
+
+.resize-e,
+.resize-w {
+  top: 8px;
+  bottom: 8px;
+  width: 6px;
+}
+
+.resize-e {
+  right: 0;
+}
+
+.resize-w {
+  left: 0;
+}
+
+.resize-ne,
+.resize-nw,
+.resize-se,
+.resize-sw {
+  width: 10px;
+  height: 10px;
+}
+
+.resize-ne {
+  top: 0;
+  right: 0;
+}
+
+.resize-nw {
+  top: 0;
+  left: 0;
+}
+
+.resize-se {
+  bottom: 0;
+  right: 0;
+}
+
+.resize-sw {
+  bottom: 0;
+  left: 0;
+}
+
+/* The snap-zone preview (ticket 04: "a dashed preview of the target shows during the
+   drag"). Amber, dashed, never solid — it must never be mistaken for a real frame. */
+.snap-preview {
+  border: 2px dashed var(--edge-hot);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--edge-hot) 12%, transparent);
+  pointer-events: none;
+}
