@@ -12,7 +12,10 @@
  * animated CRT would trigger WCAG 2.2.2's pause/stop/hide requirement).
  */
 
-html[data-crt='on'] .scan {
+/* Zero specificity via `:where()`: `.scan` only needs *a* containing block for its
+   `::after`, so any element that already positions itself (the fixed `.taskbar`)
+   keeps its own `position` rather than being knocked back into flow. */
+:where(html[data-crt='on'] .scan) {
   position: relative;
 }
 

@@ -361,8 +361,17 @@ export default function Terminal({ windowId }: AppProps) {
     return () => observer.disconnect();
   }, []);
 
+  // A click anywhere in the terminal lands on the prompt, as in a real terminal — the
+  // input itself is only the one line beside the prompt. A drag that selected log
+  // text is left alone so it can still be copied.
+  function focusInputOnClick(): void {
+    if (window.getSelection()?.isCollapsed === false) return;
+    inputRef.current?.focus();
+  }
+
   return (
-    <div className="terminal">
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- pointer convenience only; the input is keyboard-reachable on its own
+    <div className="terminal" onClick={focusInputOnClick}>
       <span
         ref={measureRef}
         aria-hidden="true"

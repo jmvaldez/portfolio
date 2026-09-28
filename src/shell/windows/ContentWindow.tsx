@@ -75,7 +75,7 @@ export default function ContentWindow({ node }: Props) {
   }, [ready, node.path]);
 
   return (
-    <div ref={wrapRef}>
+    <div ref={wrapRef} className="content-window">
       {node.strip && <p className="spec-strip">{node.strip}</p>}
       {isResume && (
         <p className="resume-download">

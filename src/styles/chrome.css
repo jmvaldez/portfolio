@@ -28,6 +28,17 @@
   font-feature-settings: 'zero';
 }
 
+/* The title (always the bar's first child, `Window.tsx` and `chrome/Frame.astro`
+   alike) takes the slack, so the controls sit flush right. A long title truncates
+   rather than pushing them off the bar. */
+.titlebar > :first-child {
+  margin-inline-end: auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .titlebar[data-lit] {
   background: var(--chrome-hi);
   border-bottom-color: var(--edge-hot);

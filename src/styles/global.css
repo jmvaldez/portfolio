@@ -59,5 +59,8 @@
 
 body {
   background: var(--bg);
+  /* The default every `color: inherit` (taskbar buttons, folder rows) resolves to;
+     without it those fell through to the UA's black, on a near-black surface. */
+  color: var(--ink);
   font-family: var(--font-mono);
 }

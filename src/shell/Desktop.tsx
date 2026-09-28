@@ -65,7 +65,8 @@ interface Props {
 
 /** D16's seed layout, as fractions of the desktop — never fixed pixels (map Hazards).
  * `viewer.exe` (Phase 12) and `terminal.exe` (Phase 11) are both registered, so both
- * seeds are in, at D16's own fractions.
+ * seeds are in, at D16's own fractions. `about.txt`/`projects` sit a few points right of
+ * D16's originals so neither opens over the desktop icon column.
  *
  * Listed FIRST, not last: `store.open()` always focuses whatever it just opened
  * (`store.ts`), and D16 requires the terminal "unfocused" while the other seeds
@@ -76,8 +77,8 @@ interface Props {
 const SEEDS: ReadonlyArray<{ path: string; seed: SeedFraction }> = [
   { path: '/bin/terminal.exe', seed: { x: 0.02, y: 0.62, w: 0.32, h: 0.34 } },
   { path: '/bin/viewer.exe', seed: { x: 0.5, y: 0.42, w: 0.34, h: 0.48 } },
-  { path: '/about.txt', seed: { x: 0.04, y: 0.06, w: 0.26, h: 0.42 } },
-  { path: '/projects', seed: { x: 0.33, y: 0.06, w: 0.28, h: 0.42 } },
+  { path: '/about.txt', seed: { x: 0.09, y: 0.06, w: 0.26, h: 0.42 } },
+  { path: '/projects', seed: { x: 0.37, y: 0.06, w: 0.28, h: 0.42 } },
 ];
 
 const Desktop = forwardRef<DesktopHandle, Props>(function Desktop({ onSkip, onSeeded }, ref) {

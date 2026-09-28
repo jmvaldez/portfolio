@@ -10,7 +10,52 @@
 // window component.
 import { appRegistry } from './apps/registry';
 import { useShellStore } from './store';
+import { rescue } from './wm/geometry';
 import type { FsNode } from '~/fs/types';
+
+/** A launched window's size, as a fraction of the desktop (the same D16 terms as the
+ * seed layout, never fixed pixels), clamped so it opens readable on a small desktop
+ * and not sprawling on a large one. */
+const LAUNCH_W = 0.42;
+const LAUNCH_H = 0.62;
+const LAUNCH_MIN = { width: 420, height: 320 };
+const LAUNCH_MAX = { width: 900, height: 720 };
+/** Each open window offsets the next one by this much, so launches cascade rather
+ * than stack exactly on top of each other. */
+const CASCADE_STEP = 28;
+const CASCADE_WRAP = 6;
+
+/** `store.open()` places a new window at a placeholder rect; this gives a *newly*
+ * opened one its real, desktop-relative geometry. An already-open window is only
+ * raised — its user-chosen rect is left alone. */
+function openSized(path: string, opener: string | undefined): void {
+  const store = useShellStore.getState();
+  const isNew = !store.windows.some((w) => w.id === path);
+  if (opener !== undefined) store.open(path, opener);
+  else store.open(path);
+  if (!isNew) return;
+
+  const desktop = document.getElementById('desktop')?.getBoundingClientRect();
+  if (!desktop || desktop.width === 0) return;
+  const width = Math.min(
+    LAUNCH_MAX.width,
+    Math.max(LAUNCH_MIN.width, desktop.width * LAUNCH_W),
+    desktop.width,
+  );
+  const height = Math.min(
+    LAUNCH_MAX.height,
+    Math.max(LAUNCH_MIN.height, desktop.height * LAUNCH_H),
+    desktop.height,
+  );
+  const step = ((store.windows.length % CASCADE_WRAP) + 1) * CASCADE_STEP;
+  const rect = {
+    x: Math.max(0, (desktop.width - width) / 2 - CASCADE_STEP * 2 + step),
+    y: Math.max(0, (desktop.height - height) / 3 - CASCADE_STEP * 2 + step),
+    width,
+    height,
+  };
+  useShellStore.getState().setRect(path, rescue(rect, desktop));
+}
 
 /** Opens, focuses, or downloads `node`, dispatching on `node.kind` (ticket 05's five
  * node kinds). `opener` is the id (path) of whatever triggered the launch — a desktop
@@ -25,8 +70,7 @@ export function launch(node: FsNode, opener?: string): void {
       // Rendering differs by kind (`WindowBody.tsx` picks `FolderWindow` vs.
       // `ContentWindow`), but opening the window is identical: single-instance per
       // node, raised if already open (`store.ts`'s own `open()`).
-      if (opener !== undefined) useShellStore.getState().open(node.path, opener);
-      else useShellStore.getState().open(node.path);
+      openSized(node.path, opener);
       return;
 
     case 'app':
@@ -36,8 +80,7 @@ export function launch(node: FsNode, opener?: string): void {
       // with — reaching this branch with an unregistered app means some other caller
       // (Phase 11's terminal `open`) tried to open something that isn't wired up.
       if (node.app === undefined || !(node.app in appRegistry)) return;
-      if (opener !== undefined) useShellStore.getState().open(node.path, opener);
-      else useShellStore.getState().open(node.path);
+      openSized(node.path, opener);
       return;
 
     case 'link': {
