@@ -16,6 +16,17 @@ export const LAYOUT_OVERRIDE_KEY = 'vos:layout-override';
 export const BOOTED_KEY = 'vos:booted';
 export const LAYOUT_KEY = 'vos:layout';
 export const HISTORY_KEY = 'vos:history';
+/** Not one of D13's originally-enumerated keys — added by Phase 11 for ticket 08/10's
+ * motd rule: printed on "a session's first open" of the terminal and never again,
+ * including across a reload that restores an already-open terminal from `vos:layout`
+ * (ticket 14: "not announced, because the terminal opens unfocused" implies it's still
+ * in the log from the start on that first open, but absent on every later one).
+ * `sessionStorage` is exactly "session" scope, same reasoning as `BOOTED_KEY`. */
+export const TERMINAL_MOTD_KEY = 'vos:terminal-motd';
+
+/** How many typed commands `vos:history` keeps (ticket 08 § Keys: "last 100
+ * commands"). */
+const HISTORY_LIMIT = 100;
 
 export interface StoredLayout {
   v: 1;
@@ -105,5 +116,53 @@ export function setLayoutOverride(on: boolean): void {
     }
   } catch {
     // Private browsing etc.: the override simply doesn't persist.
+  }
+}
+
+/** Whether the terminal's motd (`valdez-os 1.0 · type 'help'`) has already printed
+ * this session — the session's very first terminal open, and never again, including
+ * across a reload that restores an already-open terminal (ticket 08, ticket 10 §
+ * "The terminal's motd"). */
+export function hasShownTerminalMotd(): boolean {
+  try {
+    return sessionStorage.getItem(TERMINAL_MOTD_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export function setTerminalMotdShown(): void {
+  try {
+    sessionStorage.setItem(TERMINAL_MOTD_KEY, '1');
+  } catch {
+    // Private browsing etc.: the motd may reprint on the next open, the safe fallback.
+  }
+}
+
+/** Safe read of `vos:history` (ticket 08 § Keys: "kept in sessionStorage alongside
+ * the window layout"). Returns `[]` on a missing, malformed, or inaccessible entry. */
+export function readHistory(): string[] {
+  try {
+    const raw = sessionStorage.getItem(HISTORY_KEY);
+    if (!raw) return [];
+    const parsed: unknown = JSON.parse(raw);
+    if (Array.isArray(parsed) && parsed.every((entry) => typeof entry === 'string')) {
+      return parsed;
+    }
+    return [];
+  } catch {
+    return [];
+  }
+}
+
+/** Appends `line` to `vos:history`, capped at the last `HISTORY_LIMIT` entries. A
+ * throw (quota, private browsing) is dropped rather than surfaced, same as every
+ * other write in this file. */
+export function appendHistory(line: string): void {
+  try {
+    const next = [...readHistory(), line].slice(-HISTORY_LIMIT);
+    sessionStorage.setItem(HISTORY_KEY, JSON.stringify(next));
+  } catch {
+    // Dropping the write is the safe fallback: history just doesn't grow this time.
   }
 }

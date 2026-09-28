@@ -16,6 +16,9 @@
    — see the file's own header for why these aren't folded into `chrome.css`
    or `wm.css`. */
 @import './desktop.css';
+/* Phase 11's terminal (`Terminal.tsx`) — scoped to `.terminal`, see the file's own
+   header for why it isn't folded into `desktop.css`. */
+@import './terminal.css';
 /* Print-only (ticket 15): the media qualifier gates the whole file, so nothing in it
    needs its own `@media print` wrapper. Applies to every page — a visitor may print
    any of them — and is also the stylesheet Task 5.2's headless render uses. */

@@ -52,11 +52,11 @@ test.describe('returning visit (reload)', () => {
     // by the time we look.
     //
     // This was originally written in Phase 8, when the desktop seeded no windows
-    // at all — "RESUME · DESKTOP RESTORED" was correct then. Phase 9/10's D16 seed
-    // now opens real windows (about.txt, projects), so the correct wording is the
-    // plural "N WINDOWS RESTORED" form. Matched by pattern, not a hardcoded count,
-    // so a future phase changing the seed list doesn't re-break this test over
-    // unrelated wording it was never meant to pin down.
+    // at all — "RESUME · DESKTOP RESTORED" was correct then. Phase 9-11's D16 seed
+    // now opens real windows (about.txt, projects, terminal.exe), so the correct
+    // wording is the plural "N WINDOWS RESTORED" form. Matched by pattern, not a
+    // hardcoded count, so a future phase changing the seed list doesn't re-break
+    // this test over unrelated wording it was never meant to pin down.
     await expect(page.locator('#restore-line')).toHaveText(
       /^RESUME · (DESKTOP|\d+ WINDOWS?) RESTORED$/,
     );
