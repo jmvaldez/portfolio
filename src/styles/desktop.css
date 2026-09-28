@@ -1,0 +1,246 @@
+/*
+ * Phase 10's own shell chrome: desktop icons, the shell's `Taskbar.tsx` (distinct
+ * from `TaskbarStrip.astro`'s linear-layout strip, D14), the taskbar gauges (ticket
+ * 06 § gauges, D18), a window's spec strip and `READ FULL PAGE` bar (ticket 12), and
+ * the folder-window row reset (`FolderWindow.tsx` reuses `.folder-row-link` from
+ * `chrome.css` but on a `<button>`, which needs its native chrome stripped).
+ */
+
+.desktop-icons {
+  position: absolute;
+  top: var(--pad);
+  left: var(--pad);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.desktop-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 72px;
+  padding: 6px 4px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: center;
+}
+
+.desktop-icon:hover,
+.desktop-icon:focus-visible {
+  border-color: var(--edge);
+  background: var(--chrome);
+  color: var(--accent);
+}
+
+.desktop-icon-glyph {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.desktop-icon-label {
+  font-size: 0.75em;
+  word-break: break-word;
+}
+
+/* `Taskbar.tsx` — the shell's own strip, live shell state (`TaskbarStrip.astro`'s
+   linear-layout strip has neither gauges nor window buttons, by its own design). */
+.taskbar {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  height: calc(44px + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-inline: var(--pad);
+  border-inline: none;
+  border-bottom: none;
+  border-radius: 0;
+  z-index: 2;
+}
+
+.taskbar-launchers,
+.taskbar-windows {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-x: auto;
+}
+
+.taskbar-launchers button,
+.taskbar-windows button {
+  border: 1px solid var(--edge);
+  border-radius: var(--radius);
+  background: var(--chrome);
+  color: inherit;
+  font: inherit;
+  padding: 2px 8px;
+}
+
+.taskbar-windows button[aria-pressed='true'] {
+  border-color: var(--edge-hot);
+  color: var(--accent);
+}
+
+.taskbar-launchers button:hover,
+.taskbar-windows button:hover {
+  color: var(--accent);
+}
+
+.taskbar-gauges {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.gauge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: var(--ink-faint);
+  letter-spacing: 0.1em;
+}
+
+.gauge .bars {
+  display: flex;
+  gap: 2px;
+}
+
+.gauge .bars s {
+  display: inline-block;
+  width: 3px;
+  height: 11px;
+  background: var(--ink-faint);
+  text-decoration: none;
+}
+
+.gauge .bars s.lit {
+  background: var(--accent);
+}
+
+.crt-toggle {
+  color: var(--accent);
+}
+
+.taskbar-clock {
+  color: var(--accent);
+  font-feature-settings: 'zero';
+}
+
+/* The window's one-line spec strip (ticket 12 § Window versus page): condensed,
+   uppercase, already formatted by `src/fs/tree.ts`. */
+.spec-strip {
+  margin: 0 0 var(--pad);
+  padding-bottom: 0.5em;
+  border-bottom: 1px solid var(--edge);
+  color: var(--accent);
+  font-size: 0.85em;
+  letter-spacing: 0.04em;
+}
+
+.resume-download {
+  margin: 0 0 var(--pad);
+}
+
+.resume-download a {
+  color: var(--accent);
+}
+
+.body-loading,
+.body-error {
+  color: var(--ink-faint);
+}
+
+/* Persistent, not a transient toast (ticket 12: "a persistent amber READ FULL PAGE
+   bar"). `position: sticky` within `.window-body`'s own `overflow: auto` keeps it at
+   the bottom of the visible content area while the body scrolls, with no JS
+   positioning of its own. */
+.read-full-page {
+  position: sticky;
+  bottom: 0;
+  display: block;
+  margin-top: var(--pad);
+  padding: 0.5em var(--pad);
+  background: var(--chrome-hi);
+  border-top: var(--border-w) solid var(--edge-hot);
+  color: var(--accent);
+  text-align: center;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.read-full-page:hover {
+  color: var(--ink);
+}
+
+/* The kill-feed toast stack (ticket 06 § the FPS layer, Task 10.4): top-right,
+   newest at the bottom of the DOM order but visually stacked so the newest reads
+   closest to the top — `column-reverse` keeps the newest toast's entrance the one
+   that doesn't reflow everything already on screen. */
+.toasts {
+  position: fixed;
+  top: var(--pad);
+  right: var(--pad);
+  z-index: 10;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  padding: 6px 10px;
+  font-size: 0.8em;
+  letter-spacing: 0.04em;
+}
+
+.toast-label {
+  color: var(--accent);
+  font-weight: bold;
+}
+
+.toast-value {
+  color: var(--ink);
+}
+
+/* `FolderWindow.tsx` reuses `.folder-row-link` (`chrome.css`, shared with
+   `FolderListing.astro`) on a `<button>` instead of an `<a>`/`<span>` — this resets
+   the native button chrome the other two usages never had. */
+button.folder-row-link {
+  all: unset;
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 1em;
+  align-items: baseline;
+  width: 100%;
+  padding: 0.5em 0;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+}
+
+button.folder-row-link:hover,
+button.folder-row-link:focus-visible {
+  color: var(--accent);
+}

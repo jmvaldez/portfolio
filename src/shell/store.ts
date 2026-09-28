@@ -28,6 +28,27 @@ export interface ShellWindow {
   opener?: string;
 }
 
+/** One kill-feed toast (ticket 06 § gauges/HUD layer, ticket 14 § Terminal: "toasts
+ * ... all go through one shared role=status region"). `id` is a monotonically
+ * increasing counter, not the window/node path — a toast has no natural key of its
+ * own, and several can carry the same `label` (e.g. two Konami attempts). */
+export interface Toast {
+  id: number;
+  label: string;
+  value?: string;
+}
+
+/** Task 10.4's effects slice, shared with Phases 11 and 12: session-only, never
+ * written to `sessionStorage`/`localStorage` (unlike `windows`) — it resets on
+ * reload same as any other in-memory `useState` would. `armed` and `vector` are
+ * Phase 11's terminal easter eggs (`arm`/`disarm`); `gridTint` is the Konami code
+ * here in Phase 10, read by Phase 12's WebGL grid. */
+export interface EffectsState {
+  armed: boolean;
+  gridTint: 'blue' | 'amber';
+  vector: 'running' | 'standby';
+}
+
 /** Where focus should land after `close()` removes a window (ticket 14 § Focus and
  * the window lifecycle): the opener if it's still open, else the taskbar button of
  * the window that is now on top, else the first desktop icon. `close()` can't call
@@ -99,7 +120,59 @@ interface ShellState {
    * order. `focus()` calls this; exposed on its own for callers (e.g. a click that
    * shouldn't move keyboard focus) that only want the stacking change. */
   raise: (id: string) => void;
+  /** Restores a window exactly as `persist.ts`'s `applyStoredLayout` (Task 10.3)
+   * reconstructs it from `vos:layout` — unlike `open()`, this never defaults the
+   * rect or bumps `z` relative to whatever's already open. The caller has already
+   * rescued the rect for the current viewport and resolved whether the underlying
+   * app is still registered; this just appends it verbatim and keeps `zCounter`
+   * ahead of the highest restored `z` so a later `raise()` still wins. */
+  restoreWindow: (win: ShellWindow) => void;
+  /** Sets `focusedId` directly, with no raise — `open()`/`focus()` always raise the
+   * window they focus, which is wrong for restoring a whole session's z-order in one
+   * pass (Task 10.3): the stored `focus` id's `z` is already exactly what it was
+   * when the session was saved. */
+  setFocused: (id: string | null) => void;
+
+  /** Each open window's current body scroll position, keyed by window id (Task
+   * 10.3 § body scroll persistence). Lives here rather than on `ShellWindow` itself
+   * since it's read continuously (every scroll) but only ever written to storage on
+   * the debounced/`pagehide` persist pass, not on every store update. */
+  bodyScroll: Record<string, number>;
+  setBodyScroll: (id: string, scrollTop: number) => void;
+  /** Scroll positions read back from `vos:layout` on restore, keyed by window id,
+   * waiting for that window's body to finish loading before they can actually be
+   * applied (Task 10.3: "once each window's body has loaded"). `ContentWindow.tsx`
+   * and `FolderWindow.tsx` each consume their own entry once their content is ready. */
+  pendingScroll: Record<string, number>;
+  setPendingScroll: (scroll: Record<string, number>) => void;
+  consumePendingScroll: (id: string) => number | undefined;
+
+  /** The kill-feed toast stack (Task 10.4, ticket 06): newest-4-visible — a 5th
+   * arrival drops the oldest rather than queuing (ticket 06's "kill-feed" framing:
+   * a feed shows what's current, it doesn't hold a backlog). Each toast is also sent
+   * to the shared `role="status"` region via `announce()`, so the same text reaches
+   * both channels ticket 14 names. */
+  toasts: Toast[];
+  toast: (label: string, value?: string) => void;
+  dismissToast: (id: number) => void;
+
+  /** Task 10.4's session-only effects slice, shared with Phases 11 and 12. */
+  effects: EffectsState;
+  setEffects: (patch: Partial<EffectsState>) => void;
 }
+
+/** Toast ids: a plain module-level counter rather than `Date.now()` — several
+ * toasts can legitimately fire within the same millisecond (e.g. rapid-fire
+ * easter eggs), and a counter guarantees uniqueness where a timestamp wouldn't. */
+let nextToastId = 0;
+
+/** How long a toast stays visible before auto-dismissing (ticket 06 § gauges: the
+ * kill-feed style implies a short, fixed lifetime, not a manual dismiss). */
+const TOAST_LIFETIME_MS = 4000;
+
+/** The cap on simultaneously visible toasts (Task 10.4: "a MAXIMUM of 4 visible at
+ * once... oldest drops off if a 5th arrives"). */
+const MAX_TOASTS = 4;
 
 export const useShellStore = create<ShellState>((set, get) => ({
   surface: 'linear',
@@ -214,4 +287,44 @@ export const useShellStore = create<ShellState>((set, get) => ({
         windows: state.windows.map((w) => (w.id === id ? { ...w, z } : w)),
       };
     }),
+
+  restoreWindow: (win) =>
+    set((state) => ({
+      windows: [...state.windows, win],
+      zCounter: Math.max(state.zCounter, win.z),
+    })),
+
+  setFocused: (id) => set({ focusedId: id }),
+
+  bodyScroll: {},
+  setBodyScroll: (id, scrollTop) =>
+    set((state) => ({ bodyScroll: { ...state.bodyScroll, [id]: scrollTop } })),
+
+  pendingScroll: {},
+  setPendingScroll: (scroll) => set({ pendingScroll: scroll }),
+  consumePendingScroll: (id) => {
+    const value = get().pendingScroll[id];
+    if (value === undefined) return undefined;
+    set((state) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars -- discarded on purpose
+      const { [id]: _consumed, ...rest } = state.pendingScroll;
+      return { pendingScroll: rest };
+    });
+    return value;
+  },
+
+  toasts: [],
+  toast: (label, value) => {
+    const id = ++nextToastId;
+    set((state) => {
+      const next = [...state.toasts, { id, ...(value !== undefined ? { value } : {}), label }];
+      return { toasts: next.length > MAX_TOASTS ? next.slice(next.length - MAX_TOASTS) : next };
+    });
+    get().announce(value ? `${label}: ${value}` : label);
+    setTimeout(() => get().dismissToast(id), TOAST_LIFETIME_MS);
+  },
+  dismissToast: (id) => set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) })),
+
+  effects: { armed: false, gridTint: 'blue', vector: 'standby' },
+  setEffects: (patch) => set((state) => ({ effects: { ...state.effects, ...patch } })),
 }));

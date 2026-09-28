@@ -11,6 +11,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import {
   magnetise,
+  rescue,
   resize,
   snapRect,
   snapTarget,
@@ -79,6 +80,10 @@ interface Props {
   /** Phase 10's real maximise link, present iff the underlying node has a URL
    * (ticket 09). Phase 9's windows hold placeholder bodies and never pass this. */
   maximiseSlot?: React.ReactNode;
+  /** The window's body content (Phase 10: `WindowBody.tsx` picks `ContentWindow` /
+   * `FolderWindow` / a registered app by node kind). Rendered inside the same
+   * scrollable `.window-body` Phase 9 already built the keyboard focus stop for. */
+  children?: React.ReactNode;
 }
 
 export default function Window({
@@ -90,6 +95,7 @@ export default function Window({
   onClose,
   headingRef,
   maximiseSlot,
+  children,
 }: Props) {
   const tree = useShellStore((state) => state.tree);
   const focusedId = useShellStore((state) => state.focusedId);
@@ -98,6 +104,7 @@ export default function Window({
   const setRect = useShellStore((state) => state.setRect);
   const snap = useShellStore((state) => state.snap);
   const unsnap = useShellStore((state) => state.unsnap);
+  const setBodyScroll = useShellStore((state) => state.setBodyScroll);
 
   const node = tree?.[win.path];
   // The filename shown in a title bar (Frame's own convention, `Section.astro`:
@@ -108,12 +115,29 @@ export default function Window({
   const gestureRef = useRef<Gesture | null>(null);
   const pendingRectRef = useRef<Rect>(win.rect);
   const rafRef = useRef<number | null>(null);
+  const scrollRafRef = useRef<number | null>(null);
 
   useEffect(
     () => () => {
       if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+      if (scrollRafRef.current != null) cancelAnimationFrame(scrollRafRef.current);
     },
     [],
+  );
+
+  // Tracks `.window-body`'s own scroll position for `persist.ts`'s `serializeLayout`
+  // (Task 10.3 § body scroll persistence). rAF-throttled the same way drag/resize
+  // rects are above — a scroll fires far more often than a frame needs it recorded.
+  const handleBodyScroll = useCallback(
+    (e: React.UIEvent<HTMLDivElement>) => {
+      const scrollTop = e.currentTarget.scrollTop;
+      if (scrollRafRef.current != null) return;
+      scrollRafRef.current = requestAnimationFrame(() => {
+        scrollRafRef.current = null;
+        setBodyScroll(win.id, scrollTop);
+      });
+    },
+    [setBodyScroll, win.id],
   );
 
   const flush = useCallback(() => {
@@ -164,12 +188,28 @@ export default function Window({
       // window free, back to its pre-snap size centred under the cursor.
       const restoreSize = win.restoreRect ?? win.rect;
       const pointer = toDesktopPoint(e);
+      // `tearOff` centres the restored rect on the pointer with no bounds check, so a
+      // tear starting near an edge/corner of a maximised window can place the result
+      // (and its title bar) off-screen. That can put the whole pointer-captured
+      // element outside the viewport, which risks `pointercancel` in Chromium and
+      // stranding the gesture (found while testing Phase 10's maximise link).
+      //
+      // The fix has to be careful: everything after this point tracks the pointer by
+      // adding `dx`/`dy` onto `g.startRect`, which is what keeps the window's centre
+      // exactly under the cursor for the rest of the drag (ticket 04). If `startRect`
+      // itself were clamped, that clamp's offset would never wash out — it would
+      // follow the window for the rest of the gesture, landing it away from the
+      // cursor at release. So `startRect` stays the TRUE, unclamped tear-off result
+      // (correct math, what the rest of this function already assumed); only the
+      // rect actually rendered for this one frame is clamped, purely so the title
+      // bar's DOM node isn't fully off-screen the instant it tears free. The very
+      // next `pointermove` recomputes from the true `startRect` and overwrites it.
       const torn = tearOff(win.rect, restoreSize, pointer);
       unsnap(win.id);
       g.torn = true;
       g.startRect = torn;
       g.startPointer = { x: e.clientX, y: e.clientY };
-      pendingRectRef.current = torn;
+      pendingRectRef.current = rescue(torn, desktopSize);
       scheduleFlush();
       return;
     }
@@ -306,10 +346,10 @@ export default function Window({
       </div>
       {/* eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- ticket 14:
           "a body that scrolls is its own focus stop" (WCAG technique G202 for
-          keyboard access to scrollable content). Phase 9's placeholder body never
-          overflows, but the container is built to take that stop from day one. */}
-      <div className="window-body" tabIndex={0}>
-        <p>{win.path}</p>
+          keyboard access to scrollable content). Phase 10's content/folder bodies are
+          exactly what can overflow this. */}
+      <div className="window-body" tabIndex={0} onScroll={handleBodyScroll}>
+        {children}
       </div>
       {RESIZE_HANDLES.map((handle) => (
         <div

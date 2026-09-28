@@ -40,7 +40,7 @@ test.describe('first visit', () => {
 test.describe('returning visit (reload)', () => {
   test.use({ viewport: DESKTOP });
 
-  test('#restore shows RESUME · DESKTOP RESTORED, no #boot', async ({ page }) => {
+  test('#restore shows the correct RESUME wording, no #boot', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('html')).toHaveClass(/shell-ready/, { timeout: 7000 });
 
@@ -50,7 +50,16 @@ test.describe('returning visit (reload)', () => {
     // catches it visible. The text mutation and the absence of a boot are what
     // matter; both are true regardless of whether `#restore` is still on screen
     // by the time we look.
-    await expect(page.locator('#restore-line')).toHaveText('RESUME · DESKTOP RESTORED');
+    //
+    // This was originally written in Phase 8, when the desktop seeded no windows
+    // at all — "RESUME · DESKTOP RESTORED" was correct then. Phase 9/10's D16 seed
+    // now opens real windows (about.txt, projects), so the correct wording is the
+    // plural "N WINDOWS RESTORED" form. Matched by pattern, not a hardcoded count,
+    // so a future phase changing the seed list doesn't re-break this test over
+    // unrelated wording it was never meant to pin down.
+    await expect(page.locator('#restore-line')).toHaveText(
+      /^RESUME · (DESKTOP|\d+ WINDOWS?) RESTORED$/,
+    );
     const hasBootClass = await page.evaluate(() =>
       document.documentElement.classList.contains('boot'),
     );

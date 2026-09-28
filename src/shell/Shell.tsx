@@ -9,7 +9,7 @@
 // moving focus on boot completion strands screen-reader users) — only the widen
 // case moves focus, because it's a deliberate viewport-driven mode switch
 // (ticket 14 § Live swap).
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { SHELL_QUERY } from '~/lib/breakpoint';
 import { getLayoutOverride } from '~/lib/storage';
 import type { FsTree } from '~/fs/types';
@@ -29,6 +29,14 @@ export default function Shell({ tree }: Props) {
   // readiness effect below: a widen's readiness handshake announces and focuses
   // differently from the passive initial boot/restore (ticket 14 § Live swap).
   const widenPendingRef = useRef(false);
+  // Task 10.3: the readiness announcement now reports the real window count, which
+  // isn't known until `Desktop`'s own seed/restore effect has run — an async
+  // `ResizeObserver` round trip behind this component's own mount. These two refs
+  // gate the announcement on *both* the boot floor (if any) and that effect having
+  // actually settled, whichever finishes last.
+  const seededRef = useRef(false);
+  const timerDoneRef = useRef(false);
+  const readyRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     useShellStore.getState().setTree(tree);
@@ -75,6 +83,19 @@ export default function Shell({ tree }: Props) {
     return () => mql.removeEventListener('change', handleChange);
   }, []);
 
+  // Task 10.3: resolves to the actual open-window count, plural-aware — "Desktop
+  // ready, 1 window open" / "Desktop ready, 2 windows open".
+  function windowCountPhrase(n: number, verb: 'open' | 'restored'): string {
+    return `${n} window${n === 1 ? '' : 's'} ${verb}`;
+  }
+
+  // `Desktop`'s own `onSeeded` prop (Task 10.3): fires once this mount's window set
+  // (D16's seed, a restored `vos:layout`, or a widen's "already there") is settled.
+  const handleSeeded = useCallback(() => {
+    seededRef.current = true;
+    if (timerDoneRef.current) readyRef.current?.();
+  }, []);
+
   // The readiness handshake (ticket 10 § Timing, D23; ticket 14 § Boot and resume):
   // runs whenever `Desktop` (re)mounts, whether that's the initial above-the-
   // breakpoint mount or a widen-triggered remount.
@@ -83,6 +104,8 @@ export default function Shell({ tree }: Props) {
 
     const html = document.documentElement;
     let cancelled = false;
+    seededRef.current = false;
+    timerDoneRef.current = false;
 
     function ready(): void {
       if (cancelled) return;
@@ -96,8 +119,20 @@ export default function Shell({ tree }: Props) {
         desktopRef.current?.focusHeading();
       } else {
         const restoring = html.classList.contains('restore');
-        useShellStore.getState().announce(restoring ? 'Desktop restored' : 'Desktop ready');
+        const n = useShellStore.getState().windows.length;
+        useShellStore
+          .getState()
+          .announce(
+            restoring
+              ? `Desktop restored, ${windowCountPhrase(n, 'restored')}`
+              : `Desktop ready, ${windowCountPhrase(n, 'open')}`,
+          );
       }
+    }
+    readyRef.current = ready;
+
+    function maybeReady(): void {
+      if (!cancelled && seededRef.current && timerDoneRef.current) ready();
     }
 
     if (html.classList.contains('boot')) {
@@ -106,14 +141,18 @@ export default function Shell({ tree }: Props) {
       // `boot`) has no floor.
       const bootAt = Number(html.dataset.bootAt) || 0;
       const remaining = Math.max(0, 600 - (performance.now() - bootAt));
-      const timer = window.setTimeout(ready, remaining);
+      const timer = window.setTimeout(() => {
+        timerDoneRef.current = true;
+        maybeReady();
+      }, remaining);
       return () => {
         cancelled = true;
         window.clearTimeout(timer);
       };
     }
 
-    ready();
+    timerDoneRef.current = true;
+    maybeReady();
     return () => {
       cancelled = true;
     };
@@ -123,7 +162,9 @@ export default function Shell({ tree }: Props) {
 
   return (
     <>
-      {renderDesktop && <Desktop ref={desktopRef} onSkip={() => setRenderDesktop(false)} />}
+      {renderDesktop && (
+        <Desktop ref={desktopRef} onSkip={() => setRenderDesktop(false)} onSeeded={handleSeeded} />
+      )}
       {/* The one shared status region (ticket 14 § Boot and resume, § Live swap,
           § Terminal): boot-ready and live-swap announcements now, toasts in later
           phases. Lives here rather than inside `Desktop` so a narrowing swap's
