@@ -1,7 +1,6 @@
 // The desktop surface (ticket 14 § Shell structure, § Round 2; map Hazards: the skip
-// link and the opaque-surface trap). Phase 9/10 grow `#desktop` into the window
-// manager, the desktop icons and the taskbar; this phase ships the empty surface, its
-// heading and the skip link ahead of it.
+// link and the opaque-surface trap). Phase 9 grows `#desktop` into the window
+// manager itself — Phase 10 adds the desktop icons and the taskbar on top of it.
 //
 // The shared `role="status"` region lives in `Shell.tsx`, not here, even though the
 // phase doc lists it under `Desktop`: narrowing past the breakpoint unmounts this
@@ -9,14 +8,18 @@
 // § Live swap), and a status region that's removed before a screen reader observes
 // the mutation never gets read out. `Shell.tsx` always exists (it's the island root),
 // so hosting the region there is the only way that announcement survives.
-import { forwardRef, useImperativeHandle, useRef } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { setLayoutOverride } from '~/lib/storage';
+import { rescue, seedToRect, type SeedFraction, type SnapZone } from './wm/geometry';
+import SnapPreview from './wm/SnapPreview';
+import Window from './wm/Window';
+import { useShellStore } from './store';
 
 export interface DesktopHandle {
   /** Focuses the desktop's own h1 — the widen fallback (ticket 14 § Live swap:
-   * "else the desktop h1") when there's no counterpart window yet to focus. Phase
-   * 9/10 should extend `Shell.tsx`'s caller to check the actually-focused window's
-   * root mount first, and fall back to this only when none is open. */
+   * "else the desktop h1") when there's no counterpart window yet to focus, and
+   * ticket 14's own "first desktop icon" fallback for `close()`'s focus target
+   * (Phase 9 has no desktop icons yet — Phase 10 — so this heading stands in). */
   focusHeading: () => void;
 }
 
@@ -27,12 +30,113 @@ interface Props {
   onSkip: () => void;
 }
 
+/** D16's seed layout, as fractions of the desktop — never fixed pixels (map Hazards).
+ * `viewer.exe` and `terminal.exe` are omitted entirely: D16 says "a seed whose app is
+ * not yet registered is skipped", and neither app exists in the mount table yet
+ * (Phase 12 and Phase 11 respectively add them) — there is no node at either path for
+ * `tree` to even resolve, so skipping is unconditional rather than a per-render check. */
+const SEEDS: ReadonlyArray<{ path: string; seed: SeedFraction }> = [
+  { path: '/about.txt', seed: { x: 0.04, y: 0.06, w: 0.26, h: 0.42 } },
+  { path: '/projects', seed: { x: 0.33, y: 0.06, w: 0.28, h: 0.42 } },
+];
+
 const Desktop = forwardRef<DesktopHandle, Props>(function Desktop({ onSkip }, ref) {
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const desktopRef = useRef<HTMLDivElement>(null);
+  const titleRefs = useRef(new Map<string, HTMLHeadingElement>());
+  const seededRef = useRef(false);
+
+  const [desktopSize, setDesktopSize] = useState({ width: 0, height: 0 });
+  const [dragSnapZone, setDragSnapZone] = useState<SnapZone | null>(null);
+
+  const windows = useShellStore((state) => state.windows);
+  const tree = useShellStore((state) => state.tree);
+  const open = useShellStore((state) => state.open);
+  const setRect = useShellStore((state) => state.setRect);
+  const close = useShellStore((state) => state.close);
 
   useImperativeHandle(ref, () => ({
     focusHeading: () => headingRef.current?.focus(),
   }));
+
+  // Tracks `#desktop`'s own box live (Task 9.4 § rescue clamp) — the same
+  // measurement both the seed effect converts D16's fractions against and the
+  // rescue effect below reacts to.
+  useEffect(() => {
+    const el = desktopRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) return;
+      const { width, height } = entry.contentRect;
+      setDesktopSize({ width, height });
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  // Task 9.4: a floor ahead of ticket 11's own breakpoint listener — every window's
+  // title bar stays reachable through the moments before that listener fires. Reads
+  // `windows` fresh from the store rather than depending on it, so the pass this
+  // effect itself causes (via `setRect`) never re-triggers itself.
+  useEffect(() => {
+    if (desktopSize.width === 0 && desktopSize.height === 0) return;
+    for (const win of useShellStore.getState().windows) {
+      const rescued = rescue(win.rect, desktopSize);
+      if (rescued.x !== win.rect.x || rescued.y !== win.rect.y) {
+        setRect(win.id, rescued);
+      }
+    }
+  }, [desktopSize, setRect]);
+
+  // D16's seed layout, opened once the desktop has both a real size to convert
+  // fractions against and a tree to check registration against. Deliberately calls
+  // `open()` directly rather than moving focus to either window afterward — ticket
+  // 14 § Boot and resume: "focus is not moved" on the passive ready path, and this
+  // seeding is part of that same first paint, not an interactive open.
+  useEffect(() => {
+    if (seededRef.current || !tree) return;
+    if (desktopSize.width === 0 && desktopSize.height === 0) return;
+    seededRef.current = true;
+    for (const { path, seed } of SEEDS) {
+      if (!tree[path]) continue; // D16: an unregistered app's seed is skipped
+      open(path);
+      setRect(path, seedToRect(seed, desktopSize));
+    }
+  }, [tree, desktopSize, open, setRect]);
+
+  const handleHeadingRef = useCallback((id: string, el: HTMLHeadingElement | null) => {
+    if (el) titleRefs.current.set(id, el);
+    else titleRefs.current.delete(id);
+  }, []);
+
+  // Resolves ticket 14's focus-on-close priority into a real `.focus()` call —
+  // `store.close()` only returns a descriptor, since it has no DOM nodes to call
+  // `.focus()` on itself.
+  const handleClose = useCallback(
+    (id: string) => {
+      const target = close(id);
+      if (target.type === 'icon') {
+        // Ticket 14's own fallback ("first desktop icon") doesn't exist yet
+        // (Phase 10) — the desktop heading is the best available stand-in.
+        headingRef.current?.focus();
+        return;
+      }
+      // Phase 9 has no shell taskbar yet either (Phase 10), so a `taskbar` target
+      // resolves the same way a `window` target does: focus now lives on the
+      // window itself, which is exactly what a taskbar button or the reopened
+      // opener would otherwise hand focus to — unless that window is minimised,
+      // in which case its title is hidden (`display: none`) and unfocusable, so
+      // the desktop heading is the fallback instead.
+      const win = useShellStore.getState().windows.find((w) => w.id === target.id);
+      if (win && !win.minimised) {
+        titleRefs.current.get(target.id)?.focus();
+      } else {
+        headingRef.current?.focus();
+      }
+    },
+    [close],
+  );
 
   function handleSkip(): void {
     // Ticket 14 § Strategy: sets the layout override, which is what makes the
@@ -59,7 +163,21 @@ const Desktop = forwardRef<DesktopHandle, Props>(function Desktop({ onSkip }, re
           behind it — Phase 12's shared WebGL canvas will eventually go there. The
           ground fill belongs on an ancestor (`body`, `global.css`); this surface
           stays transparent on purpose. */}
-      <div id="desktop" />
+      <div id="desktop" ref={desktopRef}>
+        {windows.map((win) => (
+          <Window
+            key={win.id}
+            win={win}
+            allWindows={windows}
+            desktopSize={desktopSize}
+            desktopRef={desktopRef}
+            onDragSnapChange={setDragSnapZone}
+            onClose={handleClose}
+            headingRef={(el) => handleHeadingRef(win.id, el)}
+          />
+        ))}
+        {dragSnapZone && <SnapPreview zone={dragSnapZone} desktop={desktopSize} />}
+      </div>
     </>
   );
 });
