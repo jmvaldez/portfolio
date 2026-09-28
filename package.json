@@ -16,8 +16,10 @@
     "format": "prettier --write . && eslint --fix .",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "budgets": "node scripts/check-budgets.mjs",
+    "lighthouse": "lhci autorun --config=./lighthouserc.cjs && lhci autorun --config=./lighthouserc.desktop.cjs",
     "fonts:subset": "python3 scripts/subset-fonts.py",
-    "verify": "pnpm lint && pnpm check && pnpm test && pnpm build && pnpm test:e2e"
+    "verify": "pnpm lint && pnpm check && pnpm test && pnpm build && pnpm budgets && pnpm test:e2e"
   },
   "dependencies": {
     "@astrojs/react": "^7.0.0",
@@ -35,6 +37,7 @@
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
     "@ibm/plex-mono": "^2.5.0",
+    "@lhci/cli": "^0.15.1",
     "@playwright/test": "^1.63.0",
     "@types/node": "^26.6.3",
     "@types/react": "^19.3.0",
