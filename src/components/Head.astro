@@ -1,26 +1,59 @@
 ---
-// Kept minimal (title, description) per Task 3.4; Phase 7 extends this with the
-// rest of the meta layer (canonical, OG image, JSON-LD — ticket 18).
+// Task 3.4 kept this minimal (title, description); Phase 7 (ticket 18 § Meta) adds the
+// rest of the meta layer here: canonical, OG image, and the `/`-only Person JSON-LD.
 import { Font } from 'astro:assets';
 import CrtPrefScript from './CrtPrefScript.astro';
+import { pageMeta } from '~/lib/meta';
+import { SITE_NAME } from '~/lib/site';
+import type { FsNode, FsTree } from '~/fs/types';
 import '~/styles/global.css';
 
 interface Props {
-  title: string;
-  description: string;
+  /** Omitted for `/` (ticket 18 § Meta: it has no collection entry to derive a title
+   * from and gets the fixed root title/description instead). */
+  node?: FsNode | undefined;
+  tree: FsTree;
   /** D15: forwarded to `CrtPrefScript` to gate the inbound half of the view transition. */
   page?: boolean;
 }
 
-const { title, description, page = false } = Astro.props;
+const { node, tree, page = false } = Astro.props;
+
+// `site-guard` (astro:config:done) already fails the build if `Astro.site` is unset or
+// points at localhost, so this non-null assertion is safe by the time any page renders.
+const meta = pageMeta(node, tree, Astro.site!.toString());
+
+const personSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  name: SITE_NAME,
+  jobTitle: 'Software Engineer',
+  // Lorem placeholders (map "Standing preferences": content is lorem ipsum throughout).
+  sameAs: ['https://github.com/joe-valdez-lorem', 'https://www.linkedin.com/in/joe-valdez-lorem'],
+};
 ---
 
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>{title}</title>
-<meta name="description" content={description} />
+<title>{meta.title}</title>
+<meta name="description" content={meta.description} />
+<link rel="canonical" href={meta.canonical} />
+<meta property="og:title" content={meta.title} />
+<meta property="og:description" content={meta.description} />
+<meta property="og:url" content={meta.canonical} />
+<meta property="og:image" content={meta.ogImage} />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content={meta.ogImageAlt} />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary_large_image" />
 {/* Ticket 13: only Regular is preloaded; Bold and Italic swap in on demand. */}
 <Font cssVariable="--font-mono" preload={[{ weight: '400', style: 'normal' }]} />
+{!node && (
+  // `/` only (ticket 18 § Meta): data, never executable JS — zero-js.spec.ts excludes
+  // `application/ld+json` from its inline-script byte count for exactly this tag.
+  <script type="application/ld+json" set:html={JSON.stringify(personSchema)} />
+)}
 <CrtPrefScript page={page} />
 {/* Extra head content a specific page needs (Phase 8: `/`'s `HeadGate`, `/`-only
     and unrelated to the title/description/page props above). Empty on every page

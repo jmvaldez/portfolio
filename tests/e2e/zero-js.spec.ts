@@ -21,9 +21,13 @@ for (const { url } of URLS) {
     expect(html).not.toContain('type="module"');
 
     let inlineBytes = 0;
-    const scriptRe = /<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g;
+    // Excludes `type="application/ld+json"` (Phase 7's Person schema on `/`): it's data
+    // rendered with `set:html`, never executable JS, so it doesn't belong in this budget.
+    const scriptRe = /<script(?![^>]*\bsrc=)([^>]*)>([\s\S]*?)<\/script>/g;
     for (const match of html.matchAll(scriptRe)) {
-      inlineBytes += Buffer.byteLength(match[1] ?? '', 'utf8');
+      const attrs = match[1] ?? '';
+      if (/\btype="application\/ld\+json"/.test(attrs)) continue;
+      inlineBytes += Buffer.byteLength(match[2] ?? '', 'utf8');
     }
 
     expect(inlineBytes).toBeLessThanOrEqual(1024);

@@ -22,10 +22,7 @@ const droneSvg = renderDroneSvg(DRONE_FIGURE_SIZE);
 const droneReadout = await featuredReadout();
 ---
 
-<BaseLayout
-  title="Joe Valdez · Software Engineer"
-  description="Joe Valdez's software-engineering portfolio, presented as a retro personal computer."
->
+<BaseLayout tree={tree}>
   <Fragment slot="head">
     <HeadGate />
   </Fragment>

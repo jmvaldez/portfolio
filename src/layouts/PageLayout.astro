@@ -13,8 +13,6 @@ import GridFloor from '~/components/GridFloor.astro';
 import type { FsNode, FsTree } from '~/fs/types';
 
 interface Props {
-  title: string;
-  description: string;
   node: FsNode;
   tree: FsTree;
   /** The masthead's filename (ticket 12 § Anatomy): the readme's name for a directory
@@ -22,10 +20,10 @@ interface Props {
   filename: string;
 }
 
-const { title, description, node, tree, filename } = Astro.props;
+const { node, tree, filename } = Astro.props;
 ---
 
-<BaseLayout title={title} description={description} page>
+<BaseLayout node={node} tree={tree} page>
   <div class="page-shell">
     <GridFloor />
     <Frame as="article" title={filename} headingLevel="h1" vtName="page-frame">

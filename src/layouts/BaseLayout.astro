@@ -1,20 +1,22 @@
 ---
 import Head from '~/components/Head.astro';
+import type { FsNode, FsTree } from '~/fs/types';
 
 interface Props {
-  title: string;
-  description: string;
+  /** Omitted for `/` (see `Head.astro`). */
+  node?: FsNode | undefined;
+  tree: FsTree;
   /** Ticket 09, D15: true on content pages, false (or omitted) on `/`. Gates the
    * inbound half of the outbound-only view transition (CrtPrefScript). */
   page?: boolean;
 }
 
-const { title, description, page = false } = Astro.props;
+const { node, tree, page = false } = Astro.props;
 ---
 
 <html lang="en">
   <head>
-    <Head title={title} description={description} page={page}>
+    <Head node={node} tree={tree} page={page}>
       <slot name="head" />
     </Head>
   </head>

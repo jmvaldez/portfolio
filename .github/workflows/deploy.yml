@@ -24,6 +24,12 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # Task 7.3: same incremental-build cache as ci.yml — see that file's comment.
+      - uses: actions/cache@v4
+        with:
+          path: node_modules/.astro
+          key: astro-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('src/assets/fonts/og/*') }}
+
       # The resume PDF is rendered by a real headless Chromium at build time
       # (ticket 15), so the build step below needs it available.
       - run: pnpm exec playwright install --with-deps chromium

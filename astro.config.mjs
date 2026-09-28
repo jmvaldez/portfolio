@@ -1,5 +1,6 @@
 import { defineConfig, fontProviders } from 'astro/config';
 import react from '@astrojs/react';
+import sitemap from '@astrojs/sitemap';
 import tailwindcss from '@tailwindcss/vite';
 import siteGuard from './src/integrations/site-guard.ts';
 
@@ -12,7 +13,22 @@ export default defineConfig({
   // The shell does its own hover prefetch (ticket 09); content pages have no JS
   // to prefetch with, so Astro's built-in prefetch stays off (D4).
   prefetch: false,
-  integrations: [react(), siteGuard()],
+  integrations: [
+    react(),
+    siteGuard(),
+    // Ticket 18 § Sitemap and robots: every page, minus the OG images, the raw
+    // fs body/source endpoints, and the resume PDF — none of those are pages.
+    sitemap({
+      filter: (page) => {
+        const url = new URL(page);
+        return (
+          !url.pathname.includes('/og/') &&
+          !url.pathname.includes('/fs/') &&
+          url.pathname !== '/resume.pdf'
+        );
+      },
+    }),
+  ],
   // Ticket 13: the renamed IBM Plex Mono subset (`scripts/subset-fonts.py`),
   // self-hosted through Astro's local provider. Astro does not subset local
   // files itself, so the woff2 files are pre-subset and committed (D21).
@@ -52,9 +68,16 @@ export default defineConfig({
     plugins: [tailwindcss()],
   },
   build: {
-    // Left at the default of 1: Phase 7's incremental build cache turns off
-    // above concurrency 1.
+    // Left at the default of 1: Phase 7's incremental build cache (enabled below)
+    // turns off entirely above concurrency 1 (map Hazards, research 17 hazard 5).
     concurrency: 1,
+  },
+  experimental: {
+    // Task 7.3: caches the OG endpoint's PNGs (and any other `cacheKey`-bearing
+    // route) across builds, kept warm by `actions/cache` on `node_modules/.astro`
+    // in both workflows (research 17 § Caching). Requires `build.concurrency: 1`
+    // above.
+    incrementalBuild: true,
   },
   // Never add `vite.ssr.noExternal: ['@react-three/drei']` here — it breaks
   // `astro dev` with a `detect-gpu` CJS named-export error (map Hazards).
