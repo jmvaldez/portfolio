@@ -1,0 +1,15 @@
+---
+// Promotion (glossary): navigates from a window (or a linear-layout Section) to its
+// node's page. Ticket 14: the accessible name says where it goes, since it navigates
+// — "maximise" would hide that — and the glyph itself is `aria-hidden`, never the link.
+interface Props {
+  href: string;
+  title: string;
+}
+
+const { href, title } = Astro.props;
+---
+
+<a class="ctl maxbox" href={href} aria-label={`Open ${title} page`}>
+  <span aria-hidden="true">▢</span>
+</a>

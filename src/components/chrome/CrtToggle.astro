@@ -1,0 +1,11 @@
+---
+// Starts `hidden`; CrtPrefScript's `DOMContentLoaded` handler reveals it once JS has
+// actually run, so a no-JS visitor never sees a dead toggle (ticket 11 § Taskbar
+// strip). `aria-pressed="true"` matches the script's default-on behaviour; the
+// script itself is the source of truth for both the attribute and `data-crt` once
+// it runs.
+---
+
+<button type="button" data-crt-toggle hidden aria-pressed="true">
+  CRT
+</button>

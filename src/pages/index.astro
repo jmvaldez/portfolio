@@ -1,13 +1,21 @@
 ---
-import '../styles/global.css';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import Frame from '~/components/chrome/Frame.astro';
+import CrtToggle from '~/components/chrome/CrtToggle.astro';
 ---
 
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Joe Valdez</title>
-  </head>
-  <body>valdez-os 1.0</body>
-</html>
+<BaseLayout
+  title="Joe Valdez"
+  description="Joe Valdez's software-engineering portfolio, presented as a retro personal computer."
+>
+  <Frame title="valdez-os 1.0" headingLevel="h1">
+    <Fragment slot="controls">
+      <CrtToggle />
+    </Fragment>
+    <p class="prose">
+      Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut
+      labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco
+      laboris nisi ut aliquip ex ea commodo consequat.
+    </p>
+  </Frame>
+</BaseLayout>
