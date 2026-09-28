@@ -29,10 +29,31 @@ async function windowRect(page: Page, path: string) {
   }));
 }
 
+// Picks a point on the bare `.titlebar` div itself — never a control. Phase 10 gives
+// a URL-bearing node's title bar a maximise box next to its `h2` (`Window.tsx`'s
+// `maximiseSlot`), and a flex row with no `h2 { flex: 1 }` clusters every control at
+// the div's left edge, so the div's own geometric centre is no longer reliably empty
+// once there's a third control to reach it. This finds the empty stretch to the right
+// of every `.ctl` (maximise/minimise/close) and picks its midpoint, staying clear of
+// the invisible `.resize-e` handle that overlaps the title bar's own right edge
+// (`wm.css`: it spans the frame's full height, not just its body).
 async function titlebarCenter(page: Page, path: string) {
-  const box = await page.locator(`[data-window="${path}"] .titlebar`).boundingBox();
+  const bar = page.locator(`[data-window="${path}"] .titlebar`);
+  const box = await bar.boundingBox();
   if (!box) throw new Error(`no titlebar box for ${path}`);
-  return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+
+  const controls = bar.locator('.ctl');
+  const count = await controls.count();
+  let controlsRight = box.x;
+  for (let i = 0; i < count; i++) {
+    const controlBox = await controls.nth(i).boundingBox();
+    if (controlBox) controlsRight = Math.max(controlsRight, controlBox.x + controlBox.width);
+  }
+
+  const RESIZE_HANDLE_MARGIN = 10;
+  const safeRight = box.x + box.width - RESIZE_HANDLE_MARGIN;
+  const x = Math.min((controlsRight + 12 + safeRight) / 2, safeRight);
+  return { x, y: box.y + box.height / 2 };
 }
 
 function near(a: number, b: number, tolerance = 2): void {
@@ -168,8 +189,10 @@ test('clicking a background window brings it to the front without changing DOM o
     .locator('[data-window]')
     .evaluateAll((els) => els.map((el) => el.getAttribute('data-window')));
 
-  // /projects opened after /about.txt, so it's the one already on top.
-  await page.locator('[data-window="/about.txt"] .titlebar').click();
+  // /projects opened after /about.txt, so it's the one already on top. Clicks the
+  // same empty stretch of the bar `titlebarCenter` finds above, never a real control.
+  const { x, y } = await titlebarCenter(page, '/about.txt');
+  await page.mouse.click(x, y);
 
   const after = await page
     .locator('[data-window]')

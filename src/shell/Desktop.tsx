@@ -10,10 +10,34 @@
 // so hosting the region there is the only way that announcement survives.
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { setLayoutOverride } from '~/lib/storage';
+import DesktopIcons from './DesktopIcons';
+import { applyStoredLayout, initPersistence, restoreLayout } from './persist';
+import { clearStalePromotionName } from './promote';
+import Taskbar from './Taskbar';
+import Toasts from './Toasts';
 import { rescue, seedToRect, type SeedFraction, type SnapZone } from './wm/geometry';
+import MaximiseBox from './wm/MaximiseBox';
 import SnapPreview from './wm/SnapPreview';
 import Window from './wm/Window';
+import WindowBody from './windows/WindowBody';
 import { useShellStore } from './store';
+
+/** The Konami code (Task 10.4, ticket 08 § Easter eggs), matched on `KeyboardEvent`'s
+ * layout-independent `code` rather than `key` — `ArrowUp` etc. are already
+ * layout-independent, but `KeyB`/`KeyA` are not the same as `key === 'b'/'a'` under a
+ * non-QWERTY layout. */
+const KONAMI_CODE = [
+  'ArrowUp',
+  'ArrowUp',
+  'ArrowDown',
+  'ArrowDown',
+  'ArrowLeft',
+  'ArrowRight',
+  'ArrowLeft',
+  'ArrowRight',
+  'KeyB',
+  'KeyA',
+];
 
 export interface DesktopHandle {
   /** Focuses the desktop's own h1 — the widen fallback (ticket 14 § Live swap:
@@ -28,6 +52,13 @@ interface Props {
    * from then on. `Desktop` itself only sets the override and drops the `shell`
    * class; it never decides whether it keeps rendering. */
   onSkip: () => void;
+  /** Fires once this mount's window set is settled — either D16's seed, a restored
+   * `vos:layout`, or (a widen remount, ticket 11 § Crossing it mid-session) skipped
+   * outright because windows from the previous mount are still in the store.
+   * `Shell.tsx`'s readiness announcement (ticket 14 § Boot and resume) waits on this
+   * so it never reads `windows.length` before the async `ResizeObserver` round trip
+   * that gates this effect has actually run (Task 10.3). */
+  onSeeded?: () => void;
 }
 
 /** D16's seed layout, as fractions of the desktop — never fixed pixels (map Hazards).
@@ -40,7 +71,7 @@ const SEEDS: ReadonlyArray<{ path: string; seed: SeedFraction }> = [
   { path: '/projects', seed: { x: 0.33, y: 0.06, w: 0.28, h: 0.42 } },
 ];
 
-const Desktop = forwardRef<DesktopHandle, Props>(function Desktop({ onSkip }, ref) {
+const Desktop = forwardRef<DesktopHandle, Props>(function Desktop({ onSkip, onSeeded }, ref) {
   const headingRef = useRef<HTMLHeadingElement>(null);
   const desktopRef = useRef<HTMLDivElement>(null);
   const titleRefs = useRef(new Map<string, HTMLHeadingElement>());
@@ -89,21 +120,78 @@ const Desktop = forwardRef<DesktopHandle, Props>(function Desktop({ onSkip }, re
     }
   }, [desktopSize, setRect]);
 
-  // D16's seed layout, opened once the desktop has both a real size to convert
-  // fractions against and a tree to check registration against. Deliberately calls
-  // `open()` directly rather than moving focus to either window afterward — ticket
-  // 14 § Boot and resume: "focus is not moved" on the passive ready path, and this
-  // seeding is part of that same first paint, not an interactive open.
+  // D16's seed layout, or Task 10.3's restored `vos:layout` — opened once the
+  // desktop has both a real size to convert fractions (or rescue stored rects)
+  // against and a tree to check registration against. Deliberately calls `open()`/
+  // `applyStoredLayout()` directly rather than moving focus to any window afterward
+  // — ticket 14 § Boot and resume: "focus is not moved" on the passive ready path,
+  // and this seeding is part of that same first paint, not an interactive open. A
+  // widen remount (ticket 11) re-runs this effect against a fresh `seededRef`, but
+  // the store's own `windows` survive the remount — the length check below is what
+  // stops it from re-seeding or re-restoring on top of what's already there.
   useEffect(() => {
     if (seededRef.current || !tree) return;
     if (desktopSize.width === 0 && desktopSize.height === 0) return;
     seededRef.current = true;
-    for (const { path, seed } of SEEDS) {
-      if (!tree[path]) continue; // D16: an unregistered app's seed is skipped
-      open(path);
-      setRect(path, seedToRect(seed, desktopSize));
+
+    if (useShellStore.getState().windows.length === 0) {
+      const stored = restoreLayout();
+      if (stored && stored.windows.length > 0) {
+        applyStoredLayout(stored, tree, desktopSize);
+      } else {
+        for (const { path, seed } of SEEDS) {
+          if (!tree[path]) continue; // D16: an unregistered app's seed is skipped
+          open(path);
+          setRect(path, seedToRect(seed, desktopSize));
+        }
+      }
     }
-  }, [tree, desktopSize, open, setRect]);
+    onSeeded?.();
+  }, [tree, desktopSize, open, setRect, onSeeded]);
+
+  // Task 10.3: writes `vos:layout` on every committed windows-related change
+  // (debounced) and synchronously on `pagehide`. Re-wired on every mount/unmount —
+  // cheap, and it keeps a narrow/widen remount from ever holding two subscriptions.
+  useEffect(() => initPersistence(), []);
+
+  // Map Hazards: a leftover inline `view-transition-name` from a promotion click
+  // must be cleared if the visitor navigates back into a bfcache-restored `/`
+  // (Task 10.3), or it collides with the next promotion's own assignment.
+  useEffect(() => {
+    window.addEventListener('pageshow', clearStalePromotionName);
+    return () => window.removeEventListener('pageshow', clearStalePromotionName);
+  }, []);
+
+  // The Konami code (Task 10.4, ticket 08 § Easter eggs): ignored while focus is in
+  // a text input/textarea/contenteditable element, reset on any wrong key. Delivers
+  // only the state change and the toast here — the visual grid tint is Phase 12's.
+  useEffect(() => {
+    let progress = 0;
+
+    function handleKeyDown(e: KeyboardEvent): void {
+      const active = document.activeElement;
+      if (
+        active instanceof HTMLElement &&
+        (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)
+      ) {
+        return;
+      }
+
+      if (e.code === KONAMI_CODE[progress]) {
+        progress += 1;
+        if (progress === KONAMI_CODE.length) {
+          progress = 0;
+          useShellStore.getState().setEffects({ gridTint: 'amber' });
+          useShellStore.getState().toast('TINT', 'AMBER');
+        }
+      } else {
+        progress = e.code === KONAMI_CODE[0] ? 1 : 0;
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const handleHeadingRef = useCallback((id: string, el: HTMLHeadingElement | null) => {
     if (el) titleRefs.current.set(id, el);
@@ -164,20 +252,33 @@ const Desktop = forwardRef<DesktopHandle, Props>(function Desktop({ onSkip }, re
           ground fill belongs on an ancestor (`body`, `global.css`); this surface
           stays transparent on purpose. */}
       <div id="desktop" ref={desktopRef}>
-        {windows.map((win) => (
-          <Window
-            key={win.id}
-            win={win}
-            allWindows={windows}
-            desktopSize={desktopSize}
-            desktopRef={desktopRef}
-            onDragSnapChange={setDragSnapZone}
-            onClose={handleClose}
-            headingRef={(el) => handleHeadingRef(win.id, el)}
-          />
-        ))}
+        <DesktopIcons />
+        {windows.map((win) => {
+          const node = tree?.[win.id];
+          // `exactOptionalPropertyTypes`: an absent maximise box must be an absent
+          // key, not an explicit `undefined` value (same convention as `store.ts`'s
+          // own `opener`).
+          const maximiseProps = node?.url ? { maximiseSlot: <MaximiseBox node={node} /> } : {};
+          return (
+            <Window
+              key={win.id}
+              win={win}
+              allWindows={windows}
+              desktopSize={desktopSize}
+              desktopRef={desktopRef}
+              onDragSnapChange={setDragSnapZone}
+              onClose={handleClose}
+              headingRef={(el) => handleHeadingRef(win.id, el)}
+              {...maximiseProps}
+            >
+              <WindowBody node={node} windowId={win.id} />
+            </Window>
+          );
+        })}
         {dragSnapZone && <SnapPreview zone={dragSnapZone} desktop={desktopSize} />}
       </div>
+      <Toasts />
+      <Taskbar />
     </>
   );
 });
