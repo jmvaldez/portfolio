@@ -1,0 +1,21 @@
+/*
+ * The promotion view transition (ticket 09 "The transition", D15): outbound-only,
+ * native cross-document view transitions, no `<ClientRouter />` (map Hazards).
+ *
+ * Cross-document view transitions have no reduced-motion handling of their own —
+ * unlike Astro's router, which ships one — so the opt-in is gated by hand here.
+ * `page-frame` is the one and only `view-transition-name` in the whole site
+ * (`PageLayout.astro` sets it statically; a promoted window supplies its own name
+ * only in the click handler, Phase 10): two elements sharing a name silently skips
+ * the whole transition, so nothing else here may ever be named.
+ */
+
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition {
+    navigation: auto;
+  }
+}
+
+::view-transition-group(page-frame) {
+  animation-duration: 280ms;
+}

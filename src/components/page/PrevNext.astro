@@ -1,0 +1,60 @@
+---
+// Siblings in D10 (folder-listing) order (ticket 12 § Prev/next). Notes are out of their
+// parent's sequence: they neither occupy a position nor interrupt one, which falls out
+// naturally here from filtering them out of `siblings` before finding this node's index.
+// No wraparound. Absent entirely on `pages` entries — the caller in `[...path].astro`
+// simply never renders this component for them.
+import type { FsNode, FsTree } from '~/fs/types';
+
+interface Props {
+  node: FsNode;
+  tree: FsTree;
+}
+
+const { node, tree } = Astro.props;
+
+function parentPathOf(path: string): string {
+  const idx = path.lastIndexOf('/');
+  return idx <= 0 ? '/' : path.slice(0, idx);
+}
+
+const parent = tree[parentPathOf(node.path)];
+const siblings = (parent?.children ?? [])
+  .map((path) => tree[path])
+  .filter((sibling): sibling is FsNode => sibling !== undefined)
+  .filter((sibling) => sibling.entry?.type !== 'note');
+
+const index = siblings.findIndex((sibling) => sibling.path === node.path);
+const prev = index > 0 ? siblings[index - 1] : undefined;
+const next = index >= 0 && index < siblings.length - 1 ? siblings[index + 1] : undefined;
+---
+
+{(prev?.url || next?.url) && (
+  <nav aria-label="Sibling pages" class="prevnext">
+    {prev?.url && (
+      <a class="prevnext-prev" href={prev.url}>
+        &larr; {prev.title}
+      </a>
+    )}
+    {next?.url && (
+      <a class="prevnext-next" href={next.url}>
+        {next.title} &rarr;
+      </a>
+    )}
+  </nav>
+)}
+
+<style>
+  .prevnext {
+    display: flex;
+    justify-content: space-between;
+    gap: 1em;
+    margin: var(--pad) 0 0;
+    padding-top: var(--pad);
+    border-top: 1px solid var(--edge);
+  }
+
+  .prevnext-next {
+    margin-left: auto;
+  }
+</style>

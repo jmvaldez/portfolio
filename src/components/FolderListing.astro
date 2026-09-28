@@ -1,0 +1,58 @@
+---
+// The rows a folder window will also show (ticket 12 § Folder pages; Phase 10 mirrors
+// this markup in React, hence the reusable class names living in `chrome.css` rather
+// than one-off names here, D14). One row per child, in D10 order — `node.children` is
+// already sorted that way by `buildTree`; this never re-sorts it. The whole row links to
+// the child's URL when it has one; a node with no URL (a `text`/`app`/`link` synthetic
+// node) renders as plain text instead.
+import type { FsNode, FsTree } from '~/fs/types';
+
+interface Props {
+  node: FsNode;
+  tree: FsTree;
+}
+
+const { node, tree } = Astro.props;
+
+const children = (node.children ?? [])
+  .map((path) => tree[path])
+  .filter((child): child is FsNode => child !== undefined);
+
+/** `ls -F`-style marker: a directory's name gets a trailing slash. */
+function markerOf(child: FsNode): string {
+  return child.kind === 'dir' ? '/' : '';
+}
+---
+
+<div class="folder-listing">
+  <div class="folder-listing-head" aria-hidden="true">
+    <span class="folder-col-name">Name</span>
+    <span class="folder-col-title">Title</span>
+    <span class="folder-col-spec">Spec</span>
+  </div>
+  <ul class="folder-listing-rows">
+    {children.map((child) => (
+      <li class="folder-row">
+        {child.url ? (
+          <a class="folder-row-link" href={child.url}>
+            <span class="folder-col-name">
+              {child.name}
+              {markerOf(child)}
+            </span>
+            <span class="folder-col-title">{child.title}</span>
+            {child.strip && <span class="folder-col-spec">{child.strip}</span>}
+          </a>
+        ) : (
+          <span class="folder-row-link folder-row-plain">
+            <span class="folder-col-name">
+              {child.name}
+              {markerOf(child)}
+            </span>
+            <span class="folder-col-title">{child.title}</span>
+            {child.strip && <span class="folder-col-spec">{child.strip}</span>}
+          </span>
+        )}
+      </li>
+    ))}
+  </ul>
+</div>
