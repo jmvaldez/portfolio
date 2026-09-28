@@ -4,14 +4,17 @@ import Head from '~/components/Head.astro';
 interface Props {
   title: string;
   description: string;
+  /** Ticket 09, D15: true on content pages, false (or omitted) on `/`. Gates the
+   * inbound half of the outbound-only view transition (CrtPrefScript). */
+  page?: boolean;
 }
 
-const { title, description } = Astro.props;
+const { title, description, page = false } = Astro.props;
 ---
 
 <html lang="en">
   <head>
-    <Head title={title} description={description} />
+    <Head title={title} description={description} page={page} />
   </head>
   <body>
     <slot />

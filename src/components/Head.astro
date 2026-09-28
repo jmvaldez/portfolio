@@ -8,9 +8,11 @@ import '~/styles/global.css';
 interface Props {
   title: string;
   description: string;
+  /** D15: forwarded to `CrtPrefScript` to gate the inbound half of the view transition. */
+  page?: boolean;
 }
 
-const { title, description } = Astro.props;
+const { title, description, page = false } = Astro.props;
 ---
 
 <meta charset="utf-8" />
@@ -19,4 +21,4 @@ const { title, description } = Astro.props;
 <meta name="description" content={description} />
 {/* Ticket 13: only Regular is preloaded; Bold and Italic swap in on demand. */}
 <Font cssVariable="--font-mono" preload={[{ weight: '400', style: 'normal' }]} />
-<CrtPrefScript />
+<CrtPrefScript page={page} />

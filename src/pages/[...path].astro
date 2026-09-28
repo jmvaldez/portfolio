@@ -1,0 +1,94 @@
+---
+// One route per URL-bearing node (ticket 12 § URLs, § Folder pages): every collection
+// entry, every note, every `pages` entry, and every directory that holds any of them. A
+// directory's `readme.md` shares the directory's own URL (glossary "Readme": a directory
+// never carries a body itself) — the directory node is the one route that serves both, so
+// `getStaticPaths` collapses that collision onto the directory rather than emitting two
+// routes for the same URL.
+import type { GetStaticPaths, ImageMetadata, InferGetStaticPropsType } from 'astro';
+import PageLayout from '~/layouts/PageLayout.astro';
+import Frame from '~/components/chrome/Frame.astro';
+import FolderListing from '~/components/FolderListing.astro';
+import SpecBlock from '~/components/page/SpecBlock.astro';
+import Cover from '~/components/page/Cover.astro';
+import Gallery from '~/components/page/Gallery.astro';
+import Footage from '~/components/page/Footage.astro';
+import PrevNext from '~/components/page/PrevNext.astro';
+import { getEntryForNode, getTree } from '~/fs/load';
+import type { FsNode } from '~/fs/types';
+
+export const getStaticPaths = (async () => {
+  const tree = await getTree();
+  const byUrl = new Map<string, FsNode>();
+
+  for (const node of Object.values(tree)) {
+    if (!node.url || node.url === '/') continue;
+    const existing = byUrl.get(node.url);
+    // A directory wins a URL collision with its own readme.md (ticket 12 § URLs).
+    if (!existing || node.kind === 'dir') byUrl.set(node.url, node);
+  }
+
+  return [...byUrl.values()].map((node) => ({
+    params: { path: node.url!.replace(/^\/+|\/+$/g, '') },
+    props: { path: node.path },
+  }));
+}) satisfies GetStaticPaths;
+
+type Props = InferGetStaticPropsType<typeof getStaticPaths>;
+
+const { path } = Astro.props as Props;
+const tree = await getTree();
+const node = tree[path];
+if (!node) throw new Error(`pages/[...path]: no node at "${path}"`);
+
+// A directory never carries a body itself (glossary "Readme"); if it has one, it lives on
+// its readme.md child, which is also the source for the masthead filename below.
+const readmeChildPath =
+  node.kind === 'dir'
+    ? node.children?.find((childPath) => tree[childPath]?.name === 'readme.md')
+    : undefined;
+const bodyNode = node.kind === 'dir' ? (readmeChildPath ? tree[readmeChildPath] : undefined) : node;
+const entry = bodyNode ? await getEntryForNode(bodyNode.path) : undefined;
+
+// `src/content/schemas.ts`'s `ImageSchema` is deliberately typed loosely (its own
+// comment: "typed loosely enough for a test double"), so Zod infers `image()` fields as
+// an untyped `{}` here rather than `ImageMetadata`. The runtime shape is exactly
+// `ImageMetadata` — Astro's own `image()` helper produces it — so the cast is safe.
+type FootageItem = { label: string; url: string; poster?: ImageMetadata | undefined };
+
+const filename = bodyNode?.name ?? node.name;
+const hasChildren = node.kind === 'dir' && (node.children?.length ?? 0) > 0;
+const title = entry?.data.title ?? node.title;
+const description = entry?.data.summary ?? node.summary ?? node.title;
+---
+
+<PageLayout title={title} description={description} node={node} tree={tree} filename={filename}>
+  {entry && (
+    <>
+      <SpecBlock entry={entry} />
+      {entry.data.type === 'project' && entry.data.cover && (
+        <Cover image={entry.data.cover as unknown as ImageMetadata} alt={entry.data.title} />
+      )}
+      {entry.data.type === 'page' && entry.data.filename === 'resume.txt' && (
+        <p>
+          <a href="/resume.pdf" download="joe-valdez-resume.pdf">
+            DOWNLOAD PDF
+          </a>
+        </p>
+      )}
+      {entry.rendered?.html && <div class="prose" set:html={entry.rendered.html} />}
+      {entry.data.type === 'drone' && entry.data.gallery && (
+        <Gallery images={entry.data.gallery as unknown as ImageMetadata[]} />
+      )}
+      {entry.data.type === 'drone' && entry.data.footage && (
+        <Footage items={entry.data.footage as unknown as FootageItem[]} />
+      )}
+    </>
+  )}
+  {hasChildren && (
+    <Frame as="section" title="Contents">
+      <FolderListing node={node} tree={tree} />
+    </Frame>
+  )}
+  {entry && entry.data.type !== 'page' && <PrevNext node={node} tree={tree} />}
+</PageLayout>

@@ -13,14 +13,36 @@
 // Kept hand-terse rather than run through a minifier: must stay <= 600 bytes
 // minified (phase 3 budget). Storage reads are wrapped in try/catch because
 // private browsing can throw on both `getItem` and `setItem`.
----
+//
+// `page` (ticket 09 "The transition", D15) adds the inbound half of the
+// outbound-only view transition: a page's `pagereveal` handler cuts the
+// transition unless it arrived from `/` itself (deep link, back button from
+// elsewhere, etc. all get a hard cut). `/` (Phase 6) passes no `page` prop
+// and always cuts (D15), so it needs none of this. Astro's `is:inline`
+// scripts don't evaluate `{}` expressions in their body (they're emitted as
+// literal text), so the conditional half is built as a string here and the
+// whole thing lands via `set:html` — this stays the site's one inline
+// script rather than a second `<script>` tag next to it.
+interface Props {
+  page?: boolean;
+}
 
-<!-- prettier-ignore -->
-<script is:inline>
-try{var v=localStorage.getItem('vos:crt')}catch(e){}
+const { page = false } = Astro.props;
+
+const base = `try{var v=localStorage.getItem('vos:crt')}catch(e){}
 if(v!='on'&&v!='off')v=matchMedia('(forced-colors:active),(prefers-contrast:more)').matches?'off':'on';
 var d=document,h=d.documentElement;
 h.dataset.crt=v;
 d.addEventListener('click',function(e){var t=e.target.closest('[data-crt-toggle]');if(t){v=h.dataset.crt=='on'?'off':'on';h.dataset.crt=v;try{localStorage.setItem('vos:crt',v)}catch(e){}t.setAttribute('aria-pressed',''+(v=='on'))}});
-d.addEventListener('DOMContentLoaded',function(){d.querySelectorAll('[data-crt-toggle]').forEach(function(el){el.removeAttribute('hidden')})});
-</script>
+d.addEventListener('DOMContentLoaded',function(){d.querySelectorAll('[data-crt-toggle]').forEach(function(el){el.removeAttribute('hidden')})});`;
+
+// D15: same-origin referrer whose pathname is exactly `/` is the only inbound
+// arrival that keeps the transition; everything else is a hard cut.
+const reveal = `
+d.addEventListener('pagereveal',function(e){try{var u=new URL(d.referrer)}catch(x){}if(!u||u.origin!=location.origin||u.pathname!='/')e.viewTransition?.skipTransition()});`;
+
+const script = page ? base + reveal : base;
+---
+
+<!-- prettier-ignore -->
+<script is:inline set:html={script}></script>

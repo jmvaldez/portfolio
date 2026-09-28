@@ -77,6 +77,47 @@
   color: var(--accent);
 }
 
+/* Folder listing rows (ticket 12 § Folder pages): shared verbatim between the page's
+   `FolderListing.astro` and Phase 10's React folder window, D14. */
+.folder-listing-head,
+.folder-row-link {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 1em;
+  align-items: baseline;
+}
+
+.folder-listing-head {
+  color: var(--ink-faint);
+  font-size: 0.85em;
+  padding: 0.25em 0;
+}
+
+.folder-listing-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.folder-row {
+  border-top: 1px solid var(--edge);
+}
+
+.folder-row-link {
+  padding: 0.5em 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+a.folder-row-link:hover {
+  color: var(--accent);
+}
+
+.folder-col-spec {
+  color: var(--ink-faint);
+  text-align: right;
+}
+
 @media (forced-colors: active) {
   .frame {
     border: 3px solid CanvasText;

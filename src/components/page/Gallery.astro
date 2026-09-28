@@ -1,0 +1,43 @@
+---
+// A grid of framed thumbnails (ticket 12 § Gallery and footage): each a plain link to
+// the full-size image, no lightbox, no JS. Images carry no scanlines, like body copy.
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+
+interface Props {
+  images: ImageMetadata[];
+}
+
+const { images } = Astro.props;
+---
+
+{images.length > 0 && (
+  <div class="gallery">
+    {images.map((image) => (
+      <a class="gallery-item frame" href={image.src}>
+        <Image src={image} alt="" width={image.width} height={image.height} />
+      </a>
+    ))}
+  </div>
+)}
+
+<style>
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: var(--pad);
+    margin: 0 0 var(--pad);
+  }
+
+  .gallery-item {
+    display: block;
+    overflow: hidden;
+    line-height: 0;
+  }
+
+  .gallery-item img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+</style>

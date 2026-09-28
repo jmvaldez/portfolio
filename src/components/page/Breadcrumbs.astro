@@ -1,0 +1,80 @@
+---
+// A terminal-style path (ticket 12 § Breadcrumbs): "/ projects / orbital-mesh / notes".
+// Each segment's visible text is the URL segment; each link's accessible name is the
+// target node's title (ticket 12/14: a screen reader hears "Orbital Mesh", not
+// "orbital-mesh"). The decorative "/" separators between segments are `aria-hidden` so
+// they don't clutter that reading. The final segment is the current page: not a link,
+// `aria-current="page"`.
+import type { FsNode, FsTree } from '~/fs/types';
+
+interface Props {
+  node: FsNode;
+  tree: FsTree;
+}
+
+const { node, tree } = Astro.props;
+
+function lastUrlSegment(url: string | undefined): string {
+  const segments = (url ?? '').split('/').filter(Boolean);
+  return segments[segments.length - 1] ?? '';
+}
+
+// Directory ancestors of `node`, root and `node` itself excluded — derived from the fs
+// path rather than the URL, since a directory's readme.md collapses onto the
+// directory's own URL (ticket 12 § URLs) and would otherwise double an ancestor up.
+function ancestorDirs(path: string): FsNode[] {
+  const segments = path.split('/').filter(Boolean);
+  const dirs: FsNode[] = [];
+  let current = '';
+  for (let i = 0; i < segments.length - 1; i++) {
+    current += `/${segments[i]}`;
+    const dir = tree[current];
+    if (dir) dirs.push(dir);
+  }
+  return dirs;
+}
+
+const dirs = ancestorDirs(node.path);
+const currentSegment = lastUrlSegment(node.url);
+---
+
+<nav aria-label="Breadcrumb">
+  <ol class="breadcrumbs">
+    <li>
+      <a href="/">/</a>
+    </li>
+    {dirs.map((dir) => (
+      <>
+        <li aria-hidden="true">/</li>
+        <li>
+          <a href={dir.url} aria-label={dir.title}>
+            {lastUrlSegment(dir.url)}
+          </a>
+        </li>
+      </>
+    ))}
+    <li aria-hidden="true">/</li>
+    <li aria-current="page">{currentSegment}</li>
+  </ol>
+</nav>
+
+<style>
+  .breadcrumbs {
+    display: flex;
+    flex-wrap: wrap;
+    list-style: none;
+    margin: 0 0 var(--pad);
+    padding: 0;
+    gap: 0.5em;
+    color: var(--ink-dim);
+    font-size: 0.9em;
+  }
+
+  .breadcrumbs a {
+    color: inherit;
+  }
+
+  .breadcrumbs [aria-current='page'] {
+    color: var(--ink);
+  }
+</style>

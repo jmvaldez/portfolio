@@ -1,0 +1,140 @@
+---
+// The spec block (ticket 12 § Spec block): an entry's frontmatter facts as keys and
+// values. Empty optional fields are omitted, never rendered as "--"; notes and `pages`
+// entries carry no facts worth a block at all, so both fall through to nothing. Numerals
+// rely on the mono face's own tabular widths (ticket 13: no `font-variant-numeric: tnum`
+// needed).
+import type { CollectionEntry } from 'astro:content';
+
+interface Props {
+  entry: CollectionEntry<'projects'> | CollectionEntry<'drones'> | CollectionEntry<'pages'>;
+}
+
+const { entry } = Astro.props;
+const data = entry.data;
+
+/** D6: `{ start, end? }` renders as `2025-PRESENT` in chrome (en dash here, matching
+ * `src/fs/tree.ts`'s spec-strip formatting). */
+function formatPeriod(period: { start: string; end?: string | undefined }): string {
+  const start = period.start.slice(0, 4);
+  if (period.end === undefined) return start;
+  const end = period.end === 'present' ? 'PRESENT' : period.end.slice(0, 4);
+  return `${start}–${end}`;
+}
+
+function formatDate(value: Date | string): string {
+  return value instanceof Date ? value.toISOString().slice(0, 10) : value;
+}
+---
+
+{data.type === 'project' && (
+  <dl class="specblock">
+    <dt class="speckey">Role</dt>
+    <dd>{data.role}</dd>
+    <dt class="speckey">Period</dt>
+    <dd>{formatPeriod(data.period)}</dd>
+    <dt class="speckey">Status</dt>
+    <dd>{data.status.toUpperCase()}</dd>
+    <dt class="speckey">Tech</dt>
+    <dd>{data.tech.join(', ')}</dd>
+    {data.repo && (
+      <>
+        <dt class="speckey">Repo</dt>
+        <dd>
+          <a href={data.repo}>{data.repo}</a>
+        </dd>
+      </>
+    )}
+    {data.live && (
+      <>
+        <dt class="speckey">Live</dt>
+        <dd>
+          <a href={data.live}>{data.live}</a>
+        </dd>
+      </>
+    )}
+  </dl>
+)}
+{data.type === 'drone' && (
+  <dl class="specblock">
+    <dt class="speckey">Class</dt>
+    <dd>{data.class.toUpperCase()}</dd>
+    <dt class="speckey">Frame</dt>
+    <dd>{data.frame}</dd>
+    {data.weightG !== undefined && (
+      <>
+        <dt class="speckey">Weight</dt>
+        <dd>{data.weightG}G</dd>
+      </>
+    )}
+    {data.propSizeIn !== undefined && (
+      <>
+        <dt class="speckey">Props</dt>
+        <dd>{data.propSizeIn}"</dd>
+      </>
+    )}
+    {data.firstFlight !== undefined && (
+      <>
+        <dt class="speckey">First flight</dt>
+        <dd>{formatDate(data.firstFlight)}</dd>
+      </>
+    )}
+    {data.hardware && (
+      <>
+        <dt class="speckey">Hardware</dt>
+        <dd>
+          <dl class="specblock specblock-nested">
+            {data.hardware.motors && (
+              <>
+                <dt class="speckey">Motors</dt>
+                <dd>{data.hardware.motors}</dd>
+              </>
+            )}
+            {data.hardware.esc && (
+              <>
+                <dt class="speckey">ESC</dt>
+                <dd>{data.hardware.esc}</dd>
+              </>
+            )}
+            {data.hardware.flightController && (
+              <>
+                <dt class="speckey">Flight controller</dt>
+                <dd>{data.hardware.flightController}</dd>
+              </>
+            )}
+            {data.hardware.vtx && (
+              <>
+                <dt class="speckey">VTX</dt>
+                <dd>{data.hardware.vtx}</dd>
+              </>
+            )}
+            {data.hardware.camera && (
+              <>
+                <dt class="speckey">Camera</dt>
+                <dd>{data.hardware.camera}</dd>
+              </>
+            )}
+          </dl>
+        </dd>
+      </>
+    )}
+  </dl>
+)}
+
+<style>
+  .specblock {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 0.35em 1em;
+    margin: 0 0 var(--pad);
+  }
+
+  .specblock dd {
+    margin: 0;
+    color: var(--ink);
+  }
+
+  .specblock-nested {
+    margin: 0;
+  }
+</style>
