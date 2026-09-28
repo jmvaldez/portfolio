@@ -19,6 +19,9 @@
 /* Phase 11's terminal (`Terminal.tsx`) — scoped to `.terminal`, see the file's own
    header for why it isn't folded into `desktop.css`. */
 @import './terminal.css';
+/* Phase 12's 3D layer chrome (`SceneLayer.tsx`, `Viewer.tsx`) — scoped to the scene
+   fallback floor and `.viewer`, see the file's own header. */
+@import './scene.css';
 /* Print-only (ticket 15): the media qualifier gates the whole file, so nothing in it
    needs its own `@media print` wrapper. Applies to every page — a visitor may print
    any of them — and is also the stylesheet Task 5.2's headless render uses. */

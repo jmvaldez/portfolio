@@ -31,4 +31,8 @@ export const appRegistry: Partial<Record<AppId, AppRegistration>> = {
     component: lazy(() => import('../terminal/Terminal')),
     singleInstance: true,
   },
+  viewer: {
+    component: lazy(() => import('./Viewer')),
+    singleInstance: true,
+  },
 };
