@@ -191,15 +191,25 @@ export default function Window({
       // `tearOff` centres the restored rect on the pointer with no bounds check, so a
       // tear starting near an edge/corner of a maximised window can place the result
       // (and its title bar) off-screen. That can put the whole pointer-captured
-      // element outside the viewport, which fires `pointercancel` in Chromium and
-      // strands the gesture (found while testing Phase 10's maximise link). Clamp
-      // through `rescue` so the title bar stays reachable and captured.
-      const torn = rescue(tearOff(win.rect, restoreSize, pointer), desktopSize);
+      // element outside the viewport, which risks `pointercancel` in Chromium and
+      // stranding the gesture (found while testing Phase 10's maximise link).
+      //
+      // The fix has to be careful: everything after this point tracks the pointer by
+      // adding `dx`/`dy` onto `g.startRect`, which is what keeps the window's centre
+      // exactly under the cursor for the rest of the drag (ticket 04). If `startRect`
+      // itself were clamped, that clamp's offset would never wash out — it would
+      // follow the window for the rest of the gesture, landing it away from the
+      // cursor at release. So `startRect` stays the TRUE, unclamped tear-off result
+      // (correct math, what the rest of this function already assumed); only the
+      // rect actually rendered for this one frame is clamped, purely so the title
+      // bar's DOM node isn't fully off-screen the instant it tears free. The very
+      // next `pointermove` recomputes from the true `startRect` and overwrites it.
+      const torn = tearOff(win.rect, restoreSize, pointer);
       unsnap(win.id);
       g.torn = true;
       g.startRect = torn;
       g.startPointer = { x: e.clientX, y: e.clientY };
-      pendingRectRef.current = torn;
+      pendingRectRef.current = rescue(torn, desktopSize);
       scheduleFlush();
       return;
     }

@@ -161,6 +161,10 @@ test('the shell never touches the URL for desktop-only interaction', async ({ pa
 
   await launchIcon(page, 'projects');
   await page.locator('button[aria-label="Minimise projects"]').click();
+  // A minimised window's own title bar (and its Close button) is `display: none` —
+  // restore it via its taskbar button first, matching how a visitor would actually
+  // reach Close again, rather than clicking a hidden control.
+  await page.locator('.taskbar-windows button', { hasText: 'projects' }).click();
   await page.locator('button[aria-label="Close projects"]').click();
   await launchIcon(page, 'about.txt');
 
