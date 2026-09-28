@@ -86,8 +86,16 @@ _Avoid_: subtitle, byline, meta line
 
 **Breakpoint**:
 The single viewport condition that decides whether a visitor gets the desktop shell or
-the linear layout. It is a hard handover and never a responsive squeeze, and it is re-evaluated live.
+the linear layout. It is a hard handover and never a responsive squeeze, and it is re-evaluated live. A
+layout override outranks it.
 _Avoid_: mobile cutoff, responsive threshold
+
+**Layout override**:
+A visitor's standing choice of the linear layout even where the breakpoint would give them
+the desktop shell. Set from the shell's skip link and cleared from the linear layout. It
+is what makes the linear layout a conforming alternative to the shell rather than a
+mobile-only view.
+_Avoid_: text mode, accessible mode, lite version
 
 **Boot**:
 The POST-style sequence shown on a tab's first arrival at the desktop shell. Belongs to

@@ -184,6 +184,16 @@ resolution.
   experimental `incrementalBuild` plus Cloudflare's build cache. There's no SEO component,
   so meta goes in a hand-written `Head.astro`.
 
+- [Accessibility strategy](issues/14-accessibility.md): **hybrid**. The shell is keyboard
+  operable for everything that reaches content: launch, focus, raise, minimise, close, read,
+  promote. Geometry (move, resize, snap, orbit) is excluded. A first-Tab-stop "Skip to text
+  layout" link sets a `localStorage` **layout override** the head gate honours, which makes
+  the linear layout WCAG 2.2's *conforming alternate version* and carries the shell's
+  2.5.7 / 2.1.4 gaps. Target is 2.2 AA. Forced colours and increased contrast only set the
+  CRT toggle's default. Maximise is "Open <title> page". Canvases are `aria-hidden`, with a
+  text line for the drone. Terminal output is a polite `role="log"`, one unit per command.
+  Boot is `aria-hidden`, followed by one ready status. Z-order never reorders the DOM.
+
 ## Not yet specified
 
 <!-- empty: the remaining fog graduated into tickets 14-19 on 2026-09-27 -->
@@ -364,3 +374,13 @@ resolution.
   days without a read.
 - **resvg-js scans system fonts on every render by default** (~75 ms per image). Pass
   `font: { loadSystemFonts: false }`.
+
+- **Raising a window by moving its DOM node drops focus and reshuffles the tab order** under
+  a keyboard user mid-gesture. Z-order is `z-index` only, and windows stay in open order in
+  the DOM.
+- **The shell's WCAG gaps are carried by the conforming-alternate-version clause, not
+  fixed.** Drag-only geometry fails 2.5.7 and the global backtick fails 2.1.4 on their own.
+  Remove or bury the "Skip to text layout" link, or let the head gate ignore the layout
+  override, and `/` stops conforming.
+- **Moving focus on boot completion strands screen-reader users past the skip link.** The
+  ready state is announced through a status region and focus stays put.
