@@ -24,16 +24,33 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # The resume PDF is rendered by a real headless Chromium at build time
-      # (ticket 15), so the build step below needs it available.
+      # Same incremental-build cache as ci.yml; see the comment there.
+      - uses: actions/cache@v4
+        with:
+          path: node_modules/.astro
+          key: astro-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('src/assets/fonts/og/*') }}
+
+      # The resume PDF is rendered by a headless Chromium at build time, so the build step
+      # needs it installed.
       - run: pnpm exec playwright install --with-deps chromium
 
       - run: pnpm build
 
-      # Precondition 2: the deploy step must skip gracefully until Joe adds the
-      # Cloudflare secrets, so CI stays green before they exist and on forks.
+      # The deploy step skips gracefully until the Cloudflare secrets exist, so CI stays
+      # green before then and on forks. `secrets` isn't allowed in a step-level `if`, so
+      # the check goes through env.
+      - name: Check for Cloudflare secrets
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -n "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "HAS_CF=true" >> "$GITHUB_ENV"
+          else
+            echo "HAS_CF=false" >> "$GITHUB_ENV"
+          fi
+
       - name: Deploy to Cloudflare Pages
-        if: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
+        if: ${{ env.HAS_CF == 'true' }}
         uses: cloudflare/wrangler-action@v3
         with:
           command: pages deploy dist --project-name=joe-valdez-portfolio --branch=main
@@ -41,5 +58,5 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Note skipped deploy
-        if: ${{ secrets.CLOUDFLARE_API_TOKEN == '' }}
+        if: ${{ env.HAS_CF != 'true' }}
         run: echo "::notice::Cloudflare secrets not configured; skipping deploy"

@@ -1,9 +1,7 @@
 ---
-// The page frame (ticket 12 § The page frame; ticket 09 "The transition"): the outermost
-// framed element of a page, and the ONE view-transition-name in the whole site
-// (map Hazards: two elements sharing a `view-transition-name` silently skip the whole
-// transition; a promoted window supplies its own name only in the click handler,
-// Phase 10). `Frame` never sets one on its own, so this is the single static assignment.
+// The page frame: the outermost framed element of a page and the only element in the
+// site with a static `view-transition-name`. Two elements sharing a name silently skip
+// the whole transition, so `Frame` never sets one on its own.
 import BaseLayout from './BaseLayout.astro';
 import Frame from '~/components/chrome/Frame.astro';
 import CloseBox from '~/components/chrome/CloseBox.astro';
@@ -13,19 +11,17 @@ import GridFloor from '~/components/GridFloor.astro';
 import type { FsNode, FsTree } from '~/fs/types';
 
 interface Props {
-  title: string;
-  description: string;
   node: FsNode;
   tree: FsTree;
-  /** The masthead's filename (ticket 12 § Anatomy): the readme's name for a directory
-   * that has one, the node's own name otherwise. Never the title. */
+  /** The masthead's filename: the readme's name for a directory that has one, else the
+   * node's own name. Never the title. */
   filename: string;
 }
 
-const { title, description, node, tree, filename } = Astro.props;
+const { node, tree, filename } = Astro.props;
 ---
 
-<BaseLayout title={title} description={description} page>
+<BaseLayout node={node} tree={tree} page>
   <div class="page-shell">
     <GridFloor />
     <Frame as="article" title={filename} headingLevel="h1" vtName="page-frame">
@@ -43,9 +39,7 @@ const { title, description, node, tree, filename } = Astro.props;
 
 <style>
   .page-shell {
-    /* `GridFloor` fills this in behind the frame (ticket 11 § "The 3D layer, without
-       the island"), so the page frame, the linear layout masthead and (Phase 12) the
-       WebGL scene all reference one shared floor concept. */
+    /* `GridFloor` fills this in behind the frame. */
     position: relative;
     min-height: 100dvh;
     display: flex;
@@ -53,13 +47,13 @@ const { title, description, node, tree, filename } = Astro.props;
     padding: 24px 16px;
   }
 
-  /* Targets only the page frame itself, never a nested Section-style Frame (the
-     children listing, Task 4.3) — `>` stops the selector at the direct child. */
+  /* Targets only the page frame, not a nested Section-style Frame; `>` limits it to the
+     direct child. */
   .page-shell > :global(.frame) {
     width: 100%;
     max-width: calc(72ch + 2 * var(--pad) + 2 * var(--border-w));
     min-height: 100dvh;
-    /* Reserves room for the fixed taskbar strip Task 4.4 adds. */
+    /* Reserves room for the fixed taskbar strip. */
     padding-bottom: calc(44px + env(safe-area-inset-bottom));
   }
 

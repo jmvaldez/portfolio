@@ -1,11 +1,7 @@
 ---
-// A linear-layout Section (glossary "Section"; ticket 11 § Section, ticket 14): a `Frame`
-// as `<section>`, anchored at `id={node.section}`, labelled by its own `h2` title (the
-// node's filename, matching the page masthead's convention — `[...path].astro` titles a
-// page frame off `bodyNode?.name ?? node.name`; every root node a Section renders is its
-// own body node, so `node.name` alone is that same value here). Its only control is a
-// maximise box, and only when the node has a URL — never a close box, since a Section is
-// never a window.
+// A `Frame` rendered as a `<section>` anchored at `node.section`, labelled by its `h2`
+// title (the node's filename). Its only control is a maximise box, shown when the node has
+// a URL; there is never a close box because a Section is not a window.
 import Frame from '~/components/chrome/Frame.astro';
 import MaximiseBox from '~/components/chrome/MaximiseBox.astro';
 import type { FsNode } from '~/fs/types';

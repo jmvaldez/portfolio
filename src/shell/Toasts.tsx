@@ -1,8 +1,5 @@
-// The kill-feed toast stack (ticket 06 § the FPS layer's concrete form: "kill-feed
-// toasts top-right"; Task 10.4). Purely presentational and `aria-hidden` — the same
-// text already reaches the shared `role="status"` region via `store.ts`'s own
-// `toast()` (ticket 14 § Terminal: "toasts ... all go through one shared role=status
-// region"), so this stack would otherwise double-announce every toast.
+// The kill-feed toast stack. Presentational and `aria-hidden`: `store.ts`'s `toast()`
+// already sends the same text to the shared status region, so this would double-announce.
 import { useShellStore } from './store';
 
 export default function Toasts() {

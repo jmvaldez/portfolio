@@ -3,21 +3,21 @@
 
 Needs `pip install 'fonttools[woff]' brotli` (brotli backs woff2 output). This
 script is NOT run in CI: its five outputs (three woff2 + two TTF) plus
-`src/assets/fonts/OFL.txt` are committed straight into the repo (D21,
-ticket 13) so a fresh checkout never needs Python at build time.
+`src/assets/fonts/OFL.txt` are committed straight into the repo so a fresh
+checkout never needs Python at build time.
 
 Source: the hinted woff files under the `@ibm/plex-mono` devDependency
 (`node_modules/@ibm/plex-mono/fonts/complete/woff/`). Nothing at runtime
 imports that package; it exists only so this script has something to read.
 
-Ticket 13 / map Hazards this encodes:
-- pyftsubset's defaults drop `smcp`, `c2sc`, `zero`, `case`, `tnum` — they must
+Constraints this encodes:
+- pyftsubset's defaults drop `smcp`, `c2sc`, `zero`, `case`, `tnum`; they must
   be requested explicitly via `--layout-features+=`.
 - "Plex" is an OFL Reserved Font Name. A subset is a Modified Version, so
   every name-table record naming the family is rewritten to "Valdez Mono"
   (never leaving "Plex" anywhere) before the font is written out.
-- Satori (Phase 7's OG image generation) rejects woff2, so Regular and Bold
-  are also emitted as plain, unsubsetted-flavor TTF.
+- Satori (the OG image renderer) rejects woff2, so Regular and Bold are also
+  emitted as plain, unsubsetted-flavor TTF.
 """
 
 from __future__ import annotations
@@ -33,14 +33,13 @@ SOURCE_DIR = ROOT / "node_modules" / "@ibm" / "plex-mono" / "fonts" / "complete"
 FONT_DIR = ROOT / "src" / "assets" / "fonts"
 OG_DIR = FONT_DIR / "og"
 
-# ticket 13 § Styles and files: the unicode ranges the subset covers.
+# The unicode ranges the subset covers.
 UNICODES = (
     "U+0020-007E,U+00A0-00FF,U+2010-2027,U+2030-203A,U+20AC,U+2122,"
     "U+2500-257F,U+2580-259F"
 )
 
-# ticket 13 / map Hazards: these get stripped by pyftsubset's defaults and
-# must be kept explicitly.
+# pyftsubset's defaults strip these features; they must be kept explicitly.
 LAYOUT_FEATURES = ["smcp", "c2sc", "zero", "case", "tnum"]
 
 # Name table IDs that can carry the family name and must never say "Plex"
@@ -98,7 +97,7 @@ def rename_family(font: TTFont, family: str, subfamily: str, postscript: str) ->
 def scrub_remaining_plex(font: TTFont) -> None:
     """Catch-all: some name records (e.g. the trademark notice, ID 7) mention
     "IBM Plex" outside the family-name IDs this script otherwise rewrites.
-    The ticket-13 invariant is "no record contains 'Plex' anywhere", so
+    The invariant is "no record contains 'Plex' anywhere", so
     replace it wherever it survives rather than only in the family fields.
     """
     name_table = font["name"]
@@ -115,7 +114,7 @@ def scrub_remaining_plex(font: TTFont) -> None:
 
 
 def assert_scrubbed(path: Path) -> None:
-    """Re-open a written font and assert the ticket-13 invariants hold."""
+    """Re-open a written font and assert the "no Plex" invariants hold."""
     font = TTFont(str(path))
 
     names = [str(record) for record in font["name"].names]
@@ -172,7 +171,7 @@ def write_woff2(font: TTFont, family: str, subfamily: str, postscript: str, out_
 
 
 def write_ttf(source: Path, family: str, subfamily: str, postscript: str, out_path: Path) -> None:
-    """Emit an unsubsetted-flavor (plain) TTF for Phase 7's Satori renderer."""
+    """Emit an unsubsetted-flavor (plain) TTF for the Satori OG renderer."""
     font = subset_font(source)
     rename_family(font, family, subfamily, postscript)
     scrub_remaining_plex(font)

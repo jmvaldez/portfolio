@@ -1,3 +1,4 @@
 .scratch/
 dist/
 pnpm-lock.yaml
+scripts/__fixtures__/

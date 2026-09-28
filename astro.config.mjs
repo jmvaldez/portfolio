@@ -1,21 +1,37 @@
 import { defineConfig, fontProviders } from 'astro/config';
 import react from '@astrojs/react';
+import sitemap from '@astrojs/sitemap';
 import tailwindcss from '@tailwindcss/vite';
 import siteGuard from './src/integrations/site-guard.ts';
 
 export default defineConfig({
-  // Placeholder origin (D3); the domain itself is out of scope. siteGuard fails
-  // the build if this is ever unset or pointed at localhost.
+  // Placeholder origin; siteGuard fails the build if this is unset or points at
+  // localhost.
   site: 'https://joe-valdez-portfolio.pages.dev',
   trailingSlash: 'always',
   output: 'static',
-  // The shell does its own hover prefetch (ticket 09); content pages have no JS
-  // to prefetch with, so Astro's built-in prefetch stays off (D4).
+  // The shell does its own hover prefetch; content pages have no JS to prefetch with,
+  // so Astro's built-in prefetch stays off.
   prefetch: false,
-  integrations: [react(), siteGuard()],
-  // Ticket 13: the renamed IBM Plex Mono subset (`scripts/subset-fonts.py`),
-  // self-hosted through Astro's local provider. Astro does not subset local
-  // files itself, so the woff2 files are pre-subset and committed (D21).
+  integrations: [
+    react(),
+    siteGuard(),
+    // Every page, minus the OG images, the raw fs body/source endpoints and the resume
+    // PDF, none of which are pages.
+    sitemap({
+      filter: (page) => {
+        const url = new URL(page);
+        return (
+          !url.pathname.includes('/og/') &&
+          !url.pathname.includes('/fs/') &&
+          url.pathname !== '/resume.pdf'
+        );
+      },
+    }),
+  ],
+  // The renamed IBM Plex Mono subset (`scripts/subset-fonts.py`), self-hosted through
+  // Astro's local provider. Astro doesn't subset local files, so the woff2 files are
+  // pre-subset and committed.
   fonts: [
     {
       provider: fontProviders.local(),
@@ -41,9 +57,9 @@ export default defineConfig({
         ],
       },
       display: 'swap',
-      // Astro's automatic fallback only knows Courier New and is prepended
-      // ahead of any listed fallback, silently shadowing the hand-written
-      // Menlo/Consolas/DejaVu faces in src/styles/fonts.css (map Hazards).
+      // Astro's automatic fallback only knows Courier New and is prepended ahead of any
+      // listed fallback, silently shadowing the hand-written Menlo/Consolas/DejaVu faces
+      // in src/styles/fonts.css.
       optimizedFallbacks: false,
       fallbacks: ['Valdez Mono Menlo', 'Valdez Mono Consolas', 'Valdez Mono DejaVu', 'monospace'],
     },
@@ -52,10 +68,16 @@ export default defineConfig({
     plugins: [tailwindcss()],
   },
   build: {
-    // Left at the default of 1: Phase 7's incremental build cache turns off
-    // above concurrency 1.
+    // Left at the default of 1: the incremental build cache (enabled below) turns off
+    // entirely above concurrency 1.
     concurrency: 1,
   },
-  // Never add `vite.ssr.noExternal: ['@react-three/drei']` here — it breaks
-  // `astro dev` with a `detect-gpu` CJS named-export error (map Hazards).
+  experimental: {
+    // Caches the OG endpoint's PNGs (and any other `cacheKey`-bearing route) across
+    // builds, kept warm by `actions/cache` on `node_modules/.astro` in both workflows.
+    // Requires `build.concurrency: 1` above.
+    incrementalBuild: true,
+  },
+  // Never add `vite.ssr.noExternal: ['@react-three/drei']` here: it breaks `astro dev`
+  // with a `detect-gpu` CJS named-export error.
 });

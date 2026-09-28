@@ -1,14 +1,9 @@
 ---
-// The taskbar strip (ticket 11 § Taskbar strip, D11): the same fixed bottom strip on
-// `/` (Phase 6) and on every content page. Launchers are root mount-table nodes with
-// `launcher: true` (D11: "the mount table carries UI flags"), in mount order, except
-// `app` nodes (`terminal.exe` lives under `/bin` and is a shell-only launcher, Phase
-// 10) — there is no shell here to open a window in. Read straight off `mounts` rather
-// than off the tree: only `RootFileMount` and `CollectionMount` ever carry `launcher`,
-// which already excludes every `app`/`link`/`text`/`bin` mount. `onHome` picks the
-// anchor's href: an in-page `#section` on `/` itself, `/#section` from a page. No
-// gauges, no window buttons: both report live shell state and there is no shell on
-// either of these surfaces.
+// Fixed bottom strip shared by `/` and every content page. Launchers are the root mounts
+// flagged `launcher: true`, in mount order; `app` nodes are excluded because there is no
+// shell to open a window in. `onHome` picks the href: `#section` on `/` itself,
+// `/#section` from any other page. No gauges or window buttons, since both need live
+// shell state.
 import CrtToggle from '~/components/chrome/CrtToggle.astro';
 import { mounts, type CollectionMount, type RootFileMount } from '~/fs/mounts';
 import { SHELL_QUERY } from '~/lib/breakpoint';
@@ -22,12 +17,9 @@ interface Props {
 
 const { tree, onHome } = Astro.props;
 
-// Task 8.3 § 5: the Desktop control only ever makes sense on `/` (it offers a way
-// back into the shell), and only when a visitor is both above the breakpoint and
-// has set the layout override — i.e. they *could* have the shell but chose the
-// linear layout. Kept as its own tiny `is:inline` script rather than folded into
-// `HeadGate.astro`, which is already tight against its 1.5 KB budget (ticket 19)
-// and is `/`-only for an unrelated reason (deciding boot vs. restore vs. bail).
+// The Desktop control appears only on `/`, and only for a visitor above the breakpoint
+// who chose the linear layout, so it offers a way back into the shell. Separate from
+// `HeadGate.astro`, which is tight against its byte budget.
 const desktopControlScript = `
 var el=document.querySelector('[data-desktop-control]');
 if(el){

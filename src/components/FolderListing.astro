@@ -1,10 +1,7 @@
 ---
-// The rows a folder window will also show (ticket 12 § Folder pages; Phase 10 mirrors
-// this markup in React, hence the reusable class names living in `chrome.css` rather
-// than one-off names here, D14). One row per child, in D10 order — `node.children` is
-// already sorted that way by `buildTree`; this never re-sorts it. The whole row links to
-// the child's URL when it has one; a node with no URL (a `text`/`app`/`link` synthetic
-// node) renders as plain text instead.
+// One row per child of `node`, in `node.children` order. A child with a URL renders as a
+// link; one without (a synthetic `text`/`app`/`link` node) renders as plain text. Class
+// names live in `chrome.css` so the shell's folder windows can reuse them.
 import type { FsNode, FsTree } from '~/fs/types';
 
 interface Props {

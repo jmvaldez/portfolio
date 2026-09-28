@@ -1,9 +1,8 @@
 import { expect, test } from '@playwright/test';
 
-// The print stylesheet (ticket 15 § The print stylesheet): loaded on every page, tuned
-// for `/resume/`. `page.emulateMedia({ media: 'print' })` is Playwright's own recipe for
-// exercising `@media print` / a `print`-qualified `@import` without an actual print
-// dialog.
+// The print stylesheet: loaded on every page, tuned for `/resume/`.
+// `page.emulateMedia({ media: 'print' })` is Playwright's recipe for exercising
+// `@media print` / a `print`-qualified `@import` without a print dialog.
 
 test('printing /resume/ hides the taskbar strip and breadcrumbs', async ({ page }) => {
   await page.goto('/resume/');
@@ -28,9 +27,9 @@ test('printing /resume/ hides the DOWNLOAD PDF link', async ({ page }) => {
   await expect(page.locator('a[download]')).toBeHidden();
 });
 
-// The mailto link this ticket's print rule targets lives on /contact/ (ticket 15's
-// resume seed content, lorem ipsum, carries no address of its own) — the rule is
-// sitewide, so exercising it there is equivalent to exercising it on /resume/.
+// The mailto link the print rule targets lives on /contact/ (the resume seed content
+// carries no address of its own). The rule is sitewide, so exercising it there is
+// equivalent to exercising it on /resume/.
 test("printing /contact/ prints a mailto link's address after its text", async ({ page }) => {
   await page.goto('/contact/');
   await page.emulateMedia({ media: 'print' });

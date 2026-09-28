@@ -1,21 +1,16 @@
 ---
-// The shared window/Section primitive (ticket 06 § chrome geometry; glossary
-// "Page frame": the same object, grown to full height, is what a promoted window
-// becomes). `vtName` sets `view-transition-name` on the root element only when the
-// caller supplies one (ticket 09 hazard: a name applied statically to every frame
-// makes two elements share it and silently skips the whole transition — this
-// component never assigns one on its own).
+// Shared window and Section primitive. `vtName` sets `view-transition-name` only when the
+// caller passes one: a name applied to every frame would be shared by several elements
+// and silently skip the whole transition.
 interface Props {
   title: string;
   as?: 'section' | 'article' | 'div';
   titleId?: string;
   headingLevel?: 'h1' | 'h2';
   vtName?: string;
-  /** The linear layout's Sections need a stable anchor id (ticket 11: `id={node.section}`);
-   * nothing else has used this yet, so it stays optional. */
+  /** Stable anchor id, used by the linear layout's Sections. */
   id?: string | undefined;
-  /** Labels the frame itself off its own title heading — a `<section>` landmark needs an
-   * accessible name (ticket 14); `article`/`div` callers leave this unset. */
+  /** Labels a `<section>` frame from its title heading; `article`/`div` callers omit it. */
   ariaLabelledby?: string;
 }
 

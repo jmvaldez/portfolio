@@ -1,18 +1,13 @@
-// The `vos:layout` round trip (ticket 09 § State across the round trip, D13, Task
-// 10.3): serialising the store's window state into `StoredLayout`'s shape,
-// debounced writes, a synchronous write for `pagehide`, and reconstructing a
-// restored session's windows back into the store. Nothing here ever touches
-// `localStorage` — `readLayout`/`writeLayout` (`src/lib/storage.ts`) are
-// `sessionStorage` only (ticket 04, narrowed by 09).
+// The `vos:layout` round trip: serialising window state, debounced and `pagehide` writes,
+// and restoring windows into the store. Storage is `sessionStorage` only, via
+// `readLayout`/`writeLayout` in `src/lib/storage.ts`.
 import { appRegistry } from './apps/registry';
 import { rescue, type Rect, type SnapZone } from './wm/geometry';
 import { useShellStore, type ShellWindow } from './store';
 import { readLayout, writeLayout, type StoredLayout } from '~/lib/storage';
 import type { FsTree } from '~/fs/types';
 
-/** How long a burst of geometry changes (drag, resize) waits before it's actually
- * written (Task 10.3: "DEBOUNCED at 150ms so rapid drag/resize doesn't write on
- * every frame"). */
+/** How long a burst of changes (drag, resize) waits before being written. */
 const DEBOUNCE_MS = 150;
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -25,10 +20,8 @@ function toRect(stored: { x: number; y: number; w: number; h: number }): Rect {
   return { x: stored.x, y: stored.y, width: stored.w, height: stored.h };
 }
 
-/** Builds `StoredLayout` from the store's live window state (Task 10.3). Field
- * names deliberately differ from `Rect`'s own (`x,y,w,h` vs. `x,y,width,height`) —
- * `StoredLayout` is Phase 8's shape and this is the one place that maps between
- * the two. */
+/** Builds a `StoredLayout` from the store's live window state. Stored rects use `w`/`h`
+ * where `Rect` uses `width`/`height`; this is where the two are mapped. */
 export function serializeLayout(): StoredLayout {
   const { windows, focusedId, bodyScroll } = useShellStore.getState();
 
@@ -50,8 +43,7 @@ export function serializeLayout(): StoredLayout {
   };
 }
 
-/** The debounced write every committed geometry/window-state change goes through
- * (Task 10.3, wired from `initPersistence`'s store subscription). */
+/** Writes the layout after a `DEBOUNCE_MS` pause, restarting the wait on each call. */
 export function persistLayout(): void {
   if (debounceTimer !== null) clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => {
@@ -60,8 +52,7 @@ export function persistLayout(): void {
   }, DEBOUNCE_MS);
 }
 
-/** The undebounced write for `pagehide` (Task 10.3): the page may be gone before a
- * pending debounced write ever fires, so this cancels it and writes immediately. */
+/** Cancels any pending debounced write and writes the layout immediately. */
 export function persistLayoutSync(): void {
   if (debounceTimer !== null) {
     clearTimeout(debounceTimer);
@@ -70,18 +61,16 @@ export function persistLayoutSync(): void {
   writeLayout(serializeLayout());
 }
 
-/** Reads back `vos:layout`, or `null` if there's nothing valid to restore
- * (`readLayout` already treats a malformed entry the same as no entry). */
+/** Returns the stored layout, or `null` if none exists or it is malformed. */
 export function restoreLayout(): StoredLayout | null {
   return readLayout();
 }
 
-/** Reconstructs a restored session's windows into the store (Task 10.3, called from
- * `Desktop.tsx`'s seed/restore effect once the desktop has a real size to rescue
- * against). A stored path whose node no longer exists, or whose `app` is no longer
- * registered, is skipped rather than opened half-broken — the filesystem and the
- * app registry can both change between sessions, and `vos:layout` is a cache of a
- * shape, not a guarantee. */
+/**
+ * Restores `stored`'s windows into the store, clamping their rects to `desktopSize`. Windows
+ * whose node no longer exists or whose app is no longer registered are skipped, since both
+ * can change between sessions.
+ */
 export function applyStoredLayout(
   stored: StoredLayout,
   tree: FsTree,
@@ -112,10 +101,8 @@ export function applyStoredLayout(
   if (stored.focus && tree[stored.focus]) store.setFocused(stored.focus);
 }
 
-/** Wires the debounced persist to every committed windows-related change, and the
- * synchronous persist to `pagehide` (Task 10.3). Called once from `Desktop.tsx`'s
- * top-level mount effect; the returned cleanup un-wires both, so a narrow/widen
- * remount never accumulates duplicate subscriptions or listeners. */
+/** Persists the layout on every windows-related store change and on `pagehide`. Returns a
+ * cleanup that removes both. */
 export function initPersistence(): () => void {
   const unsubscribe = useShellStore.subscribe((state, prevState) => {
     if (

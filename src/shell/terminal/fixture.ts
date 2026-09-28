@@ -1,7 +1,5 @@
-// A small fixture tree shared by `interpret.test.ts` and `complete.test.ts` — enough to
-// exercise every command and completion rule without pulling in the real mount table,
-// content collections, or `src/fs/bin.ts`'s full node set. Modeled on `src/fs/path.test.ts`'s
-// own fixture, extended with the eggs, apps and node kinds this phase's commands touch.
+// A small fixture tree shared by `interpret.test.ts` and `complete.test.ts`: enough to
+// exercise every command and completion rule without the real mount table or content.
 
 import type { FsTree } from '~/fs/types';
 

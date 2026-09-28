@@ -2,8 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { listDir, resolvePath } from './path';
 import type { FsTree } from './types';
 
-// A small fixture tree, enough to exercise every resolution rule without pulling in the
-// real mount table or content collections.
+// A small fixture tree that exercises every resolution rule.
 const tree: FsTree = {
   '/': {
     path: '/',
@@ -117,7 +116,7 @@ describe('resolvePath', () => {
 });
 
 describe('listDir', () => {
-  it('sorts children alphabetically, distinct from D10 order', () => {
+  it('sorts children alphabetically, not in curated page order', () => {
     const names = listDir(tree, '/projects/orbital-mesh').map((n) => n.name);
     expect(names).toEqual(['notes.md', 'readme.md']); // alphabetical, not readme-first
   });

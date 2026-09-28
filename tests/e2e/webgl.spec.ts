@@ -1,9 +1,8 @@
 import { expect, test, type Page } from '@playwright/test';
 
-// The WebGL scene (Phase 12; tickets 01, 07, 14 § The 3D, 19). Chromium is pointed at
-// SwiftShader so CI, which has no GPU, still renders a real canvas. 1440x900, same as
-// `wm.spec.ts`: above the shell breakpoint, with D16's seed windows (including
-// `viewer.exe`) open.
+// The WebGL scene. Chromium is pointed at SwiftShader so CI, which has no GPU, still
+// renders a real canvas. 1440x900, same as `wm.spec.ts`: above the shell breakpoint,
+// with the seed windows (including `viewer.exe`) open.
 const DESKTOP = { width: 1440, height: 900 };
 
 test.use({
@@ -29,7 +28,7 @@ async function waitReady(page: Page): Promise<void> {
   await page.goto('/');
   await expect(page.locator('html')).toHaveClass(/shell-ready/, { timeout: 7000 });
   await expect(page.locator(VIEWER)).toBeVisible();
-  // The lazy chunk lands after the shell is ready (the 3D "may arrive after that").
+  // The lazy chunk lands after the shell is ready.
   await expect(page.locator('canvas')).toHaveCount(1, { timeout: 15000 });
   await expect(page.locator('.gauge', { hasText: 'VEC' }).locator('.bars s.lit')).toHaveCount(5);
 }

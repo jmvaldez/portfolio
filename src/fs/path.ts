@@ -1,13 +1,12 @@
-// Pure path resolution for the terminal (ticket 08 § Paths): absolute, relative, `.`,
-// `..` (clamped at `/`), `~` meaning `/`, and repeated/trailing slashes. No knowledge of
-// `astro:content` — this only ever sees an already-built `FsTree`.
+// Pure path resolution for the terminal: absolute, relative, `.`, `..` (clamped at `/`),
+// `~` as `/`, and repeated or trailing slashes. Works on an already-built `FsTree`.
 
 import type { FsNode, FsTree } from './types';
 
 export type PathResult = { node: FsNode } | { error: 'ENOENT' | 'ENOTDIR' };
 
-/** Turns `wd` + `input` into a normalized, absolute segment list — no empty segments, no
- * `.`, `..` resolved and clamped so it never climbs above the root. */
+/** Turns `wd` + `input` into an absolute segment list with no empty or `.` segments and
+ * `..` resolved, clamped at the root. */
 function normalizeSegments(wd: string, input: string): string[] {
   const base = input.startsWith('~')
     ? `/${input.slice(1)}`
@@ -26,6 +25,7 @@ function normalizeSegments(wd: string, input: string): string[] {
   return segments;
 }
 
+/** Resolves `input` against `wd` to a node, or an `ENOENT`/`ENOTDIR` error. */
 export function resolvePath(tree: FsTree, wd: string, input: string): PathResult {
   const segments = normalizeSegments(wd, input);
 
@@ -49,8 +49,7 @@ export function resolvePath(tree: FsTree, wd: string, input: string): PathResult
   return { error: 'ENOENT' };
 }
 
-/** `ls`'s alphabetical order (ticket 08), distinct from D10's listing order stored in
- * `node.children`. */
+/** Lists the children of `path` in `ls` order (alphabetical by name), not listing order. */
 export function listDir(tree: FsTree, path: string): FsNode[] {
   const dir = tree[path];
   const childPaths = dir?.children ?? [];

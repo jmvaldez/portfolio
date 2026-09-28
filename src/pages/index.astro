@@ -1,9 +1,8 @@
 ---
-// `/` (ticket 09, ticket 11): server-renders the linear layout, the one artifact serving
-// the mobile experience, the no-JS visitor and the crawler. `HeadGate` decides, before
-// first paint, whether it stays that way or hands off to `BootScreen`/`RestoreLine` and
-// then `Shell` — the `client:only` React island (ticket 01, D9: `tree` arrives as
-// serialised props, never a fetch).
+// `/`: server-renders the linear layout, which serves mobile, no-JS visitors, and
+// crawlers. `HeadGate` decides before first paint whether it stays that way or hands off
+// to `BootScreen`/`RestoreLine` and then `Shell`, a `client:only` React island that
+// receives `tree` as serialised props.
 import BaseLayout from '~/layouts/BaseLayout.astro';
 import LinearLayout from '~/components/linear/LinearLayout.astro';
 import TaskbarStrip from '~/components/TaskbarStrip.astro';
@@ -16,16 +15,13 @@ import { renderDroneSvg } from '~/drone/svg';
 import { DRONE_FIGURE_SIZE, featuredReadout } from '~/drone/readout';
 
 const tree = await getTree();
-// D19: the shell's fallback for `viewer.exe`, rendered here so it costs the island no
-// three import (same source as the linear layout's figure).
+// The shell's fallback for `viewer.exe`, rendered here so the island needn't import
+// three.
 const droneSvg = renderDroneSvg(DRONE_FIGURE_SIZE);
 const droneReadout = await featuredReadout();
 ---
 
-<BaseLayout
-  title="Joe Valdez · Software Engineer"
-  description="Joe Valdez's software-engineering portfolio, presented as a retro personal computer."
->
+<BaseLayout tree={tree}>
   <Fragment slot="head">
     <HeadGate />
   </Fragment>

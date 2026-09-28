@@ -1,6 +1,5 @@
-// Server-only glue between `astro:content` and the pure tree builder (map Hazards:
-// `getCollection()` is a hard `[ServerOnlyModule]` build error from client code — nothing
-// in this file may be imported by an island).
+// Server-only glue between `astro:content` and the pure tree builder. Islands must not
+// import this: `getCollection()` from client code is a build error.
 
 import { getCollection, getEntry } from 'astro:content';
 import { binNodes } from './bin';
@@ -10,6 +9,7 @@ import type { FsTree } from './types';
 
 let cached: FsTree | undefined;
 
+/** Returns the filesystem tree, built once from all collections and cached. */
 export async function getTree(): Promise<FsTree> {
   if (cached) return cached;
 
@@ -29,9 +29,8 @@ export async function getTree(): Promise<FsTree> {
   return cached;
 }
 
-/** Looks a node's underlying collection entry back up, for a page to reach
- * `entry.rendered` and its frontmatter. `undefined` for a node with no collection entry
- * behind it (a synthetic node, or a node that doesn't exist). */
+/** Returns the collection entry behind the node at `path`, for its rendered body and
+ * frontmatter. Returns `undefined` for a synthetic or missing node. */
 export async function getEntryForNode(path: string) {
   const tree = await getTree();
   const node = tree[path];

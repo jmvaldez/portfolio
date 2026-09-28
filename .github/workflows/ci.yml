@@ -20,6 +20,14 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # Astro's incremental build cache lives in `node_modules/.astro`. The font files are
+      # read from disk at build time and invisible to Astro's dependency graph, so they're
+      # folded into the key by hand, like the OG endpoint's own `cacheKey`.
+      - uses: actions/cache@v4
+        with:
+          path: node_modules/.astro
+          key: astro-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('src/assets/fonts/og/*') }}
+
       - run: pnpm exec playwright install --with-deps chromium
 
       - run: pnpm verify
@@ -29,3 +37,51 @@ jobs:
         with:
           name: playwright-report
           path: playwright-report/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          retention-days: 1
+
+  # CLS and resource sizes block; LCP and TBT only warn. Reuses the `verify` job's
+  # `dist/` so the numbers are for the exact build that just passed the byte budgets.
+  lighthouse:
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      # Both configs upload to temporary public storage; keep the report links.
+      - name: Lighthouse CI
+        run: |
+          set -o pipefail
+          pnpm lighthouse 2>&1 | tee lhci.log
+
+      - name: Post report links
+        if: always() && github.event_name == 'pull_request'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          links=$(grep -o 'https://storage.googleapis.com/[^ ]*report.html' lhci.log | sed 's/^/- /' || true)
+          [ -n "$links" ] || exit 0
+          printf '### Lighthouse reports\n\n%s\n' "$links" | tee -a "$GITHUB_STEP_SUMMARY" > body.md
+          gh pr comment ${{ github.event.pull_request.number }} --body-file body.md

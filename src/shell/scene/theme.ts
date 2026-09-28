@@ -1,6 +1,5 @@
-// Reads the ticket-06 tokens for the canvas. Read from computed style once per use,
-// never hard-coded, so the 3D layer and the CSS chrome cannot drift apart.
-
+/** Returns the trimmed computed value of the CSS custom property `name` on `<html>`, so the
+ * canvas and the CSS chrome share one set of tokens. */
 export function cssVar(name: string): string {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }

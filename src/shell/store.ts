@@ -1,18 +1,12 @@
-// The shell's state store (D17: zustand — R3F 9 already depends on it, and
-// `useFrame` can read it without a re-render). Kept deliberately minimal for Phase 8:
-// just what the readiness handshake and the live breakpoint swap need. Phase 9 adds a
-// window-geometry/z-order slice here, Phase 10 adds taskbar/gauge state; this file is
-// where those slices land, not a second store next to it.
+// The shell's zustand store: layout surface, window state, toasts, and effects. zustand is
+// used because R3F already depends on it and `useFrame` can read it without a re-render.
 
 import { create } from 'zustand';
 import type { FsTree } from '~/fs/types';
 import type { Rect, SnapZone } from './wm/geometry';
 
-/** One open window (ticket 04, ticket 14 § Z-order never reorders the DOM). `id` is
- * just `path` — single-instance-per-node (ticket 04) makes the node's own path the
- * natural unique key, so `open()`'s "is this node already open" check is a single
- * array search rather than a second index. `restoreRect` is the pre-snap geometry
- * `tearOff` (Task 9.3) needs when the window is dragged free again. */
+/** One open window. `id` equals `path`, since each node opens at most one window.
+ * `restoreRect` is the pre-snap geometry restored when the window is dragged free. */
 export interface ShellWindow {
   id: string;
   path: string;
@@ -21,96 +15,73 @@ export interface ShellWindow {
   minimised: boolean;
   snapped?: SnapZone;
   restoreRect?: Rect;
-  /** The id (path) of whatever opened this window — a desktop icon, a taskbar
-   * launcher, another window, the terminal's `open` — kept for ticket 14's
-   * focus-on-close priority: the opener, if it's still open, is the first place
-   * focus returns to. */
+  /** The id of the window that opened this one; focus returns to it on close if still open. */
   opener?: string;
 }
 
-/** One kill-feed toast (ticket 06 § gauges/HUD layer, ticket 14 § Terminal: "toasts
- * ... all go through one shared role=status region"). `id` is a monotonically
- * increasing counter, not the window/node path — a toast has no natural key of its
- * own, and several can carry the same `label` (e.g. two Konami attempts). */
+/** One kill-feed toast. `id` is a unique counter value, since several toasts can share a
+ * `label`. */
 export interface Toast {
   id: number;
   label: string;
   value?: string;
 }
 
-/** Task 10.4's effects slice, shared with Phases 11 and 12: session-only, never
- * written to `sessionStorage`/`localStorage` (unlike `windows`) — it resets on
- * reload same as any other in-memory `useState` would. `armed` and `vector` are
- * Phase 11's terminal easter eggs (`arm`/`disarm`); `gridTint` is the Konami code
- * here in Phase 10, read by Phase 12's WebGL grid. `vector` is written only by the
- * scene layer (Phase 12) and read only by the taskbar's `VEC` gauge. */
+/**
+ * Session-only visual effects state; never persisted, so it resets on reload.
+ * `armed` is set by the terminal's `arm`/`disarm`, `gridTint` by the Konami code and read
+ * by the WebGL grid, and `vector` is written by the scene layer and read by the taskbar's
+ * `VEC` gauge.
+ */
 export interface EffectsState {
   armed: boolean;
   gridTint: 'blue' | 'amber';
   vector: 'running' | 'standby';
 }
 
-/** Where focus should land after `close()` removes a window (ticket 14 § Focus and
- * the window lifecycle): the opener if it's still open, else the taskbar button of
- * the window that is now on top, else the first desktop icon. `close()` can't call
- * `.focus()` itself — that's a real DOM element only the UI layer (Task 9.3) has —
- * so it returns this descriptor for the caller to resolve. */
+/** Where focus should land after `close()` removes a window: the opener if still open, else
+ * the taskbar button of the top window, else the first desktop icon. The store has no DOM
+ * access, so the UI layer resolves this into a `.focus()` call. */
 export type FocusTarget =
   { type: 'window'; id: string } | { type: 'taskbar'; id: string } | { type: 'icon' };
 
-/** A new window's geometry before Task 9.3's seeding (or the terminal's `open`) sets
- * its real rect with `setRect`. Arbitrary but harmless: nothing renders at this rect
- * for more than the one tick between `open()` and the caller's follow-up `setRect`. */
+/** A new window's placeholder geometry, replaced by the caller's follow-up `setRect`. */
 const DEFAULT_RECT: Rect = { x: 40, y: 40, width: 400, height: 300 };
 
 interface ShellState {
-  /** Which surface currently owns `/`. `Shell.tsx` is the only writer — set once on
-   * mount and again on every live breakpoint swap (ticket 11 § Crossing it
-   * mid-session). */
+  /** Which surface currently owns `/`. Written only by `Shell.tsx`, on mount and on every
+   * live breakpoint swap. */
   surface: 'shell' | 'linear';
   setSurface: (surface: 'shell' | 'linear') => void;
 
-  /** The `FsTree` the island receives as serialised props (D9). Held here so Phase
-   * 9/10's window manager and taskbar can read it without every component re-deriving
-   * it from `Shell`'s own props. */
+  /** The `FsTree` the island receives as props, held here so any component can read it. */
   tree: FsTree | null;
   setTree: (tree: FsTree) => void;
 
-  /** The build-time drone SVG and HUD readout (ticket 11; D19): `index.astro` renders
-   * them once and they arrive as island props, so `viewer.exe`'s fallback costs no
-   * three import. Empty until `Shell.tsx` sets them. */
+  /** The build-time drone SVG and HUD readout shown by `viewer.exe` without WebGL, so the
+   * fallback needs no three import. Empty until `Shell.tsx` sets them. */
   droneFallback: { svg: string; readout: string };
   setDroneFallback: (fallback: { svg: string; readout: string }) => void;
 
-  /** The most recent message for the one shared `role="status"` region
-   * (`Desktop.tsx` renders it): boot-ready and live-swap announcements now
-   * (ticket 14 § Boot and resume, § Live swap), toasts in later phases
-   * (ticket 14 § Terminal: "one shared role=status region"). */
+  /** The latest message for the shared `role="status"` region that `Shell.tsx` renders. */
   lastAnnouncement: string;
   announce: (message: string) => void;
 
-  /** Every open window, in the order it was opened (ticket 14: "windows sit in the
-   * DOM in the order they were opened" — this array *is* that order, and it never
-   * reorders after insertion). Z-order lives on each window's own `z`, not on array
-   * position. */
+  /** Every open window in the order it was opened. The order never changes after insertion
+   * so the DOM order is stable; stacking lives on each window's `z`. */
   windows: ShellWindow[];
-  /** Currently-focused window's id, or `null` when nothing is (e.g. right after the
-   * last window closes). */
+  /** The focused window's id, or `null` when none is focused. */
   focusedId: string | null;
-  /** The running z counter `raise`/`focus`/`open` all draw from, so "on top" always
-   * means "highest z ever assigned", never a recomputed max. */
+  /** The z counter that `raise`, `focus`, and `open` draw from; the top window has the
+   * highest z ever assigned. */
   zCounter: number;
 
-  /** Opens `path` at `DEFAULT_RECT` and focuses it. Single instance per node (ticket
-   * 04): if `path` is already open, this raises and focuses the existing window
-   * instead of creating a second one. `opener` is bookkeeping for `close()`'s
-   * focus-return priority (ticket 14), not looked at otherwise. */
+  /** Opens `path` at `DEFAULT_RECT` and focuses it, or raises and focuses the existing
+   * window if `path` is already open. `opener` is recorded for `close()`'s focus return. */
   open: (path: string, opener?: string) => void;
-  /** Removes the window and returns where focus should go next (ticket 14): the
-   * opener if it's still open, else the taskbar button of the window that is now
-   * highest-z among what's left, else the first desktop icon. Does not itself call
-   * `.focus()` — the caller (Task 9.3) resolves the descriptor into a real DOM
-   * focus call. */
+  /** Removes the window and returns where focus should go next: the opener if still open,
+   * else the highest-z remaining window's taskbar button, else the first desktop icon. The
+   * caller performs the actual `.focus()`. */
   close: (id: string) => FocusTarget;
   /** Raises `id` above every other window and marks it focused. */
   focus: (id: string) => void;
@@ -118,67 +89,50 @@ interface ShellState {
   restore: (id: string) => void;
   toggleMinimised: (id: string) => void;
   setRect: (id: string, rect: Rect) => void;
-  /** Marks `id` as tiled to `zone` at `rect`, remembering its current geometry in
-   * `restoreRect` so a later `tearOff` (Task 9.3) knows what to restore. */
+  /** Tiles `id` to `zone` at `rect`, saving its current geometry in `restoreRect`. */
   snap: (id: string, zone: SnapZone, rect: Rect) => void;
-  /** Clears the snapped state — used when a snapped window is torn free by drag. */
+  /** Clears the snapped state, e.g. when a snapped window is dragged free. */
   unsnap: (id: string) => void;
-  /** Bumps `id`'s `z` above every other window, without touching focus or array
-   * order. `focus()` calls this; exposed on its own for callers (e.g. a click that
-   * shouldn't move keyboard focus) that only want the stacking change. */
+  /** Raises `id` above every other window without changing focus or array order. */
   raise: (id: string) => void;
-  /** Restores a window exactly as `persist.ts`'s `applyStoredLayout` (Task 10.3)
-   * reconstructs it from `vos:layout` — unlike `open()`, this never defaults the
-   * rect or bumps `z` relative to whatever's already open. The caller has already
-   * rescued the rect for the current viewport and resolved whether the underlying
-   * app is still registered; this just appends it verbatim and keeps `zCounter`
-   * ahead of the highest restored `z` so a later `raise()` still wins. */
+  /** Appends `win` verbatim, as restored from `vos:layout`; unlike `open()`, it does not
+   * default the rect or assign a new `z`. Keeps `zCounter` at or above the highest `z`. */
   restoreWindow: (win: ShellWindow) => void;
-  /** Sets `focusedId` directly, with no raise — `open()`/`focus()` always raise the
-   * window they focus, which is wrong for restoring a whole session's z-order in one
-   * pass (Task 10.3): the stored `focus` id's `z` is already exactly what it was
-   * when the session was saved. */
+  /** Sets `focusedId` without raising, unlike `focus()`, which would disturb a restored
+   * z-order. */
   setFocused: (id: string | null) => void;
 
-  /** Each open window's current body scroll position, keyed by window id (Task
-   * 10.3 § body scroll persistence). Lives here rather than on `ShellWindow` itself
-   * since it's read continuously (every scroll) but only ever written to storage on
-   * the debounced/`pagehide` persist pass, not on every store update. */
+  /** Each open window's body scroll position, keyed by window id. Kept apart from
+   * `ShellWindow` because it changes on every scroll but is persisted only by the debounced
+   * and `pagehide` writes. */
   bodyScroll: Record<string, number>;
   setBodyScroll: (id: string, scrollTop: number) => void;
-  /** Scroll positions read back from `vos:layout` on restore, keyed by window id,
-   * waiting for that window's body to finish loading before they can actually be
-   * applied (Task 10.3: "once each window's body has loaded"). `ContentWindow.tsx`
-   * and `FolderWindow.tsx` each consume their own entry once their content is ready. */
+  /** Scroll positions restored from `vos:layout`, keyed by window id, held until each
+   * window's body has loaded. `ContentWindow.tsx` and `FolderWindow.tsx` consume their own
+   * entry via `consumePendingScroll`, which returns `undefined` when there is none. */
   pendingScroll: Record<string, number>;
   setPendingScroll: (scroll: Record<string, number>) => void;
   consumePendingScroll: (id: string) => number | undefined;
 
-  /** The kill-feed toast stack (Task 10.4, ticket 06): newest-4-visible — a 5th
-   * arrival drops the oldest rather than queuing (ticket 06's "kill-feed" framing:
-   * a feed shows what's current, it doesn't hold a backlog). Each toast is also sent
-   * to the shared `role="status"` region via `announce()`, so the same text reaches
-   * both channels ticket 14 names. */
+  /** The kill-feed toast stack, showing at most `MAX_TOASTS`; a new arrival beyond that
+   * drops the oldest. Each toast is also sent to the status region via `announce()`. */
   toasts: Toast[];
   toast: (label: string, value?: string) => void;
   dismissToast: (id: number) => void;
 
-  /** Task 10.4's session-only effects slice, shared with Phases 11 and 12. */
+  /** Session-only visual effects state. */
   effects: EffectsState;
   setEffects: (patch: Partial<EffectsState>) => void;
 }
 
-/** Toast ids: a plain module-level counter rather than `Date.now()` — several
- * toasts can legitimately fire within the same millisecond (e.g. rapid-fire
- * easter eggs), and a counter guarantees uniqueness where a timestamp wouldn't. */
+/** Source of toast ids; a counter rather than `Date.now()`, since several toasts can fire
+ * in the same millisecond. */
 let nextToastId = 0;
 
-/** How long a toast stays visible before auto-dismissing (ticket 06 § gauges: the
- * kill-feed style implies a short, fixed lifetime, not a manual dismiss). */
+/** How long a toast stays visible before auto-dismissing. */
 const TOAST_LIFETIME_MS = 4000;
 
-/** The cap on simultaneously visible toasts (Task 10.4: "a MAXIMUM of 4 visible at
- * once... oldest drops off if a 5th arrives"). */
+/** The cap on simultaneously visible toasts. */
 const MAX_TOASTS = 4;
 
 export const useShellStore = create<ShellState>((set, get) => ({
@@ -281,8 +235,7 @@ export const useShellStore = create<ShellState>((set, get) => ({
     set((state) => ({
       windows: state.windows.map((w) => {
         if (w.id !== id) return w;
-        // `exactOptionalPropertyTypes`: clearing means dropping the keys, not
-        // setting them to an explicit `undefined`.
+        // `exactOptionalPropertyTypes`: clear by dropping the keys, not setting `undefined`.
         // eslint-disable-next-line @typescript-eslint/no-unused-vars -- discarded on purpose
         const { snapped, restoreRect, ...rest } = w;
         return rest;

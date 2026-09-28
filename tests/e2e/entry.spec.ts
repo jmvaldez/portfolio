@@ -1,9 +1,8 @@
 import { expect, test } from '@playwright/test';
 
-// The shell entry handover (tickets 10, 11, 14; D23): `HeadGate.astro` deciding boot
-// vs. restore vs. staying on the linear layout, `Shell.tsx`'s readiness handshake, and
-// the live two-way breakpoint swap. 1280x800 (above `SHELL_QUERY`) unless a test says
-// otherwise.
+// The shell entry handover: `HeadGate.astro` deciding boot vs. restore vs. staying on
+// the linear layout, `Shell.tsx`'s readiness handshake, and the live two-way breakpoint
+// swap. 1280x800 (above `SHELL_QUERY`) unless a test says otherwise.
 
 declare global {
   interface Window {
@@ -45,18 +44,14 @@ test.describe('returning visit (reload)', () => {
     await expect(page.locator('html')).toHaveClass(/shell-ready/, { timeout: 7000 });
 
     await page.reload();
-    // `#restore` has no floor (contrast the boot's 600ms one), so the shell can
-    // reach `shell-ready` — and hide it again — before this test's own polling
-    // catches it visible. The text mutation and the absence of a boot are what
-    // matter; both are true regardless of whether `#restore` is still on screen
-    // by the time we look.
+    // `#restore` has no minimum display time (unlike the boot's 600ms), so the shell can
+    // reach `shell-ready` and hide it before this test's polling sees it visible. What
+    // matters is the text mutation and the absence of a boot, whether or not `#restore`
+    // is still on screen when we look.
     //
-    // This was originally written in Phase 8, when the desktop seeded no windows
-    // at all — "RESUME · DESKTOP RESTORED" was correct then. Phase 9-11's D16 seed
-    // now opens real windows (about.txt, projects, terminal.exe), so the correct
-    // wording is the plural "N WINDOWS RESTORED" form. Matched by pattern, not a
-    // hardcoded count, so a future phase changing the seed list doesn't re-break
-    // this test over unrelated wording it was never meant to pin down.
+    // The seed opens real windows (about.txt, projects, terminal.exe), so the wording is
+    // the plural "N WINDOWS RESTORED". Matched by pattern, not a hardcoded count, so a
+    // change to the seed list doesn't break this test over unrelated wording.
     await expect(page.locator('#restore-line')).toHaveText(
       /^RESUME · (DESKTOP|\d+ WINDOWS?) RESTORED$/,
     );
@@ -113,10 +108,9 @@ test.describe('resize across the breakpoint', () => {
     await expect(page.locator('[role="status"]')).toHaveText(/Switched to text layout/);
 
     await page.setViewportSize(DESKTOP);
-    // Widening has no floor (contrast the boot's 600ms one), so the shell can reach
-    // `shell-ready` — and hide `#restore` again — before this test's own polling
-    // catches it visible. What matters is that a boot never happens and the shell
-    // does come back.
+    // Widening has no minimum display time (unlike the boot's 600ms), so the shell can
+    // reach `shell-ready` and hide `#restore` before this test's polling sees it visible.
+    // What matters is that a boot never happens and the shell does come back.
     await expect(page.locator('html')).toHaveClass(/shell-ready/, { timeout: 7000 });
     const hasBootClass = await page.evaluate(() =>
       document.documentElement.classList.contains('boot'),
@@ -149,9 +143,9 @@ test.describe('skip link and the Desktop control', () => {
     await expect(desktopControl).toBeVisible();
     await desktopControl.click();
 
-    // The shell already booted once this session (the very first `page.goto('/')`
-    // above), so clearing the override brings back the shell via the Restore line,
-    // never a second boot (ticket 10 § Returning visitor: resume).
+    // The shell already booted once this session (the first `page.goto('/')` above), so
+    // clearing the override brings the shell back via the Restore line, never a second
+    // boot.
     await page.waitForLoadState();
     await expect(page.locator('html')).toHaveClass(/shell-ready/, { timeout: 7000 });
     const hasBootClass = await page.evaluate(() =>

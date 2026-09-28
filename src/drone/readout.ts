@@ -1,23 +1,20 @@
-// The viewer's HUD readout, from the featured drone's frontmatter (ticket 11: "these
-// three values come from the featured drone's frontmatter"). Shared by
-// `DroneFigure.astro` (the linear layout) and `index.astro` (the shell island's
-// fallback prop), so the two surfaces cannot drift. Build-time only: imports
-// `astro:content`.
+// The viewer's HUD readout, built from the featured drone's frontmatter. Shared by
+// `DroneFigure.astro` and `index.astro` so the linear layout and the shell's fallback
+// agree. Build-time only: imports `astro:content`.
 import { getCollection } from 'astro:content';
 
-/** The fallback SVG's box and the linear layout figure's: one size, one source. */
+/** Pixel size of the static drone SVG, shared by every surface that renders it. */
 export const DRONE_FIGURE_SIZE = { width: 400, height: 300 } as const;
 
-// The `drones` collection also holds `note` entries nested under a build (glossary:
-// "Note"), which carry no `featured`/`class`/spec fields — narrow to `type: "drone"`
-// first, same discriminant the content schemas use.
+/**
+ * Returns the featured drone's readout, e.g. `MICRO-3 · 250 G · 3 IN`, omitting any segment
+ * whose field is missing. Returns `''` when no drone is featured.
+ */
 export async function featuredReadout(): Promise<string> {
   const drones = await getCollection('drones');
   const featured = drones.find((entry) => entry.data.type === 'drone' && entry.data.featured);
   if (!featured || featured.data.type !== 'drone') return '';
 
-  // Nothing here is invented if a future featured drone is missing a field — the
-  // readout just omits that segment.
   const { class: droneClass, weightG, propSizeIn } = featured.data;
   const parts: string[] = [];
   if (droneClass && propSizeIn !== undefined) {

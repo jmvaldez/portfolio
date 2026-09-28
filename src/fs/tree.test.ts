@@ -3,8 +3,7 @@ import { mounts } from './mounts';
 import { buildTree, type RawEntry } from './tree';
 import type { FsNode } from './types';
 
-// A handful of `/bin` nodes, standing in for `src/fs/bin.ts`'s real export — this file
-// tests `buildTree` in isolation, per its own contract of taking plain data.
+// A few `/bin` nodes standing in for `bin.ts`'s real export.
 const bin: FsNode[] = [
   {
     path: '/bin/ls',
@@ -191,10 +190,9 @@ describe('buildTree', () => {
     expect(() => buildTree(dupe, mounts, bin)).toThrow(/duplicate path/i);
   });
 
-  it("agrees pages' order with the launcher order of the mount table (D11)", () => {
-    // D11: "Launcher and Section order is mount-table order: about, projects, drones,
-    // resume, contact" — `resume.pdf`, `readme.txt` and `/bin` are mounts too, but they
-    // are not launchers, so they don't get a position in that sequence.
+  it("agrees pages' order with the launcher order of the mount table", () => {
+    // `resume.pdf`, `readme.txt` and `/bin` are mounts too but not launchers, so they
+    // take no position in the launcher sequence.
     const launcherOrder = mounts.filter((m) => 'launcher' in m && m.launcher).map((m) => m.path);
     const expected: Record<string, number> = {
       '/about.txt': 1,

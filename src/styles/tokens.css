@@ -1,11 +1,7 @@
 /*
- * Visual system tokens (ticket 06 § Tokens, variant C — Instrument panel, CRT on).
- * Copied verbatim from the ticket's `:root` block. `--font-chrome` and `--font-body`
- * are the one exception: the ticket left them as a placeholder pending ticket 13,
- * which is now resolved to the self-hosted "Valdez Mono" family wired in
- * astro.config.mjs (`--font-mono`, Task 3.2).
- *
- * Everything downstream reads these tokens; nothing hard-codes a colour (ticket 06).
+ * Visual system tokens (Instrument panel variant, CRT on). Everything downstream reads
+ * these; nothing hard-codes a colour. `--font-chrome` and `--font-body` point at the
+ * self-hosted "Valdez Mono" family (`--font-mono`, wired in astro.config.mjs).
  */
 
 :root {
@@ -40,10 +36,9 @@
   --bloom: 0 0 9px rgba(125, 255, 143, 0.34);
 }
 
-/* Ticket 14 § Forced colours and increased contrast: `prefers-contrast: more` does not
-   get its own design, it only raises the subordinate ink tokens to full phosphor green
-   so the text that fails first under a scanline (bylines, column headers, gauge labels,
-   per ticket 06's hazard) stops being subordinate at all. */
+/* `prefers-contrast: more` raises the subordinate ink tokens to full phosphor green, so
+   text that fails first under a scanline (bylines, column headers, gauge labels) stops
+   being subordinate. */
 @media (prefers-contrast: more) {
   :root {
     --ink-dim: var(--ink);

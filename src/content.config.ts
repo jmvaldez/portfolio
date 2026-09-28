@@ -1,5 +1,5 @@
-// Three content collections: `projects`, `drones`, `pages` (ticket 05 § Collections).
-// `.md` only, never `.mdx` — `.mdx` entries never carry `entry.rendered` (map Hazards).
+// Content collections `projects`, `drones`, and `pages`. Markdown only: `.mdx` entries
+// never carry `entry.rendered`.
 
 import { defineCollection } from 'astro:content';
 import { glob } from 'astro/loaders';

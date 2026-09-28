@@ -1,6 +1,5 @@
-// One static file per `file` node's rendered body (ticket 05, D9): `/fs/body/<path>.html`.
-// Fetched when a window opens, prefetched on launcher hover — never inlined into the
-// landing HTML (research 05 § 3, 8).
+// One static file per `file` node's rendered body at `/fs/body/<path>.html`, fetched when
+// a window opens and never inlined into the landing HTML.
 
 import type { APIRoute, GetStaticPaths, InferGetStaticPropsType } from 'astro';
 import { getEntry } from 'astro:content';
@@ -17,9 +16,8 @@ export const getStaticPaths = (async () => {
       }
       const entry = await getEntry(node.entry.collection, node.entry.id);
       if (!entry?.rendered) {
-        // Map Hazards: `.mdx` entries never carry `entry.rendered` — `@astrojs/mdx`
-        // sends every `.mdx` entry down the deferred-render branch. Reaching here means
-        // someone introduced a `.mdx` file where the content model requires `.md`.
+        // `.mdx` entries never carry `entry.rendered`, so reaching here means a `.mdx`
+        // file was added where the content model requires `.md`.
         throw new Error(`fs/body: "${node.path}" has no rendered body (is it .mdx?)`);
       }
       return {

@@ -1,9 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { useShellStore } from './store';
 
-// Same reset pattern as `wm/store.test.ts` — the store is a module-level singleton
-// (D17), so tests snapshot its initial state once and reset to it before each case
-// rather than reconstructing a fresh store per test.
+// The store is a module-level singleton, so snapshot its initial state and reset to it
+// before each test.
 const INITIAL_STATE = useShellStore.getState();
 
 beforeEach(() => {

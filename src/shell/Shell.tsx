@@ -1,14 +1,10 @@
-// The island root (ticket 01: `client:only="react"`; D9: `tree` arrives as
-// serialised props, never a fetch). Mounted in `index.astro` as
-// `<Shell client:only="react" tree={tree} />`. Owns three things `HeadGate.astro`
-// can't: the live two-way breakpoint swap (ticket 11 § Crossing it mid-session), the
-// readiness handshake that turns the boot/restore screen into `shell-ready`
-// (ticket 10 § Timing, ticket 14 § Boot and resume), and mounting `Desktop.tsx`.
+// The island root, mounted in `index.astro` as a `client:only="react"` island with the
+// tree as a serialised prop. Owns the live two-way breakpoint swap, the readiness
+// handshake that turns the boot/restore screen into `shell-ready`, and mounting `Desktop`.
 //
-// Never calls `.focus()` on the passive boot/restore-ready path (map Hazards:
-// moving focus on boot completion strands screen-reader users) — only the widen
-// case moves focus, because it's a deliberate viewport-driven mode switch
-// (ticket 14 § Live swap).
+// Never calls `.focus()` on the passive boot/restore-ready path, since moving focus on boot
+// completion strands screen-reader users. Only the widen case moves focus, because it is a
+// deliberate viewport-driven mode switch.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { SHELL_QUERY } from '~/lib/breakpoint';
 import { getLayoutOverride } from '~/lib/storage';
@@ -18,7 +14,7 @@ import { useShellStore } from './store';
 
 interface Props {
   tree: FsTree;
-  /** The build-time drone SVG and its HUD readout (D19): `viewer.exe`'s fallback. */
+  /** The build-time drone SVG and its HUD readout, shown by `viewer.exe` without WebGL. */
   droneSvg: string;
   droneReadout: string;
 }
@@ -28,15 +24,12 @@ export default function Shell({ tree, droneSvg, droneReadout }: Props) {
     () => !getLayoutOverride() && window.matchMedia(SHELL_QUERY).matches,
   );
   const desktopRef = useRef<DesktopHandle>(null);
-  // Set by the widen branch of the media-query listener, consumed once by the
-  // readiness effect below: a widen's readiness handshake announces and focuses
-  // differently from the passive initial boot/restore (ticket 14 § Live swap).
+  // Set by the widen branch of the media-query listener and consumed once by the readiness
+  // effect: a widen announces and focuses differently from the initial boot/restore.
   const widenPendingRef = useRef(false);
-  // Task 10.3: the readiness announcement now reports the real window count, which
-  // isn't known until `Desktop`'s own seed/restore effect has run — an async
-  // `ResizeObserver` round trip behind this component's own mount. These two refs
-  // gate the announcement on *both* the boot floor (if any) and that effect having
-  // actually settled, whichever finishes last.
+  // The readiness announcement reports the window count, which is unknown until `Desktop`'s
+  // seed/restore effect has run (after an async `ResizeObserver` callback). These refs gate
+  // the announcement on both the boot floor and that effect, whichever finishes last.
   const seededRef = useRef(false);
   const timerDoneRef = useRef(false);
   const readyRef = useRef<(() => void) | null>(null);
@@ -53,33 +46,27 @@ export default function Shell({ tree, droneSvg, droneReadout }: Props) {
     useShellStore.getState().setSurface(renderDesktop ? 'shell' : 'linear');
   }, [renderDesktop]);
 
-  // The live two-way swap (ticket 11 § Crossing it mid-session): subscribed for the
-  // lifetime of the island, not just checked once at mount.
+  // The live two-way swap between desktop and linear layouts, for the island's lifetime.
   useEffect(() => {
     const mql = window.matchMedia(SHELL_QUERY);
 
     function handleChange(event: MediaQueryListEvent): void {
-      // The layout override outranks the breakpoint either way (glossary "Layout
-      // override"); a visitor who skipped to the linear layout stays there
-      // regardless of how the viewport moves.
+      // The layout override outranks the breakpoint: a visitor who skipped to the linear
+      // layout stays there however the viewport moves.
       if (getLayoutOverride()) return;
 
       const html = document.documentElement;
 
       if (!event.matches) {
-        // Narrowing past the breakpoint: unmount the desktop (its layout is
-        // already in `sessionStorage`, Phase 9/10), let the linear layout
-        // reappear, and land focus on its `h1` — there's no real window-focus
-        // tracking yet in Phase 8, so this is the fallback the phase doc names;
-        // Phase 9/10 should check the actually-focused window's root mount first.
+        // Narrowing: unmount the desktop (its layout is already persisted), show the linear
+        // layout, and focus its `h1`.
         html.classList.remove('shell', 'shell-ready', 'boot', 'restore', 'boot-skipped');
         setRenderDesktop(false);
         useShellStore.getState().announce('Switched to text layout');
         document.querySelector<HTMLHeadingElement>('#linear h1')?.focus();
       } else {
-        // Widening back past the breakpoint: show the Restore line, never a boot
-        // (ticket 10 § Returning visitor: resume), and remount the desktop
-        // through the same readiness handshake as initial mount.
+        // Widening: show the Restore line, never a boot, and remount the desktop through
+        // the same readiness handshake as the initial mount.
         html.classList.add('shell', 'restore');
         widenPendingRef.current = true;
         setRenderDesktop(true);
@@ -90,22 +77,18 @@ export default function Shell({ tree, droneSvg, droneReadout }: Props) {
     return () => mql.removeEventListener('change', handleChange);
   }, []);
 
-  // Task 10.3: resolves to the actual open-window count, plural-aware — "Desktop
-  // ready, 1 window open" / "Desktop ready, 2 windows open".
+  // Returns a plural-aware phrase such as "1 window open" or "2 windows restored".
   function windowCountPhrase(n: number, verb: 'open' | 'restored'): string {
     return `${n} window${n === 1 ? '' : 's'} ${verb}`;
   }
 
-  // `Desktop`'s own `onSeeded` prop (Task 10.3): fires once this mount's window set
-  // (D16's seed, a restored `vos:layout`, or a widen's "already there") is settled.
+  // Passed to `Desktop` as `onSeeded`; marks the window set as settled.
   const handleSeeded = useCallback(() => {
     seededRef.current = true;
     if (timerDoneRef.current) readyRef.current?.();
   }, []);
 
-  // The readiness handshake (ticket 10 § Timing, D23; ticket 14 § Boot and resume):
-  // runs whenever `Desktop` (re)mounts, whether that's the initial above-the-
-  // breakpoint mount or a widen-triggered remount.
+  // The readiness handshake; runs whenever `Desktop` (re)mounts, initially or after a widen.
   useEffect(() => {
     if (!renderDesktop) return;
 
@@ -120,8 +103,7 @@ export default function Shell({ tree, droneSvg, droneReadout }: Props) {
 
       if (widenPendingRef.current) {
         widenPendingRef.current = false;
-        // The one focus-moving case: a deliberate viewport-driven mode switch,
-        // not passive readiness (ticket 14 § Live swap).
+        // The one focus-moving case: a deliberate viewport-driven mode switch.
         useShellStore.getState().announce('Switched to desktop');
         desktopRef.current?.focusHeading();
       } else {
@@ -143,9 +125,8 @@ export default function Shell({ tree, droneSvg, droneReadout }: Props) {
     }
 
     if (html.classList.contains('boot')) {
-      // D23: the boot holds at least 600 ms. `HeadGate.astro` stamps `bootAt` the
-      // moment it adds `html.boot`; a restore (or a widen, which never adds
-      // `boot`) has no floor.
+      // The boot holds for at least 600 ms from `HeadGate.astro`'s `bootAt` stamp; a
+      // restore or widen has no such floor.
       const bootAt = Number(html.dataset.bootAt) || 0;
       const remaining = Math.max(0, 600 - (performance.now() - bootAt));
       const timer = window.setTimeout(() => {
@@ -172,13 +153,9 @@ export default function Shell({ tree, droneSvg, droneReadout }: Props) {
       {renderDesktop && (
         <Desktop ref={desktopRef} onSkip={() => setRenderDesktop(false)} onSeeded={handleSeeded} />
       )}
-      {/* The one shared status region (ticket 14 § Boot and resume, § Live swap,
-          § Terminal): boot-ready and live-swap announcements now, toasts in later
-          phases. Lives here rather than inside `Desktop` so a narrowing swap's
-          "Switched to text layout" announcement survives `Desktop` unmounting in
-          the same tick it fires — this component is the island root, so it's
-          always mounted. Visually hidden: it's for assistive tech, not a HUD
-          element. */}
+      {/* The one shared status region, for readiness, layout-swap, and toast announcements.
+          It lives here so the "Switched to text layout" announcement survives `Desktop`
+          unmounting in the same tick. Visually hidden. */}
       <div role="status" aria-live="polite" className="sr-only">
         {lastAnnouncement}
       </div>

@@ -1,20 +1,17 @@
 /*
- * Phase 12's 3D layer chrome (ticket 07, ticket 11 § "The 3D layer, without the island",
- * D19): the shell's fallback floor and `viewer.exe`'s body. Nothing here paints an opaque
- * surface over the canvas — the map's hazard: an opaque DOM surface above it hides the 3D.
+ * 3D layer chrome: the shell's fallback floor and `viewer.exe`'s body. Nothing here
+ * paints an opaque surface over the canvas, since that would hide the 3D.
  */
 
-/* The fallback floor's rules are `GridFloor.astro`'s (global there, one source); the
-   shell only re-homes it: fixed to the viewport, above `body`'s ground fill, below
-   `#desktop`. */
+/* The floor's own rules live in `GridFloor.astro`; the shell only re-homes it: fixed to
+   the viewport, above `body`'s ground fill, below `#desktop`. */
 .scene-floor {
   position: fixed;
   z-index: 0;
 }
 
-/* `viewer.exe`'s window: the frame and body turn transparent so the shared canvas (or,
-   under the fallback, the floor) shows through — the titlebar keeps its own opaque
-   `--chrome`, so the window stays a window. */
+/* `viewer.exe`'s frame and body are transparent so the shared canvas (or the fallback
+   floor) shows through. The titlebar keeps its opaque `--chrome`. */
 .frame[data-window]:has(.viewer) {
   background: transparent;
 }
@@ -43,8 +40,7 @@
   height: 100%;
 }
 
-/* Crosshair and readout, the same rules as `DroneFigure.astro`'s (ported verbatim from
-   the visual-system prototype's HUD layer over the viewer). */
+/* Crosshair and readout, same rules as `DroneFigure.astro`. */
 .viewer .cross {
   position: absolute;
   inset: 0;

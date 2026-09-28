@@ -2,9 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { z } from 'astro/zod';
 import { dronesUnion, noteSchema, period, projectsUnion } from './schemas';
 
-// A stand-in for Astro's real `image()` schema helper, which just needs to accept a
-// relative path string in these tests — the real image processing only runs inside
-// Astro's build.
+// Stand-in for Astro's `image()` helper, which only runs inside Astro's build.
 const image = () => z.string();
 
 describe('projectsUnion', () => {

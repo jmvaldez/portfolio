@@ -1,9 +1,6 @@
 ---
-// The spec block (ticket 12 § Spec block): an entry's frontmatter facts as keys and
-// values. Empty optional fields are omitted, never rendered as "--"; notes and `pages`
-// entries carry no facts worth a block at all, so both fall through to nothing. Numerals
-// rely on the mono face's own tabular widths (ticket 13: no `font-variant-numeric: tnum`
-// needed).
+// An entry's frontmatter facts as keys and values. Empty optional fields are omitted;
+// notes and `pages` entries have no facts and render nothing.
 import type { CollectionEntry } from 'astro:content';
 
 interface Props {
@@ -13,8 +10,7 @@ interface Props {
 const { entry } = Astro.props;
 const data = entry.data;
 
-/** D6: `{ start, end? }` renders as `2025-PRESENT` in chrome (en dash here, matching
- * `src/fs/tree.ts`'s spec-strip formatting). */
+/** Formats a period as `2025–PRESENT` or `2025–2026`, or just the start year if no end. */
 function formatPeriod(period: { start: string; end?: string | undefined }): string {
   const start = period.start.slice(0, 4);
   if (period.end === undefined) return start;

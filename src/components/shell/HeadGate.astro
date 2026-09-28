@@ -1,42 +1,28 @@
 ---
-// The head gate (ticket 10 § Mechanism, ticket 11 § Breakpoint / Crossing it
-// mid-session, ticket 14 § Strategy, D13, D20, D23): an inline blocking script that
-// runs before first paint on `/` only, deciding boot vs. restore vs. staying on the
-// linear layout. Rendered unconditionally here — this component only ever appears
-// in `Head.astro`'s own `/`-only usage, wired in by Task 8.3.
+// Blocking inline script that runs before first paint on `/` only and decides between
+// boot, restore, and staying on the linear layout. Rendered unconditionally; `Head.astro`
+// includes it only for `/`.
 //
-// Own budget, separate from `CrtPrefScript`'s ~600 B (ticket 19: content pages get
-// ≤ 1 KB total inline JS; `/`'s head gate gets its own ≤ 1.5 KB). Kept hand-terse
-// rather than minified, same discipline as `CrtPrefScript`. Must run *after*
-// `CrtPrefScript` in document order: it reads `html[data-crt]`, which that script
-// sets synchronously.
+// Has its own inline-JS budget (<= 1.5 KB), separate from `CrtPrefScript`'s, and is
+// hand-terse for the same reason. Must come after `CrtPrefScript` in document order
+// because it reads `html[data-crt]`, which that script sets synchronously.
 //
-// The breakpoint string and every storage key are interpolated in from
-// `~/lib/breakpoint` and `~/lib/storage` so each literal exists in exactly one
-// place — an `is:inline` script can't `import` at runtime, so this is the only way
-// to avoid a second, driftable copy of `vos:booted` etc.
+// The breakpoint query and storage keys are interpolated from `~/lib/breakpoint` and
+// `~/lib/storage`: an `is:inline` script can't import, and this keeps each literal in
+// one place.
 //
-// Task 8.3 fix: this script runs while `<head>` is still parsing, before `<body>` —
-// and with it `BootScreen`'s `[data-slot]` spans and `#restore-line` — exist in the
-// DOM. Filling those slots (and the Restore text) has to wait for `DOMContentLoaded`;
-// only the `<html>`-level class/dataset work above it can run synchronously. `rm` and
-// `booted` are captured up front so the deferred handler doesn't re-read anything.
+// The script runs while `<head>` is still parsing, before `BootScreen`'s `[data-slot]`
+// spans and `#restore-line` exist. Only the `<html>` class and dataset work can run
+// immediately; filling those elements waits for `DOMContentLoaded`.
 import { SHELL_QUERY } from '~/lib/breakpoint';
 import { LAYOUT_OVERRIDE_KEY, BOOTED_KEY, LAYOUT_KEY } from '~/lib/storage';
 
-// D15: "the return to `/` is a plain cut, no transition" (ticket 09) — `/` renders
-// the linear layout and then swaps it for the shell a few hundred ms later, so
-// morphing a page frame into that only to tear it out again reads as a glitch, not
-// continuity. `/`'s `pagereveal` handler therefore always calls `skipTransition()`,
-// unconditionally, regardless of where the visitor arrived from. Only a page's own
-// handler (`CrtPrefScript` with `page`) is conditional, accepting a transition when
-// arriving from `/`.
+// `/` always cuts the view transition: it shows the linear layout and swaps in the shell
+// moments later, so morphing a page frame into that would look like a glitch.
 const reveal = `d.addEventListener('pagereveal',function(e){e.viewTransition?.skipTransition()});`;
 
-// `g` is a tiny getter shared by both storage kinds; `c` is `documentElement.classList`.
-// Both exist purely to keep this at or under its own 1.5 KB budget (ticket 19) —
-// every `classList.add/contains/remove` and every `getItem` here is used enough
-// times that the alias pays for its own declaration several times over.
+// `g` is a storage getter shared by both storage kinds and `c` is
+// `documentElement.classList`; the aliases keep the script under its byte budget.
 const script = `
 var d=document,h=d.documentElement,c=h.classList,ls=localStorage,ss=sessionStorage;
 function g(s,k){try{return s.getItem(k)}catch(e){}}

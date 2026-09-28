@@ -1,5 +1,5 @@
-// One static file per `file` node's raw source, frontmatter included (ticket 05 § the
-// filesystem, D8: "`cat` prints the whole file, frontmatter included"): `/fs/src/<path>.txt`.
+// One static file per `file` node's raw source, frontmatter included, at
+// `/fs/src/<path>.txt` (`cat` prints the whole file).
 
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -20,9 +20,8 @@ export const getStaticPaths = (async () => {
       if (!entry?.filePath) {
         throw new Error(`fs/src: "${node.path}" has no on-disk file`);
       }
-      // D8: read from disk against `process.cwd()`, never a path built from
-      // `import.meta.url` — at build time that resolves into `dist/.prerender/chunks/`,
-      // not the source tree (research 17, hazard 8).
+      // Read against `process.cwd()`, not `import.meta.url`: at build time the latter
+      // resolves into `dist/.prerender/chunks/`, not the source tree.
       const source = await readFile(join(process.cwd(), entry.filePath), 'utf-8');
       return {
         params: { path: node.path.slice(1) },

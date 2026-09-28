@@ -1,8 +1,7 @@
-// `viewer.exe` (Task 12.3; ticket 07, ticket 14 § The 3D, ticket 11 § "The 3D layer,
-// without the island"). The window body is transparent and holds the drone's `<View>`, so
-// it composites over the same grid as the desktop floor. The HUD is plain HTML over it.
-// When the scene gate is off (D19) the same HUD sits over the build-time drone SVG, and
-// three is never imported: the 3D half is its own lazy chunk.
+// `viewer.exe`: the window body is transparent and holds the drone's `<View>`, so it
+// composites over the same grid as the desktop floor, with a plain-HTML HUD on top. When
+// the scene gate is off, the HUD sits over the build-time drone SVG instead and three is
+// never imported, since the 3D half is its own lazy chunk.
 import { lazy, Suspense, useState } from 'react';
 import { useShellStore } from '../store';
 import { useSceneGate } from '../scene/gate';

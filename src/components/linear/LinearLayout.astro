@@ -1,10 +1,7 @@
 ---
-// `/` as one long scroll (ticket 11 § "What `/` is"): the masthead over the grid floor,
-// then one Section per root mount that carries a `section` id, in mount-table order —
-// about, projects, drones, resume, contact (D11). Reads `mounts` directly rather than
-// `tree['/'].children`, same reasoning `TaskbarStrip` already documents: mount order is
-// the source of truth D11 names, and a tree's children array is sorted for other reasons
-// (D10) that don't apply to the root.
+// `/` as one long scroll: the masthead, then one Section per root mount that has a
+// `section` id, in mount order. Reads `mounts` rather than `tree['/'].children`, whose
+// order is sorted for folder listings.
 import Masthead from './Masthead.astro';
 import Section from './Section.astro';
 import FolderListing from '~/components/FolderListing.astro';
@@ -96,9 +93,7 @@ const sections: SectionData[] = await Promise.all(
     padding: 0 var(--pad) calc(64px + env(safe-area-inset-bottom));
   }
 
-  /* Single column at every width (ticket 11 § Wide viewports): one `max-width` from
-     phone to wide screen, the reading order never changes. Mirrors `PageLayout`'s
-     `.page-shell > :global(.frame)` sizing of the page frame it's the same object as. */
+  /* One column at every width, matching `PageLayout`'s page frame sizing. */
   #linear > :global(.frame) {
     width: 100%;
     max-width: calc(72ch + 2 * var(--pad) + 2 * var(--border-w));

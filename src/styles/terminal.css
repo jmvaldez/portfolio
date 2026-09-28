@@ -1,9 +1,6 @@
 /*
- * Phase 11's terminal (`Terminal.tsx`, ticket 08 § Voice and prompt, ticket 14 §
- * Terminal). Own file, same reasoning as `desktop.css` and `wm.css`: scoped to
- * `.terminal` and never referenced outside it. Tones map straight to `--ink` /
- * `--ink-dim` — ticket 08 is explicit the terminal never uses the amber accent, so
- * nothing here reads `--accent`.
+ * Terminal styles, scoped to `.terminal`. Tones map to `--ink` / `--ink-dim`; the
+ * terminal never uses the amber accent, so nothing here reads `--accent`.
  */
 
 .terminal {

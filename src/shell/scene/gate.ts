@@ -1,9 +1,8 @@
-// The 3D layer's gate (ticket 01 § Reduced motion, layer 1; D19): WebGL2 present AND
-// `prefers-reduced-motion: no-preference`. Deliberately three-free — `Desktop.tsx`, the
-// scene layer and `Viewer.tsx` all import this, and none of them may drag three into
-// the shell's static import graph (map Hazards). Like D20's head gate this never
-// creates a context to check: `WebGL2RenderingContext`'s presence is the test, and a
-// context that then fails to build is caught at runtime (`SceneBoundary` -> `markFailed`).
+// The 3D layer's gate: WebGL2 is present and `prefers-reduced-motion` is `no-preference`.
+// Three-free, since `Desktop.tsx`, the scene layer and `Viewer.tsx` all import it and none
+// may pull three into the shell's static import graph. It never creates a context to check:
+// `WebGL2RenderingContext`'s presence is the test, and a context that then fails to build is
+// caught at runtime (`SceneBoundary` calls `markSceneFailed`).
 import { useSyncExternalStore } from 'react';
 
 export const MOTION_OK_QUERY = '(prefers-reduced-motion: no-preference)';
@@ -15,9 +14,8 @@ function webgl2Available(): boolean {
 let failed = false;
 const failListeners = new Set<() => void>();
 
-/** Called by the scene's error boundary when the canvas could not be built after
- * all (blocklisted GPU, context creation refused): everything that reads the gate
- * then takes the fallback path, same as if it had never passed. */
+/** Closes the gate for the rest of the session after the canvas failed to build (blocklisted
+ * GPU, context creation refused), so everything reading it takes the fallback path. */
 export function markSceneFailed(): void {
   if (failed) return;
   failed = true;
@@ -34,13 +32,13 @@ function subscribe(onChange: () => void): () => void {
   };
 }
 
-/** The gate's current value, for non-React callers (the terminal's `arm`). */
+/** Returns whether the gate is open, for non-React callers (the terminal's `arm`). */
 export function sceneGateOpen(): boolean {
   return !failed && webgl2Available() && window.matchMedia(MOTION_OK_QUERY).matches;
 }
 
-/** Live: flips when the visitor changes their reduced-motion setting mid-session
- * (ticket 01 layer 2), not just at mount. */
+/** Returns whether the gate is open, updating when the visitor changes their
+ * reduced-motion setting mid-session. */
 export function useSceneGate(): boolean {
   return useSyncExternalStore(subscribe, sceneGateOpen, () => false);
 }

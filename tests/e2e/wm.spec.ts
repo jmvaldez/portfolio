@@ -1,10 +1,9 @@
 import { expect, test, type Page } from '@playwright/test';
 
-// The hand-rolled window manager (ticket 04 § Behaviour, ticket 14 § Round 2): drag,
-// snap, magnetism, resize, z-order, minimise/close, and the rescue clamp. 1440x900
-// (well above `SHELL_QUERY`) unless a test says otherwise — D16's own seed windows,
-// `about.txt` and `projects/`, are what every test here drives; `viewer.exe` and
-// `terminal.exe` are skipped in this phase (neither app is registered yet).
+// The hand-rolled window manager: drag, snap, magnetism, resize, z-order,
+// minimise/close, and the rescue clamp. 1440x900 (well above `SHELL_QUERY`) unless a test
+// says otherwise. The seed windows `about.txt` and `projects/` are what every test here
+// drives; `viewer.exe` and `terminal.exe` are seeded too but not driven here.
 const DESKTOP = { width: 1440, height: 900 };
 
 test.use({ viewport: DESKTOP });
@@ -29,31 +28,30 @@ async function windowRect(page: Page, path: string) {
   }));
 }
 
-// Picks a point on the bare `.titlebar` div itself — never a control. Phase 10 gives
-// a URL-bearing node's title bar a maximise box next to its `h2` (`Window.tsx`'s
-// `maximiseSlot`), and a flex row with no `h2 { flex: 1 }` clusters every control at
-// the div's left edge, so the div's own geometric centre is no longer reliably empty
-// once there's a third control to reach it. This finds the empty stretch to the right
-// of every `.ctl` (maximise/minimise/close) and picks its midpoint, staying clear of
-// the invisible `.resize-e` handle that overlaps the title bar's own right edge
-// (`wm.css`: it spans the frame's full height, not just its body).
+// Picks a point on the bare `.titlebar` div itself, never a control. The title (the
+// bar's first child) takes the slack and every `.ctl` sits flush right (`chrome.css`),
+// so the empty stretch is between the end of the title text and the leftmost control;
+// this picks its midpoint.
 async function titlebarCenter(page: Page, path: string) {
   const bar = page.locator(`[data-window="${path}"] .titlebar`);
   const box = await bar.boundingBox();
   if (!box) throw new Error(`no titlebar box for ${path}`);
 
+  const title = await bar.locator('h2').evaluate((el) => {
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    return range.getBoundingClientRect().right;
+  });
+
   const controls = bar.locator('.ctl');
   const count = await controls.count();
-  let controlsRight = box.x;
+  let controlsLeft = box.x + box.width;
   for (let i = 0; i < count; i++) {
     const controlBox = await controls.nth(i).boundingBox();
-    if (controlBox) controlsRight = Math.max(controlsRight, controlBox.x + controlBox.width);
+    if (controlBox) controlsLeft = Math.min(controlsLeft, controlBox.x);
   }
 
-  const RESIZE_HANDLE_MARGIN = 10;
-  const safeRight = box.x + box.width - RESIZE_HANDLE_MARGIN;
-  const x = Math.min((controlsRight + 12 + safeRight) / 2, safeRight);
-  return { x, y: box.y + box.height / 2 };
+  return { x: (title + controlsLeft) / 2, y: box.y + box.height / 2 };
 }
 
 function near(a: number, b: number, tolerance = 2): void {
@@ -219,9 +217,8 @@ test('minimising hides a window; closing removes it and focus lands sensibly', a
   await page.locator('button[aria-label="Close projects"]').click();
   await expect(page.locator('[data-window="/projects"]')).toHaveCount(0);
 
-  // The only window left is minimised, so there is no visible title to hand focus
-  // to and no taskbar yet (Phase 10) — the desktop heading is Desktop.tsx's own
-  // fallback for exactly this case.
+  // The only window left is minimised, so there is no visible title to hand focus to;
+  // the desktop heading is Desktop.tsx's own fallback for this case.
   await expect(page.locator('h1.sr-only')).toBeFocused();
 });
 
@@ -243,8 +240,8 @@ test('narrowing the browser viewport keeps every title bar reachable', async ({ 
     expect(narrowed.width).toBeLessThan(desktop.width);
   }).toPass({ timeout: 2000 });
 
-  // The rescue clamp (Task 9.4) runs off the same `ResizeObserver`, a tick behind
-  // the viewport resize itself — poll rather than assume it's already landed.
+  // The rescue clamp runs off the same `ResizeObserver`, a tick behind the viewport
+  // resize itself: poll rather than assume it has landed.
   for (const path of ['/about.txt', '/projects']) {
     await expect(async () => {
       const narrowDesktop = await desktopBox(page);

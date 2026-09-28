@@ -1,9 +1,5 @@
-// `/bin` (ticket 08 § Commands, § `/bin`, § Easter eggs). Every command the terminal
-// understands is also a node here, so the commands are discoverable by walking the
-// filesystem — `ls /bin` lists them, `cat /bin/<command>` describes them.
-//
-// `HELP_TEXT` is exported for Phase 11's terminal to print for bare `help`, byte for byte
-// what ticket 08 specifies.
+// `/bin`: every terminal command is also a node here, so `ls /bin` lists them and
+// `cat /bin/<command>` describes them.
 
 import type { FsNode } from './types';
 
@@ -19,8 +15,7 @@ export const HELP_TEXT = `commands:
   exit           close the terminal
 there's more in /bin, if you're the curious type.`;
 
-/** One line of `help`'s command table, keyed by command name, plus the `usage:` line
- * `cat /bin/<command>` appends to it. */
+/** Each command's `help` table line, plus the `usage:` line `cat /bin/<command>` adds. */
 const COMMANDS: Record<string, { help: string; usage: string }> = {
   ls: { help: 'ls [path]      list a directory', usage: 'usage: ls [path]' },
   cd: { help: 'cd [path]      change directory', usage: 'usage: cd [path]' },
@@ -33,8 +28,7 @@ const COMMANDS: Record<string, { help: string; usage: string }> = {
   exit: { help: 'exit           close the terminal', usage: 'usage: exit' },
 };
 
-/** Absent from `help`, present here — found by exploring (ticket 08 § Easter eggs). Each
- * line is dry and doesn't spoil the command's effect; `hack`'s is ticket 08's own text. */
+/** Hidden commands, absent from `help` and found by exploring; each reply is dry. */
 const EGGS: Record<string, string> = {
   sudo: 'you first.',
   rm: "don't.",
