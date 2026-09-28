@@ -15,6 +15,7 @@
     "format": "prettier --write . && eslint --fix .",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "fonts:subset": "python3 scripts/subset-fonts.py",
     "verify": "pnpm lint && pnpm check && pnpm test && pnpm build && pnpm test:e2e"
   },
   "dependencies": {
@@ -27,6 +28,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
+    "@ibm/plex-mono": "^2.5.0",
     "@playwright/test": "^1.63.0",
     "@types/node": "^26.6.3",
     "@types/react": "^19.3.0",

@@ -1,0 +1,52 @@
+/*
+ * Visual system tokens (ticket 06 § Tokens, variant C — Instrument panel, CRT on).
+ * Copied verbatim from the ticket's `:root` block. `--font-chrome` and `--font-body`
+ * are the one exception: the ticket left them as a placeholder pending ticket 13,
+ * which is now resolved to the self-hosted "Valdez Mono" family wired in
+ * astro.config.mjs (`--font-mono`, Task 3.2).
+ *
+ * Everything downstream reads these tokens; nothing hard-codes a colour (ticket 06).
+ */
+
+:root {
+  --bg: #0a0d09;
+  --bg-sunk: #050703;
+  --chrome: #17200f;
+  --chrome-hi: #26331a;
+  --ink: #7dff8f; /* 15.42:1 on --bg */
+  --ink-dim: #47a352; /*  6.17:1 on --bg,  5.30:1 on --chrome */
+  --ink-faint: #409a4c; /*  5.53:1 on --bg,  4.76:1 on --chrome (both clean; higher under scan) */
+  --accent: #ffc24d; /* 10.46:1 on --chrome, 11.46:1 under its scanline */
+  --hud: #ffc24d; /* the FPS layer and the accent are the same amber */
+  --edge: #3f5a2c;
+  --edge-hot: #ffc24d; /* focused window border */
+  --body-bg: #0a0d09;
+  --body-ink: #d6ffdb; /* 17.86:1 on --body-bg */
+  --grid: #4a4ae0; /* Commodore blue, 3D backdrop only */
+
+  --font-chrome: var(--font-mono);
+  --font-body: var(--font-mono);
+  --body-size: 15px;
+  --body-leading: 1.75;
+  --body-measure: 58ch;
+
+  --border-w: 3px;
+  --title-h: 30px;
+  --radius: 0px;
+  --pad: 14px;
+  --bevel: inset 2px 2px 0 rgba(255, 255, 255, 0.08), inset -2px -2px 0 rgba(0, 0, 0, 0.6);
+  --scan-alpha: 0.32;
+  --scan-period: 3px;
+  --bloom: 0 0 9px rgba(125, 255, 143, 0.34);
+}
+
+/* Ticket 14 § Forced colours and increased contrast: `prefers-contrast: more` does not
+   get its own design, it only raises the subordinate ink tokens to full phosphor green
+   so the text that fails first under a scanline (bylines, column headers, gauge labels,
+   per ticket 06's hazard) stops being subordinate at all. */
+@media (prefers-contrast: more) {
+  :root {
+    --ink-dim: var(--ink);
+    --ink-faint: var(--ink);
+  }
+}

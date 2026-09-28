@@ -1,0 +1,93 @@
+/*
+ * Chrome primitives (ticket 06 § chrome geometry, D14: plain classes shared verbatim
+ * by Astro and React components; Tailwind is layout utilities only).
+ */
+
+.frame {
+  border: var(--border-w) solid var(--edge);
+  border-radius: var(--radius);
+  box-shadow: var(--bevel);
+  background: var(--chrome);
+}
+
+.frame[data-focused] {
+  border-color: var(--edge-hot);
+}
+
+.titlebar {
+  height: var(--title-h);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 var(--pad);
+  background: var(--chrome);
+  border-bottom: var(--border-w) solid var(--edge);
+  color: var(--accent);
+  /* Slashed zero on chrome and terminal only (ticket 13): the body typeface stays
+     plain and this is where numerals actually appear (window titles, gauges). */
+  font-feature-settings: 'zero';
+}
+
+.titlebar[data-lit] {
+  background: var(--chrome-hi);
+  border-bottom-color: var(--edge-hot);
+}
+
+.ctl {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 18px;
+  border: 1px solid currentColor;
+  border-radius: var(--radius);
+  color: inherit;
+  background: transparent;
+  text-decoration: none;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.maxbox {
+  color: var(--accent);
+}
+
+.closebox {
+  color: var(--accent);
+}
+
+/* Long-form body copy (ticket 06): mono, 15px / 1.75 / 58ch, and explicitly never
+   given `.scan` — scanlines are per-surface chrome, never over long-form prose. */
+.prose {
+  max-width: var(--body-measure);
+  font-family: var(--font-body);
+  font-size: var(--body-size);
+  line-height: var(--body-leading);
+  color: var(--body-ink);
+  background: var(--body-bg);
+}
+
+.speckey {
+  /* Never the CSS small-caps variant property (ticket 13 hazard: a browser-simulated
+     small cap scales the advance too and breaks the mono column). Plain uppercase
+     plus tracking instead. */
+  text-transform: uppercase;
+  font-size: 0.8em;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+}
+
+@media (forced-colors: active) {
+  .frame {
+    border: 3px solid CanvasText;
+  }
+
+  .frame[data-focused] {
+    border-color: Highlight;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}

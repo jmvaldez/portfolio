@@ -1,0 +1,26 @@
+---
+// Pre-paint CRT preference (ticket 02 § off switch; ticket 09 § the CRT toggle is a
+// `localStorage` preference; D13: key `vos:crt`, values 'on' | 'off'). Runs before
+// first paint so there's no flash of the wrong treatment: a stored preference wins,
+// otherwise `forced-colors: active` or `prefers-contrast: more` default it off
+// (ticket 14 § Forced colours and increased contrast). A zero-JS page can't read
+// `localStorage` on its own (map Hazards), so this is the unavoidable inline script.
+//
+// Also owns the one delegated click handler for `[data-crt-toggle]` buttons, which
+// start `hidden` in markup and are only revealed once this script has actually run
+// (ticket 11 § Taskbar strip) — a no-JS visitor never sees a dead toggle.
+//
+// Kept hand-terse rather than run through a minifier: must stay <= 600 bytes
+// minified (phase 3 budget). Storage reads are wrapped in try/catch because
+// private browsing can throw on both `getItem` and `setItem`.
+---
+
+<!-- prettier-ignore -->
+<script is:inline>
+try{var v=localStorage.getItem('vos:crt')}catch(e){}
+if(v!='on'&&v!='off')v=matchMedia('(forced-colors:active),(prefers-contrast:more)').matches?'off':'on';
+var d=document,h=d.documentElement;
+h.dataset.crt=v;
+d.addEventListener('click',function(e){var t=e.target.closest('[data-crt-toggle]');if(t){v=h.dataset.crt=='on'?'off':'on';h.dataset.crt=v;try{localStorage.setItem('vos:crt',v)}catch(e){}t.setAttribute('aria-pressed',''+(v=='on'))}});
+d.addEventListener('DOMContentLoaded',function(){d.querySelectorAll('[data-crt-toggle]').forEach(function(el){el.removeAttribute('hidden')})});
+</script>

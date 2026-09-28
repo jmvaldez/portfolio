@@ -1,1 +1,40 @@
 @import 'tailwindcss';
+@import './fonts.css';
+@import './tokens.css';
+@import './crt.css';
+@import './chrome.css';
+
+/* Ticket 06 / D14: map the visual-system tokens into Tailwind's theme so layout
+   utilities (`bg-ink`, `text-accent`, `border-edge`, …) read the same custom
+   properties the hand-written chrome CSS reads. Nothing here hard-codes a colour.
+   `inline` (not plain `@theme`) matters for `--font-mono`: Astro's <Font> component
+   (Task 3.4) already declares a real, concrete `--font-mono` on `:root` from its own
+   inline <style>. A plain `@theme` block would emit a *second*, competing `:root`
+   declaration for the same custom-property name, and if that copy ever won the
+   cascade its `var(--font-mono)` would resolve back to itself — a genuine cycle,
+   which CSS defines as invalid at computed-value time, silently dropping the whole
+   font stack. `@theme inline` avoids the competing declaration entirely by
+   substituting the referenced variable directly into each generated utility. */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-sunk: var(--bg-sunk);
+  --color-chrome: var(--chrome);
+  --color-chrome-hi: var(--chrome-hi);
+  --color-ink: var(--ink);
+  --color-ink-dim: var(--ink-dim);
+  --color-ink-faint: var(--ink-faint);
+  --color-accent: var(--accent);
+  --color-hud: var(--hud);
+  --color-edge: var(--edge);
+  --color-edge-hot: var(--edge-hot);
+  --color-body-bg: var(--body-bg);
+  --color-body-ink: var(--body-ink);
+  --color-grid: var(--grid);
+
+  --font-mono: var(--font-mono);
+}
+
+body {
+  background: var(--bg);
+  font-family: var(--font-mono);
+}

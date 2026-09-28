@@ -1,0 +1,22 @@
+---
+// Kept minimal (title, description) per Task 3.4; Phase 7 extends this with the
+// rest of the meta layer (canonical, OG image, JSON-LD — ticket 18).
+import { Font } from 'astro:assets';
+import CrtPrefScript from './CrtPrefScript.astro';
+import '~/styles/global.css';
+
+interface Props {
+  title: string;
+  description: string;
+}
+
+const { title, description } = Astro.props;
+---
+
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>{title}</title>
+<meta name="description" content={description} />
+{/* Ticket 13: only Regular is preloaded; Bold and Italic swap in on demand. */}
+<Font cssVariable="--font-mono" preload={[{ weight: '400', style: 'normal' }]} />
+<CrtPrefScript />

@@ -1,0 +1,45 @@
+import { expect, test } from '@playwright/test';
+
+// The CRT preference (ticket 02 § off switch; D13: `vos:crt` in localStorage) is set
+// by CrtPrefScript before first paint. These specs exercise the three inputs that
+// script reads, in the priority order it reads them: a stored preference beats the
+// media queries, and `forced-colors`/`prefers-contrast` only supply a default.
+
+test('data-crt defaults to "on" with no stored preference and no forced media', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await expect(page.locator('html')).toHaveAttribute('data-crt', 'on');
+});
+
+test('the CRT toggle sets data-crt to "off" and it survives a reload', async ({ page }) => {
+  await page.goto('/');
+  await page.locator('[data-crt-toggle]').click();
+  await expect(page.locator('html')).toHaveAttribute('data-crt', 'off');
+
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-crt', 'off');
+});
+
+test('forced-colors with no stored preference defaults data-crt to "off"', async ({ browser }) => {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  await page.emulateMedia({ forcedColors: 'active' });
+  await page.goto('/');
+  await expect(page.locator('html')).toHaveAttribute('data-crt', 'off');
+  await context.close();
+});
+
+test('prefers-contrast: more defaults data-crt off, but the toggle still works', async ({
+  browser,
+}) => {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  await page.emulateMedia({ contrast: 'more' });
+  await page.goto('/');
+  await expect(page.locator('html')).toHaveAttribute('data-crt', 'off');
+
+  await page.locator('[data-crt-toggle]').click();
+  await expect(page.locator('html')).toHaveAttribute('data-crt', 'on');
+  await context.close();
+});
