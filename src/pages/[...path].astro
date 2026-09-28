@@ -58,11 +58,9 @@ type FootageItem = { label: string; url: string; poster?: ImageMetadata | undefi
 
 const filename = bodyNode?.name ?? node.name;
 const hasChildren = node.kind === 'dir' && (node.children?.length ?? 0) > 0;
-const title = entry?.data.title ?? node.title;
-const description = entry?.data.summary ?? node.summary ?? node.title;
 ---
 
-<PageLayout title={title} description={description} node={node} tree={tree} filename={filename}>
+<PageLayout node={node} tree={tree} filename={filename}>
   {entry && (
     <>
       <SpecBlock entry={entry} />

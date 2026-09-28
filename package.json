@@ -21,10 +21,14 @@
   },
   "dependencies": {
     "@astrojs/react": "^7.0.0",
+    "@astrojs/sitemap": "^3.7.4",
+    "@resvg/resvg-js": "^2.6.2",
     "@tailwindcss/vite": "^4.3.3",
     "astro": "7.3.5",
+    "fontkit": "^2.0.4",
     "react": "19.2.0",
     "react-dom": "19.2.0",
+    "satori": "^0.33.5",
     "sharp": "^0.35.5",
     "tailwindcss": "^4.3.3",
     "three": "0.186.1"
@@ -33,6 +37,7 @@
     "@astrojs/check": "^0.9.10",
     "@ibm/plex-mono": "^2.5.0",
     "@playwright/test": "^1.63.0",
+    "@types/fontkit": "^2.0.9",
     "@types/node": "^26.6.3",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",

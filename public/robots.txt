@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://joe-valdez-portfolio.pages.dev/sitemap-index.xml

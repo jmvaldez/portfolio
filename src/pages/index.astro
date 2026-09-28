@@ -11,10 +11,7 @@ import { getTree } from '~/fs/load';
 const tree = await getTree();
 ---
 
-<BaseLayout
-  title="Joe Valdez · Software Engineer"
-  description="Joe Valdez's software-engineering portfolio, presented as a retro personal computer."
->
+<BaseLayout tree={tree}>
   <LinearLayout tree={tree} />
   <TaskbarStrip tree={tree} onHome={true} />
 </BaseLayout>

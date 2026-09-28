@@ -20,6 +20,15 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # Task 7.3: Astro 7.2's incremental build cache lives in `node_modules/.astro`
+      # (research 17 § Caching); the font files are read from disk at build time and
+      # invisible to Astro's own dependency graph, so they're folded into the key by
+      # hand, same as the OG endpoint's own `cacheKey` (research 17 hazard 4).
+      - uses: actions/cache@v4
+        with:
+          path: node_modules/.astro
+          key: astro-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('src/assets/fonts/og/*') }}
+
       - run: pnpm exec playwright install --with-deps chromium
 
       - run: pnpm verify

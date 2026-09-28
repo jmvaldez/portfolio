@@ -7,26 +7,10 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { parseHexTokens, parseNumberToken } from '~/lib/tokens';
 
 const stylesDir = fileURLToPath(new URL('.', import.meta.url));
 const tokensSource = readFileSync(new URL('./tokens.css', import.meta.url), 'utf-8');
-
-/** Every `--token-name: #rrggbb;` declaration in `tokens.css`, keyed without the `--`. */
-function parseHexTokens(source: string): Record<string, string> {
-  const tokens: Record<string, string> = {};
-  for (const match of source.matchAll(/--([\w-]+):\s*#([0-9a-fA-F]{6});/g)) {
-    const [, name, hex] = match;
-    if (name && hex) tokens[name] = `#${hex}`;
-  }
-  return tokens;
-}
-
-/** The bare numeric value of a `--token-name: <number>;` declaration (e.g. `--scan-alpha`). */
-function parseNumberToken(source: string, name: string): number {
-  const match = source.match(new RegExp(`--${name}:\\s*([\\d.]+);`));
-  if (!match) throw new Error(`token --${name} not found in tokens.css`);
-  return Number(match[1]);
-}
 
 const tokens = parseHexTokens(tokensSource);
 const scanAlpha = parseNumberToken(tokensSource, 'scan-alpha');
