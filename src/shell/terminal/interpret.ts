@@ -269,6 +269,15 @@ function commandNotFound(cmd: string): Result {
   };
 }
 
+/** The command a typed line invokes, for analytics: its first token when that is a node under
+ * `/bin` (every command is one), else `unknown`. Never the arguments, and never an arbitrary
+ * typed word. `null` for a blank line. */
+export function commandName(line: string, tree: FsTree): string | null {
+  const [cmd] = line.trim().split(/\s+/);
+  if (!cmd) return null;
+  return !cmd.includes('/') && tree[`/bin/${cmd}`] ? cmd : 'unknown';
+}
+
 /** Runs one typed line against `ctx` and returns the output lines and requested effects.
  * A blank line returns no lines. */
 export function run(line: string, ctx: InterpretCtx): Result {

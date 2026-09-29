@@ -9,6 +9,7 @@ import { Canvas } from '@react-three/fiber';
 import { View } from '@react-three/drei';
 import { useShellStore } from '../store';
 import CrtViewPass from './CrtViewPass';
+import { reportScene } from './gate';
 import GridView from './GridView';
 
 interface Props {
@@ -41,6 +42,7 @@ export default function Scene({ desktopRef, active }: Props) {
       dpr={[1, 1.5]}
       frameloop={active ? 'always' : 'never'}
       eventSource={desktopRef}
+      onCreated={() => reportScene('webgl')}
     >
       <GridView desktopRef={desktopRef} />
       <View.Port />

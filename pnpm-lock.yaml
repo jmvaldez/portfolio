@@ -57,6 +57,9 @@ importers:
       '@astrojs/check':
         specifier: ^0.9.10
         version: 0.9.10(@emnapi/runtime@1.11.1)(prettier-plugin-astro@1.1.0(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)(prettier@3.9.9))(prettier@3.9.9)(typescript@5.9.3)
+      '@cloudflare/workers-types':
+        specifier: ^5.20260928.1
+        version: 5.20260928.1
       '@ibm/plex-mono':
         specifier: ^2.5.0
         version: 2.5.0
@@ -436,6 +439,9 @@ packages:
   '@clack/prompts@1.8.1':
     resolution: {integrity: sha512-dlT1m5e/0yUL0kRNcQn7yGLVThkgbB0Ga/1AmfDDC/8ik6AIiSf2QLQO2zPYvefsHP0aFgxO93cVLCCfDp7kzQ==}
     engines: {node: '>= 20.12.0'}
+
+  '@cloudflare/workers-types@5.20260928.1':
+    resolution: {integrity: sha512-B/El15v5HqZyuyfR7Z0W443iA6Ml4nZjaR8rgHyW612r8reO+1JaDKtNbP3CPdzVIM2egp98by3NlpMm5pKbcg==}
 
   '@dimforge/rapier3d-compat@0.12.0':
     resolution: {integrity: sha512-uekIGetywIgopfD97oDL5PfeezkFpNhwlzlaEYNOA0N6ghdsOvh/HYjSMek5Q2O1PYvRSDFcqFVJl4r4ZBwOow==}
@@ -5092,6 +5098,8 @@ snapshots:
       fast-string-width: 3.0.2
       fast-wrap-ansi: 0.2.2
       sisteransi: 1.0.5
+
+  '@cloudflare/workers-types@5.20260928.1': {}
 
   '@dimforge/rapier3d-compat@0.12.0': {}
 

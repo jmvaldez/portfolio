@@ -34,7 +34,24 @@ jobs:
 
       - run: pnpm exec playwright install --with-deps chromium
 
+      # Built with a placeholder analytics key, as deploy.yml builds with the real one, so the
+      # byte budgets and the zero-JS e2e measure content pages with the beacon in them. The
+      # key is the same length as a real one (`phc_` + 43); nothing is sent, because the
+      # preview server has no `/ingest` and the e2e spec asserts nothing leaves localhost.
       - run: pnpm verify
+        env:
+          PUBLIC_POSTHOG_KEY: phc_ci_placeholder_0000000000000000000000000000
+
+      # The keyless shape (dev, forks, no `POSTHOG_KEY` secret): no beacon, no `/ingest`.
+      - name: Keyless build emits no analytics
+        env:
+          PUBLIC_POSTHOG_KEY: ''
+        run: |
+          pnpm exec astro build --outDir dist-keyless
+          if grep -rlE 'sendBeacon|/ingest' dist-keyless --include=index.html; then
+            echo "::error::a keyless build emitted analytics"
+            exit 1
+          fi
 
       - uses: actions/upload-artifact@v4
         if: failure()

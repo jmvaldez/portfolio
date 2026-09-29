@@ -15,7 +15,7 @@ const KB = 1024;
 
 export const BUDGETS = {
   contentExternalJs: 0,
-  contentInlineJs: 1 * KB,
+  contentInlineJs: 1.5 * KB,
   headGate: 1.5 * KB,
   islandInitial: 90 * KB,
   sceneChunk: 250 * KB,
@@ -66,7 +66,8 @@ const row = (name, budget, actual, unit, ok = actual <= budget) => ({
 
 /**
  * Content pages (every `index.html` but the root): no `<script src`, no module script,
- * inline JS <= 1 KB. Kept apart from `checkBudgets` so a fixture `dist/` needs no shell.
+ * inline JS <= 1.5 KB (the CRT script plus the analytics beacon). Kept apart from
+ * `checkBudgets` so a fixture `dist/` needs no shell.
  */
 export function checkContentPages(dist) {
   const rows = [];

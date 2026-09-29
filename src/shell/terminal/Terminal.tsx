@@ -7,6 +7,7 @@
 // typing animation of `typeLines`/`hexWall` renders in a transient `aria-hidden` slot
 // outside the log, and only the finished result becomes a log child.
 import { useEffect, useRef, useState } from 'react';
+import { track } from '~/analytics';
 import type { FsNode } from '~/fs/types';
 import {
   appendHistory,
@@ -20,7 +21,7 @@ import { sceneGateOpen } from '../scene/gate';
 import { useShellStore } from '../store';
 import { appRegistry } from '../apps/registry';
 import { complete } from './complete';
-import { run, type Line } from './interpret';
+import { commandName, run, type Line } from './interpret';
 
 /** Delay between typed lines; skipped under reduced motion. */
 const TYPE_INTERVAL_MS = 40;
@@ -180,6 +181,9 @@ export default function Terminal({ windowId }: AppProps) {
       historyRef.current = [...historyRef.current, raw].slice(-100);
     }
     historyIdxRef.current = null;
+
+    const command = commandName(raw, tree);
+    if (command !== null) track('terminal_command_run', { command });
 
     const result = run(raw, { tree, wd: cwdAtRun, width: cols });
     if (result.wd !== undefined) setWd(result.wd);

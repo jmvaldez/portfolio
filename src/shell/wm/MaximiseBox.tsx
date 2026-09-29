@@ -28,7 +28,7 @@ export default function MaximiseBox({ node }: Props) {
       aria-label={`Open ${node.title} page`}
       onMouseEnter={() => prefetchPage(url)}
       onFocus={() => prefetchPage(url)}
-      onClick={handlePromotionClick}
+      onClick={(event) => handlePromotionClick(event, node.path)}
     >
       <span aria-hidden="true">▢</span>
     </a>

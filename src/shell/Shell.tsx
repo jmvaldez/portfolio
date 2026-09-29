@@ -6,6 +6,7 @@
 // completion strands screen-reader users. Only the widen case moves focus, because it is a
 // deliberate viewport-driven mode switch.
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { initAnalytics, track } from '~/analytics';
 import { SHELL_QUERY } from '~/lib/breakpoint';
 import { getLayoutOverride } from '~/lib/storage';
 import type { FsTree } from '~/fs/types';
@@ -33,6 +34,15 @@ export default function Shell({ tree, droneSvg, droneReadout }: Props) {
   const seededRef = useRef(false);
   const timerDoneRef = useRef(false);
   const readyRef = useRef<(() => void) | null>(null);
+
+  // Starts analytics once the island has mounted; the adapter loads on an idle callback.
+  // Whether this mount is the linear layout (mobile, or a stored layout override) is the
+  // one handoff decided before the island exists, so it is reported here.
+  const startedLinearRef = useRef(!renderDesktop);
+  useEffect(() => {
+    initAnalytics();
+    if (startedLinearRef.current) track('linear_handoff', { reason: 'initial' });
+  }, []);
 
   useEffect(() => {
     useShellStore.getState().setTree(tree);
@@ -63,6 +73,7 @@ export default function Shell({ tree, droneSvg, droneReadout }: Props) {
         html.classList.remove('shell', 'shell-ready', 'boot', 'restore', 'boot-skipped');
         setRenderDesktop(false);
         useShellStore.getState().announce('Switched to text layout');
+        track('linear_handoff', { reason: 'narrowed' });
         document.querySelector<HTMLHeadingElement>('#linear h1')?.focus();
       } else {
         // Widening: show the Restore line, never a boot, and remount the desktop through
@@ -105,10 +116,12 @@ export default function Shell({ tree, droneSvg, droneReadout }: Props) {
         widenPendingRef.current = false;
         // The one focus-moving case: a deliberate viewport-driven mode switch.
         useShellStore.getState().announce('Switched to desktop');
+        track('shell_entered', { mode: 'widen' });
         desktopRef.current?.focusHeading();
       } else {
         const restoring = html.classList.contains('restore');
         const n = useShellStore.getState().windows.length;
+        track('shell_entered', { mode: restoring ? 'restore' : 'boot' });
         useShellStore
           .getState()
           .announce(
@@ -151,7 +164,14 @@ export default function Shell({ tree, droneSvg, droneReadout }: Props) {
   return (
     <>
       {renderDesktop && (
-        <Desktop ref={desktopRef} onSkip={() => setRenderDesktop(false)} onSeeded={handleSeeded} />
+        <Desktop
+          ref={desktopRef}
+          onSkip={() => {
+            track('linear_handoff', { reason: 'skip_link' });
+            setRenderDesktop(false);
+          }}
+          onSeeded={handleSeeded}
+        />
       )}
       {/* The one shared status region, for readiness, layout-swap, and toast announcements.
           It lives here so the "Switched to text layout" announcement survives `Desktop`

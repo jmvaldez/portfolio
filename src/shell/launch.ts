@@ -2,6 +2,7 @@
 // launcher, folder row, terminal `open`) goes through `launch`, so whether a node can be
 // opened is decided in one place. It only decides whether to open a window, download, or
 // refuse; what renders inside the window is `windows/WindowBody.tsx`'s decision.
+import { track, type AnalyticsEvents } from '~/analytics';
 import { appRegistry } from './apps/registry';
 import { useShellStore } from './store';
 import { rescue } from './wm/geometry';
@@ -19,12 +20,17 @@ const CASCADE_WRAP = 6;
 
 /** Opens `path` and gives a newly opened window desktop-relative geometry, since
  * `store.open()` uses a placeholder rect. An already-open window is only raised. */
-function openSized(path: string, opener: string | undefined): void {
+function openSized(
+  path: string,
+  kind: AnalyticsEvents['window_opened']['kind'],
+  opener: string | undefined,
+): void {
   const store = useShellStore.getState();
   const isNew = !store.windows.some((w) => w.id === path);
   if (opener !== undefined) store.open(path, opener);
   else store.open(path);
   if (!isNew) return;
+  track('window_opened', { path, kind });
 
   const desktop = document.getElementById('desktop')?.getBoundingClientRect();
   if (!desktop || desktop.width === 0) return;
@@ -60,17 +66,18 @@ export function launch(node: FsNode, opener?: string): void {
     case 'dir':
     case 'file':
     case 'text':
-      openSized(node.path, opener);
+      openSized(node.path, node.kind, opener);
       return;
 
     case 'app':
       // The icons and launchers never render for an unregistered app, so reaching this
       // with one means another caller (the terminal's `open`) tried it.
       if (node.app === undefined || !(node.app in appRegistry)) return;
-      openSized(node.path, opener);
+      openSized(node.path, node.kind, opener);
       return;
 
     case 'link': {
+      if (node.path === '/resume.pdf') track('resume_pdf_clicked', { source: 'launch' });
       // Never a window or a navigation of the current document: click a temporary,
       // invisible link and discard it.
       const a = document.createElement('a');

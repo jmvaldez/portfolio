@@ -16,9 +16,9 @@ describe('checkContentPages', () => {
     expect(failed.map((r) => r.name)).toEqual(['/about/ external/module scripts']);
   });
 
-  it('fails a page with 1025 bytes of inline script', () => {
-    const failed = checkContentPages(fixture('inline-1025')).filter((r) => !r.ok);
+  it('fails a page with 1537 bytes of inline script', () => {
+    const failed = checkContentPages(fixture('inline-1537')).filter((r) => !r.ok);
     expect(failed.map((r) => r.name)).toEqual(['/about/ inline JS']);
-    expect(failed[0]?.actual).toBe(1025);
+    expect(failed[0]?.actual).toBe(1537);
   });
 });

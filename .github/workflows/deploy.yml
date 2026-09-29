@@ -36,7 +36,11 @@ jobs:
       # needs it installed.
       - run: pnpm exec playwright install --with-deps chromium
 
+      # Analytics is on only when the `POSTHOG_KEY` repo secret is set; unset, it arrives as
+      # an empty string and the build emits no analytics at all.
       - run: pnpm build
+        env:
+          PUBLIC_POSTHOG_KEY: ${{ secrets.POSTHOG_KEY }}
 
       # The deploy step skips gracefully until the Cloudflare secrets exist, so CI stays
       # green before then and on forks. `secrets` isn't allowed in a step-level `if`, so

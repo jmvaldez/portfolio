@@ -1,5 +1,7 @@
 {
   "extends": "astro/tsconfigs/strictest",
+  // `functions/` runs on Workers, not in a browser; it has its own tsconfig.
+  "exclude": ["${configDir}/dist", "${configDir}/functions"],
   "compilerOptions": {
     "jsx": "react-jsx",
     "jsxImportSource": "react",
