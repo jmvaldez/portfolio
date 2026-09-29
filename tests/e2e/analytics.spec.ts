@@ -4,9 +4,9 @@ import { PAGE_URLS } from './page-urls';
 // Analytics is off unless the build had `PUBLIC_POSTHOG_KEY`. This spec adapts to whichever
 // build it is run against (the key is read from the same environment that built `dist/`):
 // - keyless (local `pnpm verify`): nothing is emitted, nothing loads, nothing is requested.
-// - keyed (CI, with a placeholder key): the beacon is there, and the SDK and beacon talk
-//   only to same-origin `/ingest`, which `pnpm preview` doesn't serve; no request leaves the
-//   machine and nothing throws.
+// - keyed (CI, with a placeholder key): the beacon is there, and the shell's adapter and the
+//   beacon POST only to same-origin `/ingest`, which `pnpm preview` doesn't serve (a 404 the
+//   fire-and-forget senders ignore); no request leaves the machine and nothing throws.
 const KEYED = Boolean(process.env['PUBLIC_POSTHOG_KEY']);
 
 test.use({ viewport: { width: 1440, height: 900 } });
@@ -36,8 +36,12 @@ test(`the desktop shell ${KEYED ? 'reaches only /ingest' : 'requests nothing ana
   page,
 }) => {
   const requests: string[] = [];
+  const posted: string[] = [];
   const errors: Error[] = [];
-  page.on('request', (request) => requests.push(request.url()));
+  page.on('request', (request) => {
+    requests.push(request.url());
+    if (request.method() === 'POST') posted.push(request.postData() ?? '');
+  });
   page.on('pageerror', (error) => errors.push(error));
 
   await page.goto('/');
@@ -46,14 +50,18 @@ test(`the desktop shell ${KEYED ? 'reaches only /ingest' : 'requests nothing ana
   // thread busy), so give it longer than that either way.
   if (KEYED) {
     await expect
-      .poll(() => requests.some((url) => /\/ingest\//.test(url)), { timeout: 10000 })
+      .poll(() => requests.some((url) => url.endsWith('/ingest/i/v0/e/')), { timeout: 10000 })
       .toBe(true);
   } else await page.waitForTimeout(5000);
 
   const origin = new URL(page.url()).origin;
   expect(requests.filter((url) => !url.startsWith(origin))).toEqual([]);
   const analytics = requests.filter((url) => /\/ingest\/|posthog/i.test(url));
-  if (KEYED) expect(analytics.length).toBeGreaterThan(0);
-  else expect(analytics).toEqual([]);
+  if (KEYED) {
+    expect(analytics.length).toBeGreaterThan(0);
+    // The shell sends its own pageview on start, cookieless.
+    const pageview = posted.map((body) => JSON.parse(body) as Record<string, unknown>)[0];
+    expect(pageview).toMatchObject({ event: '$pageview', distinct_id: '$posthog_cookieless' });
+  } else expect(analytics).toEqual([]);
   expect(errors).toEqual([]);
 });

@@ -66,8 +66,8 @@ Other scripts:
 
 ## Performance budgets
 
-`scripts/check-budgets.mjs` holds the byte budgets, all gzip: no external JS and at most
-1.5 KB of inline JS on content pages, 90 KB of initial island JS, 250 KB for the lazy scene
+`scripts/check-budgets.mjs` holds the byte budgets. File weights are gzip and inline JS is raw
+bytes: no external JS and at most 1.5 KB of inline JS on content pages, 90 KB of initial island JS, 250 KB for the lazy scene
 chunk, 20 KB of CSS, 60 KB of fonts, and 150 KB for the resume PDF. Lighthouse
 (`lighthouserc.cjs`, `lighthouserc.desktop.cjs`) blocks on CLS and resource sizes. LCP and
 TBT only warn, because they are too noisy on shared runners to gate on.
@@ -81,33 +81,38 @@ from a repo secret named `POSTHOG_KEY`. `ci.yml` builds with a placeholder key o
 length, so the budgets measure the deployed pages, and the e2e spec checks that nothing leaves
 localhost.
 
-- **On `/`**, the PostHog SDK loads on an idle callback after the shell island mounts, in a
-  lazy chunk outside the initial island JS. It owns pageviews and autocapture; session replay
-  is off. The shell also reports its own moments: a window opened or promoted to its page, a
-  terminal command run (the command's name only, never its arguments), boot vs restore vs
-  linear-layout handoff, whether the WebGL scene or the SVG fallback resolved, and resume PDF
-  downloads.
-- **On content pages**, which ship no external JS, an inline beacon sends one pageview with
-  the URL, referrer, screen and viewport size and any `utm_*` parameters. It counts toward
-  the 1.5 KB inline budget next to the CRT script.
-- **Cookieless:** `cookieless_mode: 'always'` (SDK) and the sentinel `distinct_id` (beacon)
-  set no cookies and use no storage; PostHog derives a daily visitor hash on its servers.
-  This needs **Cookieless server hash mode** switched on in the PostHog project's settings
-  (Project Settings > Web analytics), or its events are ignored.
+- **No SDK.** `posthog-js` is about 95 KB gzip, more than the whole shell, and Lighthouse
+  counts it against the page. The site instead POSTs events itself to PostHog's capture
+  endpoint (`/i/v0/e/`) with `navigator.sendBeacon`, falling back to `fetch` with `keepalive`.
+  So there is no autocapture, no heatmaps, no session replay and no feature flags: what gets
+  tracked is the pageview plus the events described here and declared in the catalogue.
+- **On `/`**, the adapter (a small lazy chunk) starts on an idle callback after the shell
+  island mounts. It sends a `$pageview` then, and the shell's own events after: a window opened
+  or promoted to its page, a terminal command run (the command's name only, never its
+  arguments), boot vs restore vs linear-layout handoff, whether the WebGL scene or the SVG
+  fallback resolved, and resume PDF downloads.
+- **On content pages**, which ship no external JS, an inline beacon sends one `$pageview`. Both
+  halves send the same cookieless event (URL, host, path, referrer, user agent, screen and
+  viewport size, and `utm_*` parameters on pageviews); a unit test holds them to one payload.
+  The beacon counts toward the 1.5 KB inline budget next to the CRT script.
+- **Cookieless:** every event carries the sentinel `distinct_id` and `$cookieless_mode`, so no
+  cookie or storage is used; PostHog derives a daily visitor hash on its servers. This needs
+  **Cookieless server hash mode** switched on in the PostHog project's settings (Project
+  Settings > Web analytics), or its events are ignored.
 - **Proxy:** `functions/ingest/[[path]].ts` is a Cloudflare Pages Function that serves
-  `/ingest/*`, following PostHog's Cloudflare proxy guide: `/static/*` and `/array/*` go to
-  `us-assets.i.posthog.com` (cached), everything else to `us.i.posthog.com`, with cookies and
-  `authorization` stripped and the client IP passed on. It has its own `tsconfig.json`,
-  checked by `pnpm check`.
+  `/ingest/*`, following PostHog's Cloudflare proxy guide minus its asset routing (no SDK, so
+  nothing to fetch): it forwards to `us.i.posthog.com` with cookies and `authorization`
+  stripped and the client IP passed on. It has its own `tsconfig.json`, checked by
+  `pnpm check`.
 - **Events** are declared in one catalogue, `AnalyticsEvents` in `src/analytics/types.ts`;
   shell code calls the neutral `track()` from `src/analytics/index.ts`, which queues calls
   until the adapter is ready.
 
 To swap providers, write a new adapter beside `src/analytics/adapters/posthog.ts`: an
-`Analytics` implementation (the SDK, loaded lazily) and a function returning the beacon's
+`Analytics` implementation and a function returning the beacon's
 script body. Point `loadAdapter` and `loadBeacon` in `src/analytics/provider.ts`, the one
 place a provider is chosen, at it, and replace the proxy function. Shell components and
-layouts don't change, and only the adapter may import a vendor SDK.
+layouts don't change, and only the adapter may know a vendor's vocabulary or import its SDK.
 
 ## CI and deployment
 
