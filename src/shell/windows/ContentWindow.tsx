@@ -3,6 +3,7 @@
 // the window, a persistent "read full page" bar linking to the node's page. Breadcrumbs, the
 // full spec block, and other page-only content are deliberately left to the page.
 import { useEffect, useRef, useState } from 'react';
+import { track } from '~/analytics';
 import type { FsNode } from '~/fs/types';
 import { fetchBody } from '../bodies';
 import { handlePromotionClick } from '../promote';
@@ -68,7 +69,11 @@ export default function ContentWindow({ node }: Props) {
       {node.strip && <p className="spec-strip">{node.strip}</p>}
       {isResume && (
         <p className="resume-download">
-          <a href="/resume.pdf" download="joe-valdez-resume.pdf">
+          <a
+            href="/resume.pdf"
+            download="joe-valdez-resume.pdf"
+            onClick={() => track('resume_pdf_clicked', { source: 'window' })}
+          >
             DOWNLOAD PDF
           </a>
         </p>
@@ -85,7 +90,11 @@ export default function ContentWindow({ node }: Props) {
         <div className="prose" dangerouslySetInnerHTML={{ __html: state.html }} />
       )}
       {overflowing && node.url && (
-        <a className="read-full-page" href={node.url} onClick={handlePromotionClick}>
+        <a
+          className="read-full-page"
+          href={node.url}
+          onClick={(event) => handlePromotionClick(event, node.path)}
+        >
           READ FULL PAGE
         </a>
       )}

@@ -7,7 +7,7 @@
 // fallback in, so re-enabling motion never pays for a second context.
 import { lazy, Suspense, useEffect, useState, type RefObject } from 'react';
 import { useShellStore } from '../store';
-import { useSceneGate } from './gate';
+import { reportScene, useSceneGate } from './gate';
 import SceneBoundary from './SceneBoundary';
 
 const Scene = lazy(() => import('./Scene'));
@@ -25,7 +25,10 @@ export default function SceneLayer({ desktopRef }: Props) {
   if (gate && !everPassed) setEverPassed(true);
 
   useEffect(() => {
-    if (!gate) useShellStore.getState().setEffects({ vector: 'standby' });
+    if (!gate) {
+      useShellStore.getState().setEffects({ vector: 'standby' });
+      reportScene('svg_fallback');
+    }
   }, [gate]);
 
   return (

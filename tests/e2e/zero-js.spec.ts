@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { PAGE_URLS } from './page-urls';
 
-// Content pages ship zero external/module scripts and <= 1 KB of inline JS.
+// Content pages ship zero external/module scripts and <= 1.5 KB of inline JS.
 //
 // `/` is exempt from this strict budget: it carries a `client:only` React island plus
 // the head-gate/boot inline scripts, and has its own, more generous budget check
@@ -9,7 +9,7 @@ import { PAGE_URLS } from './page-urls';
 const URLS = [...PAGE_URLS];
 
 for (const { url } of URLS) {
-  test(`${url} ships no external/module scripts and <= 1024 bytes of inline JS`, async ({
+  test(`${url} ships no external/module scripts and <= 1536 bytes of inline JS`, async ({
     request,
   }) => {
     const response = await request.get(url);
@@ -28,6 +28,6 @@ for (const { url } of URLS) {
       inlineBytes += Buffer.byteLength(match[2] ?? '', 'utf8');
     }
 
-    expect(inlineBytes).toBeLessThanOrEqual(1024);
+    expect(inlineBytes).toBeLessThanOrEqual(1536);
   });
 }

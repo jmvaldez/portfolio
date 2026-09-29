@@ -1,0 +1,17 @@
+---
+// The content-page pageview beacon: an inline script that posts one pageview and imports
+// nothing, since content pages ship no external JS. Renders nothing without a project key.
+// The script itself comes from the configured provider's adapter; this component doesn't
+// know which provider that is. Counted against the content-page inline budget in
+// `scripts/check-budgets.mjs`, alongside `CrtPrefScript`.
+import { analyticsKey, loadBeacon } from '~/analytics/provider';
+
+const beacon = await loadBeacon(analyticsKey());
+---
+
+{beacon && (
+  <>
+    <!-- prettier-ignore -->
+    <script is:inline set:html={beacon} />
+  </>
+)}

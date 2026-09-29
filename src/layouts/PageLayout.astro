@@ -8,6 +8,7 @@ import CloseBox from '~/components/chrome/CloseBox.astro';
 import Breadcrumbs from '~/components/page/Breadcrumbs.astro';
 import TaskbarStrip from '~/components/TaskbarStrip.astro';
 import GridFloor from '~/components/GridFloor.astro';
+import AnalyticsBeacon from '~/components/AnalyticsBeacon.astro';
 import type { FsNode, FsTree } from '~/fs/types';
 
 interface Props {
@@ -22,6 +23,9 @@ const { node, tree, filename } = Astro.props;
 ---
 
 <BaseLayout node={node} tree={tree} page>
+  <Fragment slot="head">
+    <AnalyticsBeacon />
+  </Fragment>
   <div class="page-shell">
     <GridFloor />
     <Frame as="article" title={filename} headingLevel="h1" vtName="page-frame">

@@ -7,7 +7,7 @@ import globals from 'globals';
 
 export default defineConfig(
   {
-    ignores: ['dist/', '.astro/', 'node_modules/'],
+    ignores: ['dist/', 'dist-keyless/', '.astro/', 'node_modules/'],
   },
   {
     files: ['src/**/*.{ts,tsx}'],
@@ -16,6 +16,17 @@ export default defineConfig(
       globals: globals.browser,
       parserOptions: {
         projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+  },
+  {
+    // The Pages Functions: Workers runtime, typed by their own tsconfig.
+    files: ['functions/**/*.ts'],
+    extends: [...tseslint.configs.recommendedTypeChecked],
+    languageOptions: {
+      parserOptions: {
+        project: './functions/tsconfig.json',
         tsconfigRootDir: import.meta.dirname,
       },
     },

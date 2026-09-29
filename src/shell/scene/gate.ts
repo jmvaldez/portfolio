@@ -4,11 +4,22 @@
 // `WebGL2RenderingContext`'s presence is the test, and a context that then fails to build is
 // caught at runtime (`SceneBoundary` calls `markSceneFailed`).
 import { useSyncExternalStore } from 'react';
+import { track } from '~/analytics';
 
 export const MOTION_OK_QUERY = '(prefers-reduced-motion: no-preference)';
 
 function webgl2Available(): boolean {
   return typeof window.WebGL2RenderingContext !== 'undefined';
+}
+
+let sceneReported = false;
+
+/** Reports how the scene resolved, once per page load: the first outcome wins, so a later
+ * reduced-motion switch on a running scene doesn't read as a fallback. */
+export function reportScene(scene: 'webgl' | 'svg_fallback'): void {
+  if (sceneReported) return;
+  sceneReported = true;
+  track('scene_resolved', { scene });
 }
 
 let failed = false;
@@ -19,6 +30,7 @@ const failListeners = new Set<() => void>();
 export function markSceneFailed(): void {
   if (failed) return;
   failed = true;
+  reportScene('svg_fallback');
   failListeners.forEach((listener) => listener());
 }
 

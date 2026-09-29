@@ -5,6 +5,7 @@
 // The handler finds its window via `closest('.frame')` rather than a ref threaded through
 // `Window` and `Desktop`; both links always render inside the `.frame` that `Window` makes.
 import type { MouseEvent } from 'react';
+import { track } from '~/analytics';
 import { persistLayoutSync } from './persist';
 
 /** The element currently carrying `view-transition-name: page-frame`, if any. At most one
@@ -27,8 +28,9 @@ export function clearStalePromotionName(): void {
  * `PageLayout.astro`'s `Frame` carries, so the cross-document view transition morphs one
  * into the other. Does not prevent the navigation.
  */
-export function handlePromotionClick(event: MouseEvent<HTMLAnchorElement>): void {
+export function handlePromotionClick(event: MouseEvent<HTMLAnchorElement>, path: string): void {
   persistLayoutSync();
+  track('window_promoted', { path });
   const frame = event.currentTarget.closest<HTMLElement>('.frame');
   if (!frame) return;
   clearStalePromotionName();

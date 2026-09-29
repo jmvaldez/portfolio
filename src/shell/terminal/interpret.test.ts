@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { HELP_TEXT } from '~/fs/bin';
 import { tree } from './fixture';
-import { run, type Effect, type InterpretCtx } from './interpret';
+import { commandName, run, type Effect, type InterpretCtx } from './interpret';
 
 const ctx: InterpretCtx = { tree, wd: '/', width: 80 };
 const at = (wd: string): InterpretCtx => ({ ...ctx, wd });
@@ -314,5 +314,19 @@ describe('effects never navigate', () => {
       'foo',
     ];
     for (const input of lines) assertNoNavigation(run(input, ctx).effects);
+  });
+});
+
+describe('commandName', () => {
+  it('names a command and drops its arguments', () => {
+    expect(commandName('cat resume.pdf', tree)).toBe('cat');
+    expect(commandName('  ls   /projects ', tree)).toBe('ls');
+    expect(commandName('sudo rm -rf /', tree)).toBe('sudo');
+  });
+
+  it('reports anything that is not a command as unknown, and a blank line as null', () => {
+    expect(commandName('hunter2', tree)).toBe('unknown');
+    expect(commandName('../bin/ls', tree)).toBe('unknown');
+    expect(commandName('   ', tree)).toBeNull();
   });
 });
