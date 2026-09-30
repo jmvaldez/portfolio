@@ -99,11 +99,21 @@ localhost.
   cookie or storage is used; PostHog derives a daily visitor hash on its servers. This needs
   **Cookieless server hash mode** switched on in the PostHog project's settings (Project
   Settings > Web analytics), or its events are ignored.
-- **Proxy:** `functions/ingest/[[path]].ts` is a Cloudflare Pages Function that serves
-  `/ingest/*`, following PostHog's Cloudflare proxy guide minus its asset routing (no SDK, so
-  nothing to fetch): it forwards to `us.i.posthog.com` with cookies and `authorization`
-  stripped and the client IP passed on. It has its own `tsconfig.json`, checked by
-  `pnpm check`.
+- **Proxy and enrichment:** `functions/ingest/[[path]].ts` is a Cloudflare Pages Function
+  that serves `/ingest/*`, following PostHog's Cloudflare proxy guide minus its asset routing
+  (no SDK, so nothing to fetch): it forwards to `us.i.posthog.com` with cookies and
+  `authorization` stripped and the client IP passed on. On the way through it fills in what
+  the SDK would have added on the client, at no cost to pages (`functions/ingest/enrich.ts`,
+  pure functions with unit tests): `$referrer` and `$referring_domain` (`$direct` when empty)
+  and the campaign parameters PostHog's channel classification reads, the browser, OS and
+  device from the `User-Agent` header, and the country. It only fills properties that are
+  missing, and forwards anything it can't parse untouched. It also answers 200 and drops
+  bots (crawlers, headless browsers, Lighthouse), since cookieless mode turns PostHog's own
+  bot detection off. It has its own `tsconfig.json`, checked by `pnpm check`.
+- **Country** comes from Cloudflare's `request.cf.country`, set as `$geoip_country_code` and
+  `$geoip_country_name`. Cookieless mode strips the IP before PostHog's GeoIP step, so nothing
+  finer than the country exists, and the IP is never put in an event. iPads, which report as
+  Macs, read as desktop Macs.
 - **Events** are declared in one catalogue, `AnalyticsEvents` in `src/analytics/types.ts`;
   shell code calls the neutral `track()` from `src/analytics/index.ts`, which queues calls
   until the adapter is ready.
