@@ -1,5 +1,6 @@
-// Opens off-site links in markdown bodies in a new tab, so a visitor following a repo or
-// profile link keeps their place in the site. `mailto:` and on-site links are left alone.
+// Opens off-site and `mailto:` links in markdown bodies in a new tab, so a visitor following
+// a repo or profile link, or a webmail compose, keeps their place in the site. On-site links
+// are left alone.
 // A Sätteri hast plugin (`astro.config.mjs`), typed structurally so this file needs no
 // import from the processor.
 
@@ -15,12 +16,16 @@ export function isExternalHref(href: unknown): href is string {
   return typeof href === 'string' && /^https?:\/\//i.test(href);
 }
 
+function opensInNewTab(href: unknown): boolean {
+  return isExternalHref(href) || (typeof href === 'string' && /^mailto:/i.test(href));
+}
+
 export const externalLinksInNewTab = {
   name: 'external-links-in-new-tab',
   element: {
     filter: ['a'],
     visit(node: LinkNode, ctx: PluginContext): void {
-      if (!isExternalHref(node.properties?.href)) return;
+      if (!opensInNewTab(node.properties?.href)) return;
       ctx.setProperty(node, 'target', '_blank');
       ctx.setProperty(node, 'rel', ['noopener', 'noreferrer']);
     },

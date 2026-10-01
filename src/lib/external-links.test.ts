@@ -20,8 +20,15 @@ describe('externalLinksInNewTab', () => {
     });
   });
 
-  it('leaves mailto and on-site links alone', () => {
-    expect(visit('mailto:someone@example.com')).toEqual({ href: 'mailto:someone@example.com' });
+  it('opens mailto links in a new tab', () => {
+    expect(visit('mailto:someone@example.com')).toEqual({
+      href: 'mailto:someone@example.com',
+      target: '_blank',
+      rel: ['noopener', 'noreferrer'],
+    });
+  });
+
+  it('leaves on-site links alone', () => {
     expect(visit('/projects/aetherforge/roadmap/')).toEqual({
       href: '/projects/aetherforge/roadmap/',
     });

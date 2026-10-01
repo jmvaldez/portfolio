@@ -7,6 +7,7 @@ import { mounts, type BinMount, type Mount } from '~/fs/mounts';
 import { isExternalHref } from '~/lib/external-links';
 import { appRegistry } from './apps/registry';
 import { prefetchBody } from './bodies';
+import { brandLogos } from './brandLogos';
 import { launch } from './launch';
 import { useShellStore } from './store';
 
@@ -65,7 +66,7 @@ export default function DesktopIcons() {
             onFocus={() => prefetchBody(node)}
           >
             <span className="desktop-icon-glyph" aria-hidden="true">
-              {glyphOf(node)}
+              {brandLogos[node.path] ?? glyphOf(node)}
             </span>
             <span className="desktop-icon-label">{node.name}</span>
           </button>
