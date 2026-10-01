@@ -12,14 +12,11 @@ export { PAGE_URLS };
 // Breadcrumb accessible names, spot-checked: the visible text is the URL segment, the
 // accessible name is the target node's title.
 const BREADCRUMB_TITLES: Record<string, { segment: string; title: string }[]> = {
-  '/projects/orbital-mesh/notes/': [
+  '/projects/aetherforge/roadmap/': [
     { segment: 'projects', title: 'Projects' },
-    { segment: 'orbital-mesh', title: 'Orbital Mesh' },
+    { segment: 'aetherforge', title: 'Aetherforge' },
   ],
-  '/drones/nazgul/tuning/': [
-    { segment: 'drones', title: 'Drones' },
-    { segment: 'nazgul', title: 'Nazgul' },
-  ],
+  '/drones/x500/': [{ segment: 'drones', title: 'Drones' }],
 };
 
 for (const { url, filename } of PAGE_URLS) {
@@ -73,13 +70,13 @@ test('the built dist directories match PAGE_URLS exactly', () => {
 
 // Spec block field presence/omission, no iframes, and the prose/.scan split.
 
-test('the nazgul drone page shows a HARDWARE label', async ({ page }) => {
-  await page.goto('/drones/nazgul/');
+test('the x500 drone page shows a HARDWARE label', async ({ page }) => {
+  await page.goto('/drones/x500/');
   await expect(page.getByText('Hardware', { exact: true })).toBeVisible();
 });
 
-test('the pico-whoop page omits WEIGHT since the field is unset', async ({ page }) => {
-  await page.goto('/drones/pico-whoop/');
+test('the x500 page omits WEIGHT since the field is unset', async ({ page }) => {
+  await page.goto('/drones/x500/');
   await expect(page.getByText('Weight', { exact: true })).toHaveCount(0);
 });
 
@@ -91,7 +88,7 @@ test('no page anywhere embeds an iframe', async ({ page }) => {
 });
 
 test('.prose has no ancestor carrying .scan', async ({ page }) => {
-  await page.goto('/projects/orbital-mesh/');
+  await page.goto('/projects/aetherforge/');
   const scanAncestors = await page.locator('.prose').evaluate((el) => {
     let node: HTMLElement | null = el as HTMLElement;
     let count = 0;
@@ -107,27 +104,32 @@ test('.prose has no ancestor carrying .scan', async ({ page }) => {
 // Order in the folder listing, a directory's readme + children together, and prev/next
 // between siblings.
 
-test('/projects/ lists the three projects in curated order', async ({ page }) => {
+test('/projects/ lists the projects in curated order', async ({ page }) => {
   await page.goto('/projects/');
   const names = await page.locator('.folder-listing-rows .folder-col-name').allTextContents();
-  expect(names).toEqual(['orbital-mesh/', 'signal-relay/', 'ledger-lite.md']);
+  // Featured first, then newest start date, then title.
+  expect(names).toEqual([
+    'aetherforge/',
+    'member-profile-platform/',
+    'member-payments.md',
+    'valdez-os.md',
+  ]);
 });
 
-test('/projects/orbital-mesh/ shows its own body and lists its child notes.md', async ({
+test('/projects/aetherforge/ shows its own body and lists its child roadmap.md', async ({
   page,
 }) => {
-  await page.goto('/projects/orbital-mesh/');
-  await expect(page.locator('.prose')).toContainText('Overview');
-  await expect(page.locator('.folder-listing-rows')).toContainText('notes.md');
+  await page.goto('/projects/aetherforge/');
+  await expect(page.locator('.prose')).toContainText('What works');
+  await expect(page.locator('.folder-listing-rows')).toContainText('roadmap.md');
 });
 
-test('prev/next on /projects/ledger-lite/ points at its curated-order neighbour', async ({
+test('prev/next on /projects/valdez-os/ points at its curated-order neighbour', async ({
   page,
 }) => {
-  await page.goto('/projects/ledger-lite/');
+  await page.goto('/projects/valdez-os/');
   const nav = page.locator('nav[aria-label="Sibling pages"]');
-  // The order is orbital-mesh, signal-relay, ledger-lite: ledger-lite is last, so it has
-  // a prev (signal-relay) and no next.
-  await expect(nav.locator('.prevnext-prev')).toHaveText('← Signal Relay');
+  // valdez-os is last in the curated order, so it has a prev (member-payments) and no next.
+  await expect(nav.locator('.prevnext-prev')).toHaveText('← Member Payments & Wallet');
   await expect(nav.locator('.prevnext-next')).toHaveCount(0);
 });

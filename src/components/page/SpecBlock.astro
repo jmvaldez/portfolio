@@ -37,7 +37,9 @@ function formatDate(value: Date | string): string {
       <>
         <dt class="speckey">Repo</dt>
         <dd>
-          <a href={data.repo}>{data.repo}</a>
+          <a href={data.repo} target="_blank" rel="noopener noreferrer">
+            {data.repo}
+          </a>
         </dd>
       </>
     )}
@@ -45,7 +47,9 @@ function formatDate(value: Date | string): string {
       <>
         <dt class="speckey">Live</dt>
         <dd>
-          <a href={data.live}>{data.live}</a>
+          <a href={data.live} target="_blank" rel="noopener noreferrer">
+            {data.live}
+          </a>
         </dd>
       </>
     )}

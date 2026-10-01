@@ -55,11 +55,11 @@ test('cat about.txt prints the frontmatter-bearing source and the dim hint', asy
   await expect(entry).toContainText('open about.txt to read it properly.');
 });
 
-test('open orbital-mesh from /projects opens its window without navigating', async ({ page }) => {
+test('open aetherforge from /projects opens its window without navigating', async ({ page }) => {
   await waitReady(page);
   await type(page, 'cd projects');
-  await type(page, 'open orbital-mesh');
-  await expect(page.locator('[data-window="/projects/orbital-mesh"]')).toBeVisible();
+  await type(page, 'open aetherforge');
+  await expect(page.locator('[data-window="/projects/aetherforge"]')).toBeVisible();
   await expect(page).toHaveURL('/');
 });
 

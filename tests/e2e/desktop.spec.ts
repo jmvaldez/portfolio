@@ -40,33 +40,66 @@ test('opening projects shows a folder window listing its children', async ({ pag
 
   const folder = page.locator('[data-window="/projects"]');
   await expect(folder).toBeVisible();
-  await expect(folder.locator('.folder-row-link', { hasText: 'orbital-mesh' })).toBeVisible();
+  await expect(folder.locator('.folder-row-link', { hasText: 'aetherforge' })).toBeVisible();
 });
 
-test('opening orbital-mesh from the projects folder shows the body and the spec strip', async ({
+test('opening aetherforge from the projects folder shows the body and the spec strip', async ({
   page,
 }) => {
   await waitReady(page);
   await launchIcon(page, 'projects');
 
-  // `orbital-mesh` is a directory (it nests a `notes.md`), so it opens a folder window;
+  // `aetherforge` is a directory (it nests a `roadmap.md`), so it opens a folder window;
   // its `readme.md` row carries the project's body and spec strip (a readme sorts first
   // in its directory's listing).
   await page
-    .locator('[data-window="/projects"] .folder-row-link', { hasText: 'orbital-mesh' })
+    .locator('[data-window="/projects"] .folder-row-link', { hasText: 'aetherforge' })
     .dblclick();
 
-  const orbitalFolder = page.locator('[data-window="/projects/orbital-mesh"]');
-  await expect(orbitalFolder).toBeVisible();
-  await orbitalFolder.locator('.folder-row-link', { hasText: 'readme.md' }).dblclick();
+  const aetherforgeFolder = page.locator('[data-window="/projects/aetherforge"]');
+  await expect(aetherforgeFolder).toBeVisible();
+  await aetherforgeFolder.locator('.folder-row-link', { hasText: 'readme.md' }).dblclick();
 
-  const content = page.locator('[data-window="/projects/orbital-mesh/readme.md"]');
+  const content = page.locator('[data-window="/projects/aetherforge/readme.md"]');
   await expect(content).toBeVisible();
   await expect(content.locator('.prose')).not.toBeEmpty();
   // `projectStrip` (`src/fs/tree.ts`) renders `STATUS · PERIOD · ROLE` in uppercase from
-  // the entry's frontmatter (`status: wip`, `period.start: 2025-03`,
-  // `period.end: present`, `role: Lead engineer`).
-  await expect(content.locator('.spec-strip')).toHaveText('WIP · 2025–PRESENT · LEAD ENGINEER');
+  // the entry's frontmatter (`status: wip`, `period.start: 2026`,
+  // `period.end: present`, `role: Solo builder`).
+  await expect(content.locator('.spec-strip')).toHaveText('WIP · 2026–PRESENT · SOLO BUILDER');
+});
+
+test('a link inside a content window follows on the first click', async ({ page }) => {
+  await waitReady(page);
+  await launchIcon(page, 'projects');
+  await page
+    .locator('[data-window="/projects"] .folder-row-link', { hasText: 'aetherforge' })
+    .dblclick();
+  await page
+    .locator('[data-window="/projects/aetherforge"] .folder-row-link', { hasText: 'readme.md' })
+    .dblclick();
+
+  // Pressing the link focuses it, which raises the window and re-renders it. If that
+  // re-render re-set the body's HTML, the link was gone by pointerup and no click fired.
+  await page
+    .locator('[data-window="/projects/aetherforge/readme.md"] .prose a', { hasText: 'roadmap' })
+    .click();
+  await expect(page).toHaveURL(/\/projects\/aetherforge\/roadmap\/$/);
+});
+
+test('the LinkedIn and GitHub icons open their profiles in a new tab', async ({ page }) => {
+  await waitReady(page);
+  for (const [label, url] of [
+    ['linkedin.url', 'https://www.linkedin.com/in/joseph-m-valdez/'],
+    ['github.url', 'https://github.com/jmvaldez'],
+  ] as const) {
+    // Stops the popup at the network, so the test never reaches the real site.
+    await page.context().route(url + '**', (route) => route.fulfill({ body: '' }));
+    const popup = page.waitForEvent('popup');
+    await launchIcon(page, label);
+    expect((await popup).url()).toBe(url);
+  }
+  await expect(page).toHaveURL(/\/$/);
 });
 
 test('a node with no URL opens a window with no maximise box', async ({ page }) => {

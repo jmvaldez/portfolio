@@ -2,7 +2,7 @@
 // inline, for `text`) body, the resume window's download link, and, when the body overflows
 // the window, a persistent "read full page" bar linking to the node's page. Breadcrumbs, the
 // full spec block, and other page-only content are deliberately left to the page.
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { track } from '~/analytics';
 import type { FsNode } from '~/fs/types';
 import { fetchBody } from '../bodies';
@@ -14,6 +14,13 @@ type LoadState = { status: 'loading' } | { status: 'loaded'; html: string } | { 
 interface Props {
   node: FsNode;
 }
+
+// Memoised so a re-render of the window (focusing it raises it) never re-sets the HTML. A
+// press on a link inside focuses the window, and a fresh copy of the body between pointerdown
+// and pointerup leaves the browser no element to fire the click on.
+const ProseHtml = memo(function ProseHtml({ html }: { html: string }) {
+  return <div className="prose" dangerouslySetInnerHTML={{ __html: html }} />;
+});
 
 export default function ContentWindow({ node }: Props) {
   const isText = node.kind === 'text';
@@ -87,7 +94,7 @@ export default function ContentWindow({ node }: Props) {
       ) : state.status === 'error' ? (
         <p className="body-error">Could not load this file.</p>
       ) : (
-        <div className="prose" dangerouslySetInnerHTML={{ __html: state.html }} />
+        <ProseHtml html={state.html} />
       )}
       {overflowing && node.url && (
         <a

@@ -56,12 +56,25 @@ const { node, tree, filename } = Astro.props;
   .page-shell > :global(.frame) {
     width: 100%;
     max-width: calc(72ch + 2 * var(--pad) + 2 * var(--border-w));
-    min-height: 100dvh;
+    /* Minus `.page-shell`'s vertical padding: a full 100dvh made every page 48px taller
+       than the viewport, so short pages scrolled with nothing to scroll to. */
+    min-height: calc(100dvh - 48px);
+    /* A column, so `.page-content` can grow to fill the frame below the title bar. */
+    display: flex;
+    flex-direction: column;
     /* Reserves room for the fixed taskbar strip. */
     padding-bottom: calc(44px + env(safe-area-inset-bottom));
   }
 
+  /* The whole frame body is the reading surface, as in a desktop window: `.prose`'s 58ch
+     cap left a narrow dark column inside a wider frame. */
   .page-content {
+    flex: 1;
     padding: var(--pad);
+    background: var(--body-bg);
+  }
+
+  .page-content :global(.prose) {
+    max-width: none;
   }
 </style>

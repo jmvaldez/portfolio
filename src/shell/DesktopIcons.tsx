@@ -4,6 +4,7 @@
 import type { KeyboardEvent } from 'react';
 import type { FsNode } from '~/fs/types';
 import { mounts, type BinMount, type Mount } from '~/fs/mounts';
+import { isExternalHref } from '~/lib/external-links';
 import { appRegistry } from './apps/registry';
 import { prefetchBody } from './bodies';
 import { launch } from './launch';
@@ -26,7 +27,7 @@ function glyphOf(node: FsNode): string {
     case 'app':
       return '◆';
     case 'link':
-      return '⇩';
+      return isExternalHref(node.href) ? '↗' : '⇩';
     case 'file':
     case 'text':
       return '▤';

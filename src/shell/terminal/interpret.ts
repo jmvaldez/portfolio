@@ -226,9 +226,9 @@ function cmdSudo(): Result {
  * theatre, not a real listing. */
 const REMOVAL_LINES: Line[] = [
   '/projects',
-  '/projects/orbital-mesh',
+  '/projects/aetherforge',
   '/drones',
-  '/drones/nazgul',
+  '/drones/x500',
   '/about.txt',
   '/resume.txt',
 ].map((path) => mkLine(`removing ${path}`));

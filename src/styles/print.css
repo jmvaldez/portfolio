@@ -76,6 +76,11 @@ body {
 .prose {
   background: transparent !important;
   color: #000 !important;
+  /* Paper is wider than the screen measure, and 10pt is a normal print size; together they
+     keep the resume to one page, with a tighter leading than the screen uses. */
+  max-width: none !important;
+  font-size: 10pt !important;
+  line-height: 1.5 !important;
 }
 
 .page-shell {
@@ -83,6 +88,10 @@ body {
   padding: 0 !important;
   min-height: auto !important;
   display: block !important;
+}
+
+.page-content {
+  background: transparent !important;
 }
 
 .page-shell > .frame {
@@ -97,4 +106,24 @@ body {
 a[href^='http']::after,
 a[href^='mailto:']::after {
   content: ' (' attr(href) ')';
+}
+
+/* A page's opening line of links (the resume's contact line) already spells out each
+   target, so printing the URL again would only double it. */
+.prose > p:first-child a::after {
+  content: none;
+}
+
+/* Tailwind's preflight strips list markers and heading weight; a printed resume needs both
+   to be skimmable. */
+.prose ul {
+  list-style: disc;
+  padding-left: 1.25em;
+}
+
+.prose h2 {
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-top: 0.9em;
+  border-bottom: 1px solid #000;
 }

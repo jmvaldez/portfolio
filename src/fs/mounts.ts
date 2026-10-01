@@ -3,6 +3,8 @@
 // attachment points live here; `buildTree` synthesises collection contents from the
 // entries it is given and attaches `/bin`'s nodes from `bin.ts`.
 
+import { GITHUB_URL, LINKEDIN_URL } from '../lib/site';
+
 export interface RootFileMount {
   kind: 'file';
   path: string;
@@ -99,6 +101,20 @@ export const mounts: Mount[] = [
     launcher: true,
     icon: true,
     section: 'contact',
+  },
+  {
+    kind: 'link',
+    path: '/linkedin.url',
+    title: 'linkedin.url',
+    href: LINKEDIN_URL,
+    icon: true,
+  },
+  {
+    kind: 'link',
+    path: '/github.url',
+    title: 'github.url',
+    href: GITHUB_URL,
+    icon: true,
   },
   {
     kind: 'text',
