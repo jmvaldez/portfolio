@@ -8,9 +8,8 @@ import { satteri } from '@astrojs/markdown-satteri';
 import { externalLinksInNewTab } from './src/lib/external-links.ts';
 
 export default defineConfig({
-  // Placeholder origin; siteGuard fails the build if this is unset or points at
-  // localhost.
-  site: 'https://joe-valdez-portfolio.pages.dev',
+  // siteGuard fails the build if this is unset or points at localhost.
+  site: 'https://joevaldez.dev',
   trailingSlash: 'always',
   output: 'static',
   // The shell does its own hover prefetch; content pages have no JS to prefetch with,
