@@ -7,6 +7,7 @@ import { appRegistry } from './apps/registry';
 import { useShellStore } from './store';
 import { rescue } from './wm/geometry';
 import type { FsNode } from '~/fs/types';
+import { isExternalHref } from '~/lib/external-links';
 
 /** A launched window's size as a fraction of the desktop, clamped to the min and max so it
  * is readable on a small desktop and not sprawling on a large one. */
@@ -77,12 +78,18 @@ export function launch(node: FsNode, opener?: string): void {
       return;
 
     case 'link': {
+      const href = node.href ?? node.path;
       if (node.path === '/resume.pdf') track('resume_pdf_clicked', { source: 'launch' });
+      if (isExternalHref(href)) track('outbound_link_clicked', { path: node.path });
       // Never a window or a navigation of the current document: click a temporary,
-      // invisible link and discard it.
+      // invisible link and discard it. An off-site link opens in a new tab.
       const a = document.createElement('a');
-      a.href = node.href ?? node.path;
+      a.href = href;
       if (node.download !== undefined) a.download = node.download;
+      if (isExternalHref(href)) {
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+      }
       a.style.display = 'none';
       document.body.appendChild(a);
       a.click();

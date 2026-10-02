@@ -46,6 +46,14 @@
   line-height: 1;
 }
 
+/* A brand logo stands in for the glyph; sized a touch smaller so its solid fill doesn't
+   outweigh the line-drawn glyphs beside it. */
+.desktop-icon-glyph svg {
+  display: block;
+  width: 0.85em;
+  height: 0.85em;
+}
+
 .desktop-icon-label {
   font-size: 0.75em;
   white-space: nowrap;

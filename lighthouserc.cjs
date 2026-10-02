@@ -7,7 +7,7 @@
 // metrics in `src/styles/fonts.css` are wrong, not that the budget is.
 const KB = 1024;
 
-const CONTENT = '/(about|projects/orbital-mesh|drones/nazgul)/$';
+const CONTENT = '/(about|projects/aetherforge|drones/x500)/$';
 const ROOT = '/$';
 
 module.exports = {
@@ -17,8 +17,8 @@ module.exports = {
       numberOfRuns: 3,
       url: [
         'http://localhost/about/',
-        'http://localhost/projects/orbital-mesh/',
-        'http://localhost/drones/nazgul/',
+        'http://localhost/projects/aetherforge/',
+        'http://localhost/drones/x500/',
         'http://localhost/',
       ],
       // No `preset`: Lighthouse's default form factor is mobile, and LHCI's own `preset`

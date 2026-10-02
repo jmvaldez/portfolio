@@ -3,6 +3,9 @@ import react from '@astrojs/react';
 import sitemap from '@astrojs/sitemap';
 import tailwindcss from '@tailwindcss/vite';
 import siteGuard from './src/integrations/site-guard.ts';
+import devResumePdf from './src/integrations/dev-resume-pdf.ts';
+import { satteri } from '@astrojs/markdown-satteri';
+import { externalLinksInNewTab } from './src/lib/external-links.ts';
 
 export default defineConfig({
   // Placeholder origin; siteGuard fails the build if this is unset or points at
@@ -13,9 +16,14 @@ export default defineConfig({
   // The shell does its own hover prefetch; content pages have no JS to prefetch with,
   // so Astro's built-in prefetch stays off.
   prefetch: false,
+  // Sätteri is Astro's default processor; it's named here only to add a plugin.
+  markdown: {
+    processor: satteri({ hastPlugins: [externalLinksInNewTab] }),
+  },
   integrations: [
     react(),
     siteGuard(),
+    devResumePdf(),
     // Every page, minus the OG images, the raw fs body/source endpoints and the resume
     // PDF, none of which are pages.
     sitemap({

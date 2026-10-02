@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 test('a rendered body is served as static HTML', async ({ request }) => {
-  const response = await request.get('/fs/body/projects/orbital-mesh/readme.md.html');
+  const response = await request.get('/fs/body/projects/aetherforge/readme.md.html');
   expect(response.status()).toBe(200);
   const body = await response.text();
   expect(body).toContain('<h2');

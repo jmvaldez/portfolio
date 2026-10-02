@@ -59,7 +59,7 @@ export function droneSchema(image: ImageSchema) {
     type: z.literal('drone'),
     title: z.string(),
     summary: z.string(),
-    class: z.enum(['freestyle', 'cinematic', 'long-range', 'racing', 'micro']),
+    class: z.enum(['freestyle', 'cinematic', 'long-range', 'racing', 'micro', 'autonomy']),
     frame: z.string(),
     hardware: hardware().optional(),
     weightG: z.number().optional(),

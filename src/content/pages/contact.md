@@ -3,18 +3,16 @@ type: page
 title: Contact
 filename: contact.txt
 order: 5
-summary: Lorem ipsum dolor sit amet, how to get in touch.
+summary: How to reach Joe.
 ---
 
 ## Contact
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor
-incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
-exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+I'm looking for a full-stack role, remote or hybrid around LA. If you're hiring, working on
+drones, or just want to talk shop, reach out.
 
-- Reachable by email, see below
-- _Slow_ to reply on weekends
-- **Always** happy to talk about drones
+- **Email:** [joseph.m.valdez1@gmail.com](mailto:joseph.m.valdez1@gmail.com)
+- **LinkedIn:** [linkedin.com/in/joseph-m-valdez](https://www.linkedin.com/in/joseph-m-valdez/)
+- **GitHub:** [github.com/jmvaldez](https://github.com/jmvaldez)
 
-Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
-fugiat nulla pariatur: [joe@example.com](mailto:joe@example.com).
+Happy to talk about drones any time.

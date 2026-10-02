@@ -4,7 +4,7 @@
 import { Font } from 'astro:assets';
 import CrtPrefScript from './CrtPrefScript.astro';
 import { pageMeta } from '~/lib/meta';
-import { SITE_NAME } from '~/lib/site';
+import { GITHUB_URL, LINKEDIN_URL, SITE_NAME } from '~/lib/site';
 import type { FsNode, FsTree } from '~/fs/types';
 import '~/styles/global.css';
 
@@ -26,8 +26,7 @@ const personSchema = {
   '@type': 'Person',
   name: SITE_NAME,
   jobTitle: 'Software Engineer',
-  // Lorem placeholders, like the rest of the content.
-  sameAs: ['https://github.com/joe-valdez-lorem', 'https://www.linkedin.com/in/joe-valdez-lorem'],
+  sameAs: [GITHUB_URL, LINKEDIN_URL],
 };
 ---
 

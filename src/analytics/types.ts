@@ -26,6 +26,8 @@ export interface AnalyticsEvents {
   scene_resolved: { scene: 'webgl' | 'svg_fallback' };
   /** The resume PDF was downloaded from a window or by launching it (terminal `open`). */
   resume_pdf_clicked: { source: 'window' | 'launch' };
+  /** An off-site link node (the LinkedIn or GitHub icon, or terminal `open`) was launched. */
+  outbound_link_clicked: { path: string };
 }
 
 export type EventName = keyof AnalyticsEvents;
