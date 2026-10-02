@@ -18,6 +18,7 @@
     "test:e2e": "playwright test",
     "budgets": "node scripts/check-budgets.mjs",
     "lighthouse": "lhci autorun --config=./lighthouserc.cjs && lhci autorun --config=./lighthouserc.desktop.cjs",
+    "favicons": "node scripts/build-favicons.mjs",
     "fonts:subset": "python3 scripts/subset-fonts.py",
     "verify": "pnpm lint && pnpm check && pnpm test && pnpm build && pnpm budgets && pnpm test:e2e"
   },
