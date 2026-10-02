@@ -343,6 +343,17 @@ describe('enrichBody: user agent', () => {
       $os: 'iOS',
     });
   });
+
+  it('keeps the header UA as $user_agent for bot classification, unless one was sent', () => {
+    const iphone = UA_TABLE.find(([name]) => name === 'iphone_safari')![1];
+    expect(enrichedProps(pageview(), { ...context, userAgent: iphone })['$user_agent']).toBe(
+      iphone,
+    );
+    expect(enrichedProps(pageview({ $user_agent: 'sent' }))['$user_agent']).toBe('sent');
+    expect(enrichedProps(pageview(), { ...context, userAgent: '' })).not.toHaveProperty(
+      '$user_agent',
+    );
+  });
 });
 
 describe('enrichBody: country', () => {

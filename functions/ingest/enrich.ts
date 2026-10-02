@@ -275,6 +275,12 @@ function enrichEvent(event: unknown, context: EnrichContext): unknown {
   for (const [name, value] of Object.entries(parseUserAgent(context.userAgent))) {
     if (missing(props, name)) props[name] = value;
   }
+  // Cookieless mode hashes `$raw_user_agent` into the visitor id and then drops it, which
+  // leaves PostHog's query-time bot classification (`$virt_is_bot` and friends) with no
+  // user agent: every event reads as `Automation`. `$user_agent` is stored as sent.
+  if (missing(props, '$user_agent') && context.userAgent) {
+    props['$user_agent'] = context.userAgent;
+  }
   enrichCountry(props, context.country);
 
   return { ...event, properties: props };
