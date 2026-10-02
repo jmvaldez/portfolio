@@ -239,7 +239,8 @@
 }
 
 /* The splash toast: an FPS round-end banner over the whole viewport. Its punch-in and
-   fade are driven from `Toasts.tsx`, since this stylesheet is animation-free. Never takes
+   fade run for 3s, matching `SPLASH_LIFETIME_MS` in the store. The one animation in the
+   shell's chrome: a one-off HUD banner, not part of the CRT treatment. Never takes
    pointer events. */
 .toast-splash {
   position: fixed;
@@ -252,6 +253,7 @@
   gap: 0.2em;
   pointer-events: none;
   text-align: center;
+  animation: toast-splash 3s ease-out both;
 }
 
 .toast-splash-label {
@@ -269,6 +271,28 @@
   color: var(--accent);
   font-size: clamp(1.5rem, 5vw, 4.5rem);
   text-shadow: var(--bloom);
+}
+
+@keyframes toast-splash {
+  0% {
+    opacity: 0;
+    transform: scale(1.4);
+  }
+  7%,
+  85% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast-splash {
+    animation: none;
+  }
 }
 
 /* Strips the native button chrome that `.folder-row-link` never needed on `<a>`/`<span>`. */

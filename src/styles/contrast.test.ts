@@ -86,14 +86,28 @@ describe('token contrast', () => {
   });
 });
 
+/** The `@keyframes` allowed despite the CRT treatment being static, by name: the vim-escape
+ * splash is a one-off HUD banner, not part of the CRT treatment. */
+const ALLOWED_KEYFRAMES = ['toast-splash'];
+
+/** The `@keyframes` names in `css` that are not allowlisted. */
+function forbiddenKeyframes(css: string): string[] {
+  return [...css.matchAll(/@keyframes\s+([\w-]+)/g)]
+    .map((match) => match[1]!)
+    .filter((name) => !ALLOWED_KEYFRAMES.includes(name));
+}
+
+describe('forbiddenKeyframes', () => {
+  it('passes the allowlisted name and flags any other', () => {
+    expect(forbiddenKeyframes('@keyframes toast-splash { }')).toEqual([]);
+    expect(forbiddenKeyframes('@keyframes toast-splash { } @keyframes pulse { }')).toEqual([
+      'pulse',
+    ]);
+  });
+});
+
 describe('CRT treatment avoids filter, blend modes, backdrop-filter and animation', () => {
-  const forbidden = [
-    'mix-blend-mode',
-    'backdrop-filter',
-    'filter:',
-    'font-variant-caps',
-    '@keyframes',
-  ];
+  const forbidden = ['mix-blend-mode', 'backdrop-filter', 'filter:', 'font-variant-caps'];
 
   const cssFiles = readdirSync(stylesDir).filter((name) => name.endsWith('.css'));
 
@@ -104,5 +118,10 @@ describe('CRT treatment avoids filter, blend modes, backdrop-filter and animatio
         expect(source).not.toContain(needle);
       });
     }
+
+    it(`${fileName} has no @keyframes beyond the allowlist`, () => {
+      const source = readFileSync(new URL(fileName, import.meta.url), 'utf-8');
+      expect(forbiddenKeyframes(source)).toEqual([]);
+    });
   }
 });

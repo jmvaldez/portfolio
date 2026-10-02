@@ -134,8 +134,8 @@ let nextToastId = 0;
 /** How long a toast stays visible before auto-dismissing. */
 const TOAST_LIFETIME_MS = 4000;
 
-/** How long a splash toast stays up; `Toasts.tsx`'s splash animation runs for the same time. */
-export const SPLASH_LIFETIME_MS = 3000;
+/** How long a splash toast stays up; `desktop.css`'s `toast-splash` animation runs for the same time. */
+const SPLASH_LIFETIME_MS = 3000;
 
 /** The cap on simultaneously visible toasts. */
 const MAX_TOASTS = 4;

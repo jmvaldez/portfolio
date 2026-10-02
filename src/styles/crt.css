@@ -9,6 +9,7 @@
  * pixel-identical output against pure black.
  *
  * No animation here: animated scanlines would need a pause control under WCAG 2.2.2.
+ * (The vim splash in `desktop.css` is the one allowlisted exception.)
  */
 
 /* Zero specificity via `:where()`: `.scan` only needs *a* containing block for its

@@ -206,7 +206,8 @@ _Avoid_: stack, parts, components, specs
 
 **CRT treatment**:
 The layer of effects that makes the shell read as a phosphor monitor: scanlines and
-bloom. Static, never animated, and switchable off as a single unit.
+bloom. Static, never animated, and switchable off as a single unit. The one exception
+in the chrome is the vim-escape splash, a one-off HUD banner that sits outside the treatment.
 _Avoid_: CRT effect, retro filter, screen effect
 
 **Scanline**:
