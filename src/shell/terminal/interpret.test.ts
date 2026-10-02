@@ -17,6 +17,7 @@ const NAVIGATION_EFFECT_TYPES = new Set([
   'disarm',
   'typeLines',
   'hexWall',
+  'vim',
 ]);
 function assertNoNavigation(effects: Effect[] | undefined) {
   for (const effect of effects ?? []) {
@@ -289,6 +290,23 @@ describe('easter eggs', () => {
   });
 });
 
+describe('vim', () => {
+  it.each(['vi', 'vim', 'nvim', 'vim foo.txt'])('%s enters vim mode', (line) => {
+    expect(run(line, ctx)).toEqual({ lines: [], effects: [{ type: 'vim' }] });
+  });
+
+  it.each([':wq', ':q', ':x'])('%s at the prompt toasts and exits', (line) => {
+    expect(run(line, ctx)).toEqual({
+      lines: [],
+      effects: [{ type: 'toast', label: 'EXITED VIM', value: '+1 skill' }, { type: 'exit' }],
+    });
+  });
+
+  it('is absent from help', () => {
+    for (const name of ['vi', 'vim', 'nvim']) expect(HELP_TEXT).not.toContain(name);
+  });
+});
+
 describe('effects never navigate', () => {
   it('has no navigate variant across every command this phase implements', () => {
     const lines = [
@@ -310,6 +328,8 @@ describe('effects never navigate', () => {
       'arm',
       'disarm',
       'hack',
+      'vim',
+      ':wq',
       'viewer.exe',
       'foo',
     ];

@@ -26,7 +26,8 @@ export type Effect =
   | { type: 'arm' }
   | { type: 'disarm' }
   | { type: 'typeLines'; lines: Line[] }
-  | { type: 'hexWall' };
+  | { type: 'hexWall' }
+  | { type: 'vim' };
 
 export interface Result {
   lines: Line[];
@@ -260,6 +261,19 @@ function cmdHack(): Result {
   };
 }
 
+function cmdVim(): Result {
+  return { lines: [], effects: [{ type: 'vim' }] };
+}
+
+/** `:wq`, `:q` and `:x` at the ordinary prompt: the visitor has the wrong program in mind,
+ * and the terminal obliges. */
+function cmdVimQuit(): Result {
+  return {
+    lines: [],
+    effects: [{ type: 'toast', label: 'EXITED VIM', value: '+1 skill' }, { type: 'exit' }],
+  };
+}
+
 function commandNotFound(cmd: string): Result {
   return {
     lines: [
@@ -314,6 +328,14 @@ export function run(line: string, ctx: InterpretCtx): Result {
       return cmdDisarm();
     case 'hack':
       return cmdHack();
+    case 'vi':
+    case 'vim':
+    case 'nvim':
+      return cmdVim();
+    case ':wq':
+    case ':q':
+    case ':x':
+      return cmdVimQuit();
     default: {
       // Typing an app's name alone (`viewer.exe`) opens it, like `open`; with arguments it
       // is "command not found".

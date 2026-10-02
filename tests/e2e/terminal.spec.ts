@@ -111,3 +111,27 @@ test('the log gains exactly one new child per command executed', async ({ page }
   await type(page, 'whoami');
   await expect(entries(page)).toHaveCount(before + 2);
 });
+
+test('vim traps the visitor until :qa!, then toasts how long it took', async ({ page }) => {
+  await waitReady(page);
+  await type(page, 'vim');
+  await expect(page.locator(`${TERMINAL} .vim-status`)).toContainText('[No Name]" 0L, 0B');
+  await type(page, ':q');
+  await expect(page.locator(`${TERMINAL} .vim-message`)).toHaveText(
+    'E37: No write since last change (add ! to override)',
+  );
+  for (let i = 0; i < 4; i++) await type(page, ':q');
+  await expect(page.locator(`${TERMINAL} .vim-card-title`)).toHaveText('How do I exit Vim?');
+  await type(page, ':qa!');
+  await expect(page.locator(`${TERMINAL} .vim`)).toHaveCount(0);
+  await expect(entries(page).last()).toContainText("you escaped. most don't.");
+  await expect(page.locator('.toast .toast-label')).toHaveText('ESCAPED VIM');
+  await expect(page.locator('.toast .toast-value')).toHaveText(/^\d\d:\d\d$/);
+});
+
+test(':wq at the normal prompt closes the terminal with a toast', async ({ page }) => {
+  await waitReady(page);
+  await type(page, ':wq');
+  await expect(page.locator(TERMINAL)).toBeHidden();
+  await expect(page.locator('.toast .toast-label')).toHaveText('EXITED VIM');
+});
