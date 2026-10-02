@@ -187,7 +187,7 @@ export default function Terminal({ windowId }: AppProps) {
     const trapped = formatElapsed(trappedSecs * 1000);
     setVim(null);
     commit('', [{ text: "you escaped. most don't.", tone: 'dim' }]);
-    useShellStore.getState().toast('ESCAPED VIM', trapped);
+    useShellStore.getState().toast('ESCAPED VIM', trapped, true);
   }
 
   function handleVimKeyDown(e: React.KeyboardEvent<HTMLInputElement>): void {
@@ -234,7 +234,8 @@ export default function Terminal({ windowId }: AppProps) {
     }
     if (effects.some((e) => e.type === 'exit')) {
       for (const effect of effects) {
-        if (effect.type === 'toast') useShellStore.getState().toast(effect.label, effect.value);
+        if (effect.type === 'toast')
+          useShellStore.getState().toast(effect.label, effect.value, effect.splash);
       }
       doExit();
       return;
@@ -272,7 +273,7 @@ export default function Terminal({ windowId }: AppProps) {
           void loadSrc(id, effect.node);
           break;
         case 'toast':
-          useShellStore.getState().toast(effect.label, effect.value);
+          useShellStore.getState().toast(effect.label, effect.value, effect.splash);
           break;
         case 'arm':
           doArm(true);

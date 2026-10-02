@@ -22,7 +22,7 @@ export type Effect =
   | { type: 'fetchSrc'; node: FsNode }
   | { type: 'clear' }
   | { type: 'exit' }
-  | { type: 'toast'; label: string; value?: string }
+  | { type: 'toast'; label: string; value?: string; splash?: boolean }
   | { type: 'arm' }
   | { type: 'disarm' }
   | { type: 'typeLines'; lines: Line[] }
@@ -270,7 +270,10 @@ function cmdVim(): Result {
 function cmdVimQuit(): Result {
   return {
     lines: [],
-    effects: [{ type: 'toast', label: 'EXITED VIM', value: '+1 skill' }, { type: 'exit' }],
+    effects: [
+      { type: 'toast', label: 'EXITED VIM', value: '+1 skill', splash: true },
+      { type: 'exit' },
+    ],
   };
 }
 

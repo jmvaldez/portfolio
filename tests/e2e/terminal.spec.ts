@@ -125,13 +125,15 @@ test('vim traps the visitor until :qa!, then toasts how long it took', async ({ 
   await type(page, ':qa!');
   await expect(page.locator(`${TERMINAL} .vim`)).toHaveCount(0);
   await expect(entries(page).last()).toContainText("you escaped. most don't.");
-  await expect(page.locator('.toast .toast-label')).toHaveText('ESCAPED VIM');
-  await expect(page.locator('.toast .toast-value')).toHaveText(/^\d\d:\d\d$/);
+  await expect(page.locator('.toast-splash .toast-splash-label')).toHaveText('ESCAPED VIM');
+  await expect(page.locator('.toast-splash .toast-splash-value')).toHaveText(/^\d\d:\d\d$/);
+  await expect(page.locator('.toasts')).toHaveCount(0);
 });
 
 test(':wq at the normal prompt closes the terminal with a toast', async ({ page }) => {
   await waitReady(page);
   await type(page, ':wq');
   await expect(page.locator(TERMINAL)).toBeHidden();
-  await expect(page.locator('.toast .toast-label')).toHaveText('EXITED VIM');
+  await expect(page.locator('.toast-splash .toast-splash-label')).toHaveText('EXITED VIM');
+  await expect(page.locator('.toast-splash .toast-splash-value')).toHaveText('+1 skill');
 });

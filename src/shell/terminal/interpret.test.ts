@@ -298,7 +298,10 @@ describe('vim', () => {
   it.each([':wq', ':q', ':x'])('%s at the prompt toasts and exits', (line) => {
     expect(run(line, ctx)).toEqual({
       lines: [],
-      effects: [{ type: 'toast', label: 'EXITED VIM', value: '+1 skill' }, { type: 'exit' }],
+      effects: [
+        { type: 'toast', label: 'EXITED VIM', value: '+1 skill', splash: true },
+        { type: 'exit' },
+      ],
     });
   });
 
