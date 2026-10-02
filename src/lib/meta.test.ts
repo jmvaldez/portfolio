@@ -3,7 +3,7 @@ import type { FsNode, FsTree } from '~/fs/types';
 import { pageMeta } from './meta';
 import { SITE_DESCRIPTION } from './site';
 
-const SITE = 'https://joe-valdez-portfolio.pages.dev';
+const SITE = 'https://joevaldez.dev';
 
 function node(partial: Partial<FsNode> & Pick<FsNode, 'path' | 'name' | 'kind' | 'title'>): FsNode {
   return partial;

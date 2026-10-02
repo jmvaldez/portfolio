@@ -141,5 +141,5 @@ every run.
 The deploy needs two repo secrets, `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, for
 the Cloudflare Pages project `joe-valdez-portfolio`. Until they're set, the deploy step is
 skipped with a `::notice::` and the workflow still passes. An optional third, `POSTHOG_KEY`,
-turns analytics on (see above). `site` in `astro.config.mjs` is
-still the `pages.dev` placeholder origin.
+turns analytics on (see above). `site` in `astro.config.mjs` is the custom domain
+`joevaldez.dev`, attached to the Pages project in Cloudflare.
