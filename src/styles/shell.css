@@ -40,9 +40,11 @@ html.boot-skipped:not(.shell-ready) #restore {
 
 /* The desktop surface fills the viewport so there is something to click or focus into,
    but stays transparent: the ground fill is `body`'s background and the shared WebGL
-   canvas sits behind this element. */
+   canvas sits behind this element. `isolation` traps the windows' ever-growing `z` in
+   here, so no window can climb above the taskbar, toasts, or splash. */
 #desktop {
   position: relative;
+  isolation: isolate;
   min-height: 100dvh;
   background: transparent;
 }
