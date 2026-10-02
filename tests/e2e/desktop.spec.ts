@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { binNodes } from '../../src/fs/bin';
 import { mounts } from '../../src/fs/mounts';
 
 // The launch/continuity subsystem. 1440x900, same as `wm.spec.ts`, unless a test says
@@ -28,10 +29,14 @@ test('desktop icons and taskbar launchers match the mount table', async ({ page 
     await expect(page.locator('.taskbar-launchers button', { hasText: name })).toBeVisible();
   }
 
-  // Every mount flagged `icon: true` (other than the synthetic `/bin` mount, which
-  // carries no icon at all) has a matching desktop icon.
+  // Every mount flagged `icon: true` has a matching desktop icon, plus one per `/bin` app
+  // flagged `icon` (the synthetic `/bin` mount itself carries no icon).
   const iconMounts = mounts.filter((m) => m.kind !== 'bin' && m.icon);
-  await expect(page.locator('.desktop-icon')).toHaveCount(iconMounts.length);
+  const binIcons = binNodes.filter((n) => n.icon);
+  await expect(page.locator('.desktop-icon')).toHaveCount(iconMounts.length + binIcons.length);
+  for (const node of binIcons) {
+    await expect(page.locator('.desktop-icon-label', { hasText: node.name })).toBeVisible();
+  }
 });
 
 test('opening projects shows a folder window listing its children', async ({ page }) => {

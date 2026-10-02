@@ -55,7 +55,7 @@ interface Props {
  * listed first to leave `projects` focused and the terminal unfocused.
  */
 const SEEDS: ReadonlyArray<{ path: string; seed: SeedFraction }> = [
-  { path: '/bin/terminal.exe', seed: { x: 0.02, y: 0.62, w: 0.32, h: 0.34 } },
+  { path: '/bin/terminal.exe', seed: { x: 0.09, y: 0.62, w: 0.32, h: 0.34 } },
   { path: '/bin/viewer.exe', seed: { x: 0.5, y: 0.42, w: 0.34, h: 0.48 } },
   { path: '/about.txt', seed: { x: 0.09, y: 0.06, w: 0.26, h: 0.42 } },
   { path: '/projects', seed: { x: 0.37, y: 0.06, w: 0.28, h: 0.42 } },
