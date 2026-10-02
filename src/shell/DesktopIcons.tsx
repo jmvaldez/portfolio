@@ -1,6 +1,7 @@
-// Desktop icons, in mount-table order. The icon set comes from `mounts.ts` (not `getTree()`,
-// which is server-only) so the desktop and taskbar agree; node data comes from the store's
-// `tree`, and a mount with no matching node is skipped.
+// Desktop icons, in mount-table order, then the `/bin` apps flagged `icon` (terminal,
+// viewer). The icon set comes from `mounts.ts` (not `getTree()`, which is server-only) so
+// the desktop and taskbar agree; node data comes from the store's `tree`, and a mount with
+// no matching node is skipped.
 import type { KeyboardEvent } from 'react';
 import type { FsNode } from '~/fs/types';
 import { mounts, type BinMount, type Mount } from '~/fs/mounts';
@@ -39,10 +40,12 @@ export default function DesktopIcons() {
   const tree = useShellStore((state) => state.tree);
   if (!tree) return null;
 
-  const icons = mounts
-    .filter(hasIcon)
-    .map((mount) => tree[mount.path])
-    .filter((node): node is FsNode => node !== undefined && isLaunchable(node));
+  const binIcons = Object.values(tree).filter(
+    (node) => node.path.startsWith('/bin/') && node.icon === true,
+  );
+  const icons = [...mounts.filter(hasIcon).map((mount) => tree[mount.path]), ...binIcons].filter(
+    (node): node is FsNode => node !== undefined && isLaunchable(node),
+  );
 
   function handleKeyDown(node: FsNode) {
     return (e: KeyboardEvent<HTMLButtonElement>) => {

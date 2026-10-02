@@ -137,3 +137,11 @@ test(':wq at the normal prompt closes the terminal with a toast', async ({ page 
   await expect(page.locator('.toast-splash .toast-splash-label')).toHaveText('EXITED VIM');
   await expect(page.locator('.toast-splash .toast-splash-value')).toHaveText('+1 skill');
 });
+
+test('the taskbar launcher reopens a closed terminal', async ({ page }) => {
+  await waitReady(page);
+  await type(page, ':wq');
+  await expect(page.locator(TERMINAL)).toBeHidden();
+  await page.locator('.taskbar-launchers button', { hasText: 'terminal.exe' }).click();
+  await expect(page.locator(TERMINAL)).toBeVisible();
+});

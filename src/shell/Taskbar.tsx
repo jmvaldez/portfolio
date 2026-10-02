@@ -93,10 +93,22 @@ export default function Taskbar() {
   const restore = useShellStore((state) => state.restore);
   const vector = useShellStore((state) => state.effects.vector);
 
-  const launchers = mounts
-    .filter(isLauncherMount)
-    .map((mount) => tree?.[mount.path])
-    .filter((node): node is FsNode => node !== undefined && isLaunchable(node));
+  // Root mounts first, in mount order, then `/bin` apps flagged as launchers (the terminal),
+  // so a closed terminal can be reopened without knowing the backtick shortcut.
+  const binLaunchers = Object.values(tree ?? {}).filter(
+    (node) => node.path.startsWith('/bin/') && node.launcher === true,
+  );
+  const launchers = [
+    ...mounts.filter(isLauncherMount).map((mount) => tree?.[mount.path]),
+    ...binLaunchers,
+  ].filter((node): node is FsNode => node !== undefined && isLaunchable(node));
+
+  function handleLauncherClick(node: FsNode) {
+    launch(node);
+    // `launch` only raises an already-open window, so a minimised one needs restoring too.
+    const win = useShellStore.getState().windows.find((w) => w.id === node.path);
+    if (win?.minimised) restore(win.id);
+  }
 
   function handleWindowButtonClick(win: ShellWindow) {
     if (win.minimised) {
@@ -121,7 +133,7 @@ export default function Taskbar() {
       <ul className="taskbar-launchers">
         {launchers.map((node) => (
           <li key={node.path}>
-            <button type="button" onClick={() => launch(node)}>
+            <button type="button" onClick={() => handleLauncherClick(node)}>
               {node.name}
             </button>
           </li>
