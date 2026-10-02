@@ -1,0 +1,430 @@
+---
+// Cloudflare Pages serves `dist/404.html` with a real 404 for any unknown path; without
+// it the home page answers with 200. A static content-style page: the same frame and
+// taskbar as every other page, no desktop shell, no external JS and no inline JS beyond
+// the CRT preference script. The gag is pure CSS: a stick figure walks toward a big 404,
+// which jumps to the other side just before the figure arrives, forever.
+//
+// Every keyframe below shares one 12s clock so the walk, the head turns and the jumps
+// stay in step. Motion only runs under `prefers-reduced-motion: no-preference`;
+// otherwise the figure reaches for a 404 that has already left a ghost behind.
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import Frame from '~/components/chrome/Frame.astro';
+import CloseBox from '~/components/chrome/CloseBox.astro';
+import TaskbarStrip from '~/components/TaskbarStrip.astro';
+import GridFloor from '~/components/GridFloor.astro';
+import AnalyticsBeacon from '~/components/AnalyticsBeacon.astro';
+import { getTree } from '~/fs/load';
+
+const tree = await getTree();
+---
+
+<BaseLayout tree={tree} notFound>
+  {/* Counted like any page view: the URL shows which broken links visitors arrive on. */}
+  <Fragment slot="head">
+    <AnalyticsBeacon />
+  </Fragment>
+  <div class="page-shell">
+    <GridFloor />
+    <Frame as="article" title="This page wandered off" headingLevel="h1">
+      <Fragment slot="controls">
+        <CloseBox />
+      </Fragment>
+      <div class="page-content">
+        <div class="stage" aria-hidden="true">
+          <div class="num ghost">404</div>
+          <div class="num">
+            <span>404</span>
+          </div>
+          <div class="walker">
+            <span class="q">?</span>
+            <svg
+              viewBox="0 0 60 100"
+              width="60"
+              height="100"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="3"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <g class="head">
+                <circle cx="30" cy="14" r="10"></circle>
+                <circle cx="34" cy="12" r="1.2" fill="currentColor" stroke="none"></circle>
+              </g>
+              <line x1="30" y1="24" x2="30" y2="60"></line>
+              <line class="arm arm-back" x1="30" y1="32" x2="30" y2="54"></line>
+              <line class="arm arm-front" x1="30" y1="32" x2="30" y2="54"></line>
+              <line class="leg leg-back" x1="30" y1="60" x2="30" y2="92"></line>
+              <line class="leg leg-front" x1="30" y1="60" x2="30" y2="92"></line>
+            </svg>
+          </div>
+        </div>
+        <div class="prose">
+          <p>
+            Error 404: nothing lives at this address. The little guy has been chasing the 404 for a
+            while and is not getting any closer.
+          </p>
+          <p>
+            <a href="/">Back to the home page</a>
+          </p>
+        </div>
+      </div>
+    </Frame>
+  </div>
+  <TaskbarStrip tree={tree} onHome={false} />
+</BaseLayout>
+
+<style>
+  .page-shell {
+    /* `GridFloor` fills this in behind the frame. */
+    position: relative;
+    min-height: 100dvh;
+    display: flex;
+    justify-content: center;
+    padding: 24px 16px calc(24px + 44px + env(safe-area-inset-bottom));
+  }
+
+  /* Same frame sizing as `PageLayout`. */
+  .page-shell > :global(.frame) {
+    width: 100%;
+    max-width: calc(72ch + 2 * var(--pad) + 2 * var(--border-w));
+    min-height: calc(100dvh - 48px - 44px - env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+  }
+
+  .page-content {
+    flex: 1;
+    padding: var(--pad);
+    background: var(--body-bg);
+  }
+
+  /* `--n` is the 404's font size; the stage is tall enough for it to hover above the
+     figure's head. Positions are percentages of the stage width, so the same keyframes
+     fit 390px and desktop. */
+  .stage {
+    --n: clamp(56px, 16vw, 150px);
+    position: relative;
+    overflow: hidden;
+    height: calc(var(--n) + 130px);
+    margin-bottom: 24px;
+    border-bottom: 2px dashed var(--ink-dim);
+  }
+
+  .num {
+    position: absolute;
+    top: 8px;
+    left: 78%;
+    width: 1.8em;
+    margin-left: -0.9em;
+    font-family: var(--font-mono);
+    font-size: var(--n);
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    color: var(--accent);
+    text-shadow: var(--bloom);
+  }
+
+  .num span {
+    display: block;
+  }
+
+  /* Reduced-motion composition: the 404 has already hopped (outlined ghost on the left)
+     and the figure is stuck reaching for the new spot. */
+  .ghost {
+    left: 22%;
+    color: transparent;
+    -webkit-text-stroke: 2px var(--ink-dim);
+    text-shadow: none;
+    transform: rotate(-6deg);
+  }
+
+  .walker {
+    position: absolute;
+    bottom: 0;
+    left: 58%;
+    width: 60px;
+    height: 100px;
+    margin-left: -30px;
+    color: var(--ink);
+    filter: drop-shadow(var(--bloom));
+  }
+
+  .walker svg {
+    display: block;
+  }
+
+  .q {
+    position: absolute;
+    top: -22px;
+    right: -6px;
+    font-family: var(--font-mono);
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--accent);
+  }
+
+  .head,
+  .arm,
+  .leg {
+    transform-box: view-box;
+  }
+
+  .head {
+    transform-origin: 30px 24px;
+  }
+
+  .arm {
+    transform-origin: 30px 32px;
+  }
+
+  .leg {
+    transform-origin: 30px 60px;
+  }
+
+  /* Still pose: the front arm reaches out, the legs are mid-stride. */
+  .arm-front {
+    transform: rotate(-105deg);
+  }
+
+  .arm-back {
+    transform: rotate(20deg);
+  }
+
+  .leg-front {
+    transform: rotate(-16deg);
+  }
+
+  .leg-back {
+    transform: rotate(14deg);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    /* The walk cycle is two numbers multiplied: `--phase` swings -1..1 every half
+       second, `--amp` is 1 while the figure is walking and 0 while it stands. */
+    @property --phase {
+      syntax: '<number>';
+      inherits: true;
+      initial-value: 0;
+    }
+
+    @property --amp {
+      syntax: '<number>';
+      inherits: true;
+      initial-value: 0;
+    }
+
+    .ghost {
+      display: none;
+    }
+
+    .num {
+      animation: n-jump 12s linear infinite;
+    }
+
+    .num span {
+      animation: n-shake 12s linear infinite;
+    }
+
+    .walker {
+      animation:
+        w-walk 12s linear infinite,
+        w-amp 12s linear infinite,
+        w-step 0.5s ease-in-out infinite alternate;
+    }
+
+    .walker svg {
+      animation: w-flip 12s linear infinite;
+    }
+
+    .q {
+      animation: q-show 12s linear infinite;
+    }
+
+    .head {
+      animation: h-look 12s linear infinite;
+    }
+
+    /* At rest (`--amp: 0`) the arms hang slightly out and the legs splay, so a standing
+       figure doesn't collapse into a single line. */
+    .arm-front {
+      transform: rotate(calc(var(--phase) * var(--amp) * 28deg + 14deg));
+    }
+
+    .arm-back {
+      transform: rotate(calc(var(--phase) * var(--amp) * -28deg - 14deg));
+    }
+
+    .leg-back {
+      transform: rotate(calc(var(--phase) * var(--amp) * 28deg + 6deg));
+    }
+
+    .leg-front {
+      transform: rotate(calc(var(--phase) * var(--amp) * -28deg - 6deg));
+    }
+
+    /* 404 sits right until the figure is two steps away (34%), then hops left; the same
+       on the way back at 84%. The flicker (31-34%, 81-84%) is the tell. */
+    @keyframes n-jump {
+      0%,
+      33.9% {
+        left: 78%;
+      }
+      34%,
+      83.9% {
+        left: 22%;
+      }
+      84%,
+      100% {
+        left: 78%;
+      }
+    }
+
+    @keyframes n-shake {
+      0%,
+      30%,
+      34%,
+      80%,
+      84%,
+      100% {
+        translate: 0;
+        opacity: 1;
+      }
+      31%,
+      33%,
+      81%,
+      83% {
+        translate: -3px 0;
+        opacity: 0.55;
+      }
+      32%,
+      82% {
+        translate: 3px 0;
+        opacity: 1;
+      }
+    }
+
+    /* Right 34% -> 66% (4-36%), a pause to turn around, left back to 34% (54-86%). */
+    @keyframes w-walk {
+      0%,
+      4% {
+        left: 34%;
+      }
+      36%,
+      54% {
+        left: 66%;
+      }
+      86%,
+      100% {
+        left: 34%;
+      }
+    }
+
+    @keyframes w-amp {
+      0%,
+      3.5% {
+        --amp: 0;
+      }
+      4.5%,
+      35.5% {
+        --amp: 1;
+      }
+      36.5%,
+      53.5% {
+        --amp: 0;
+      }
+      54.5%,
+      85.5% {
+        --amp: 1;
+      }
+      86.5%,
+      100% {
+        --amp: 0;
+      }
+    }
+
+    @keyframes w-step {
+      from {
+        --phase: -1;
+      }
+      to {
+        --phase: 1;
+      }
+    }
+
+    @keyframes w-flip {
+      0%,
+      43.9% {
+        scale: 1 1;
+      }
+      44%,
+      93.9% {
+        scale: -1 1;
+      }
+      94%,
+      100% {
+        scale: 1 1;
+      }
+    }
+
+    @keyframes q-show {
+      0%,
+      3% {
+        opacity: 1;
+      }
+      4%,
+      36% {
+        opacity: 0;
+      }
+      37%,
+      53% {
+        opacity: 1;
+      }
+      54%,
+      86% {
+        opacity: 0;
+      }
+      87%,
+      100% {
+        opacity: 1;
+      }
+    }
+
+    @keyframes h-look {
+      0%,
+      4%,
+      36%,
+      41%,
+      46%,
+      86%,
+      93%,
+      100% {
+        rotate: 0deg;
+      }
+      1%,
+      39%,
+      87%,
+      91% {
+        rotate: -12deg;
+      }
+      2%,
+      38%,
+      40%,
+      89% {
+        rotate: 12deg;
+      }
+      3% {
+        rotate: -6deg;
+      }
+    }
+  }
+
+  @media print {
+    .stage {
+      display: none;
+    }
+  }
+</style>

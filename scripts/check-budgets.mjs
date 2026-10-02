@@ -29,7 +29,7 @@ export const BUDGETS = {
 const gzipBytes = (buffer) => gzipSync(buffer).length;
 const byteLength = (text) => Buffer.byteLength(text, 'utf8');
 
-/** Every `index.html` under `dist`, as `{ url, file }`, `/` first. */
+/** Every `index.html` under `dist`, plus the root `404.html`, as `{ url, file }`, `/` first. */
 function listPages(dist) {
   const pages = [];
   const walk = (dir) => {
@@ -39,6 +39,8 @@ function listPages(dist) {
       else if (entry.name === 'index.html') {
         const rel = relative(dist, dir).split('\\').join('/');
         pages.push({ url: rel === '' ? '/' : `/${rel}/`, file: path });
+      } else if (dir === dist && entry.name === '404.html') {
+        pages.push({ url: '/404.html', file: path });
       }
     }
   };
@@ -65,7 +67,7 @@ const row = (name, budget, actual, unit, ok = actual <= budget) => ({
 });
 
 /**
- * Content pages (every `index.html` but the root): no `<script src`, no module script,
+ * Content pages (every `index.html` but the root, and `404.html`): no `<script src`, no module script,
  * inline JS <= 1.5 KB (the CRT script plus the analytics beacon). Kept apart from
  * `checkBudgets` so a fixture `dist/` needs no shell.
  */

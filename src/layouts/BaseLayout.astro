@@ -9,14 +9,16 @@ interface Props {
   /** True on content pages, false or omitted on `/`. Enables the inbound half of the
    * view transition (see `CrtPrefScript`). */
   page?: boolean;
+  /** True only on `404.astro`; see `Head.astro`. */
+  notFound?: boolean;
 }
 
-const { node, tree, page = false } = Astro.props;
+const { node, tree, page = false, notFound = false } = Astro.props;
 ---
 
 <html lang="en">
   <head>
-    <Head node={node} tree={tree} page={page}>
+    <Head node={node} tree={tree} page={page} notFound={notFound}>
       <slot name="head" />
     </Head>
   </head>

@@ -24,15 +24,16 @@ export default defineConfig({
     react(),
     siteGuard(),
     devResumePdf(),
-    // Every page, minus the OG images, the raw fs body/source endpoints and the resume
-    // PDF, none of which are pages.
+    // Every page, minus the OG images, the raw fs body/source endpoints, the resume PDF
+    // and the 404 page, none of which belong in a sitemap.
     sitemap({
       filter: (page) => {
         const url = new URL(page);
         return (
           !url.pathname.includes('/og/') &&
           !url.pathname.includes('/fs/') &&
-          url.pathname !== '/resume.pdf'
+          url.pathname !== '/resume.pdf' &&
+          url.pathname !== '/404/'
         );
       },
     }),

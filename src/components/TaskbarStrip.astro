@@ -102,4 +102,20 @@ const launchers = mounts
   .taskbar-launchers a:hover {
     color: var(--accent);
   }
+
+  /* At 16px with 16px gaps the five launchers need 384px, so a phone clipped the last one
+     to its first letter. Tighter spacing and type keep all five visible down to about
+     340px; narrower than that, the list still scrolls. */
+  @media (max-width: 440px) {
+    .taskbar-launchers {
+      gap: 8px;
+      font-size: 14px;
+    }
+  }
+
+  @media (max-width: 380px) {
+    .taskbar-launchers {
+      font-size: 13px;
+    }
+  }
 </style>
