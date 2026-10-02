@@ -1,11 +1,16 @@
 // The terminal window. It performs the effects that `interpret.ts` requests: `open` via
 // `launch()`, `fetchSrc` via a fetch of `node.srcUrl` (the raw source, not the rendered
-// body from `bodies.ts`), `clear`, `exit`, `toast`, `arm`/`disarm`, `typeLines`, `hexWall`.
+// body from `bodies.ts`), `clear`, `exit`, `toast`, `arm`/`disarm`, `typeLines`, `hexWall`,
+// `vim`.
 //
 // Output is a polite `role="log"` in which each `LogEntry` (the prompt line plus its output)
 // is one DOM child, appended once the command has fully resolved, never line by line. The
 // typing animation of `typeLines`/`hexWall` renders in a transient `aria-hidden` slot
 // outside the log, and only the finished result becomes a log child.
+//
+// `vim` takes the window over: the log is hidden (its entries kept, so the scrollback is
+// intact on the way out) and the one input becomes vim's command line. The visitor's
+// messages go to a polite `role="status"`; the buffer and the timer are `aria-hidden`.
 import { useEffect, useRef, useState } from 'react';
 import { track } from '~/analytics';
 import type { FsNode } from '~/fs/types';
@@ -22,6 +27,7 @@ import { useShellStore } from '../store';
 import { appRegistry } from '../apps/registry';
 import { complete } from './complete';
 import { commandName, run, type Line } from './interpret';
+import { CARD, formatElapsed, press, startVim, submit, type VimKey, type VimState } from './vim';
 
 /** Delay between typed lines; skipped under reduced motion. */
 const TYPE_INTERVAL_MS = 40;
@@ -73,6 +79,8 @@ export default function Terminal({ windowId }: AppProps) {
   const [input, setInput] = useState('');
   const [typingLines, setTypingLines] = useState<Line[] | null>(null);
   const [cols, setCols] = useState(DEFAULT_COLS);
+  const [vim, setVim] = useState<VimState | null>(null);
+  const [trappedSecs, setTrappedSecs] = useState(0);
 
   const logRef = useRef<HTMLDivElement>(null);
   const measureRef = useRef<HTMLSpanElement>(null);
@@ -171,6 +179,36 @@ export default function Terminal({ windowId }: AppProps) {
     });
   }
 
+  function applyVim(next: VimState): void {
+    if (!next.escaped) {
+      setVim(next);
+      return;
+    }
+    const trapped = formatElapsed(trappedSecs * 1000);
+    setVim(null);
+    commit('', [{ text: "you escaped. most don't.", tone: 'dim' }]);
+    useShellStore.getState().toast('ESCAPED VIM', trapped, true);
+  }
+
+  function handleVimKeyDown(e: React.KeyboardEvent<HTMLInputElement>): void {
+    if (!vim) return;
+    let key: VimKey | null = null;
+    if (e.key === 'Escape') key = 'esc';
+    else if (e.ctrlKey && (e.key === 'c' || e.key === 'C')) key = 'ctrl-c';
+    if (key) {
+      e.preventDefault();
+      setInput('');
+      applyVim(press(vim, key));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      setInput('');
+      applyVim(submit(vim, input));
+    } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      e.preventDefault();
+    }
+    // Tab is left alone, so focus can still leave the window.
+  }
+
   async function runLine(raw: string): Promise<void> {
     if (!tree) return;
     const cwdAtRun = wd;
@@ -195,7 +233,17 @@ export default function Terminal({ windowId }: AppProps) {
       return;
     }
     if (effects.some((e) => e.type === 'exit')) {
+      for (const effect of effects) {
+        if (effect.type === 'toast')
+          useShellStore.getState().toast(effect.label, effect.value, effect.splash);
+      }
       doExit();
+      return;
+    }
+    if (effects.some((e) => e.type === 'vim')) {
+      commit(promptText, []);
+      setTrappedSecs(0);
+      setVim(startVim());
       return;
     }
 
@@ -225,7 +273,7 @@ export default function Terminal({ windowId }: AppProps) {
           void loadSrc(id, effect.node);
           break;
         case 'toast':
-          useShellStore.getState().toast(effect.label, effect.value);
+          useShellStore.getState().toast(effect.label, effect.value, effect.splash);
           break;
         case 'arm':
           doArm(true);
@@ -262,6 +310,10 @@ export default function Terminal({ windowId }: AppProps) {
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>): void {
+    if (vim) {
+      handleVimKeyDown(e);
+      return;
+    }
     if (e.key === 'Tab') {
       e.preventDefault();
       if (!tree) return;
@@ -324,6 +376,14 @@ export default function Terminal({ windowId }: AppProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Ticks vim's elapsed-time counter while the trap is on.
+  const trapped = vim !== null;
+  useEffect(() => {
+    if (!trapped) return;
+    const timer = setInterval(() => setTrappedSecs((secs) => secs + 1), 1000);
+    return () => clearInterval(timer);
+  }, [trapped]);
+
   // Measures `ls`'s column budget in characters, using a hidden monospace probe span so it
   // tracks the real font, and re-measures whenever the log resizes.
   useEffect(() => {
@@ -363,6 +423,7 @@ export default function Terminal({ windowId }: AppProps) {
         aria-live="polite"
         aria-label="Terminal output"
         ref={logRef}
+        hidden={trapped}
       >
         {entries.map((entry) => (
           <div
@@ -385,12 +446,39 @@ export default function Terminal({ windowId }: AppProps) {
           </div>
         )}
       </div>
+      {vim && (
+        <div className="vim">
+          <div className="vim-buffer" aria-hidden="true">
+            {Array.from({ length: 40 }, (_, i) => (
+              <div key={i}>~</div>
+            ))}
+          </div>
+          <div className="vim-card-slot" role="status">
+            {vim.showCard && (
+              <div className="vim-card">
+                <div className="vim-card-title">{CARD.title}</div>
+                <div className="vim-card-meta">{CARD.meta}</div>
+                <div>{CARD.answer}</div>
+              </div>
+            )}
+          </div>
+          <div className="vim-status" aria-hidden="true">
+            <span>&quot;[No Name]&quot; 0L, 0B</span>
+            <span>{formatElapsed(trappedSecs * 1000)}</span>
+          </div>
+          <div className="vim-message" role="status">
+            {vim.message}
+          </div>
+        </div>
+      )}
       <div className="terminal-input-row">
-        <span className="terminal-prompt" aria-hidden="true">{`guest@valdez:${wd}$ `}</span>
+        {!vim && (
+          <span className="terminal-prompt" aria-hidden="true">{`guest@valdez:${wd}$ `}</span>
+        )}
         <input
           ref={inputRef}
           className="terminal-input"
-          aria-label="Terminal command"
+          aria-label={vim ? 'Vim command line' : 'Terminal command'}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}

@@ -238,6 +238,63 @@
   color: var(--ink);
 }
 
+/* The splash toast: an FPS round-end banner over the whole viewport. Its punch-in and
+   fade run for 3s, matching `SPLASH_LIFETIME_MS` in the store. The one animation in the
+   shell's chrome: a one-off HUD banner, not part of the CRT treatment. Never takes
+   pointer events. */
+.toast-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 11;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2em;
+  pointer-events: none;
+  text-align: center;
+  animation: toast-splash 3s ease-out both;
+}
+
+.toast-splash-label {
+  padding: 0.1em 0.5em;
+  border-block: 2px solid var(--accent);
+  color: var(--accent);
+  font-size: clamp(3rem, 10vw, 9rem);
+  font-weight: bold;
+  line-height: 1.1;
+  letter-spacing: 0.06em;
+  text-shadow: var(--bloom);
+}
+
+.toast-splash-value {
+  color: var(--accent);
+  font-size: clamp(1.5rem, 5vw, 4.5rem);
+  text-shadow: var(--bloom);
+}
+
+@keyframes toast-splash {
+  0% {
+    opacity: 0;
+    transform: scale(1.4);
+  }
+  7%,
+  85% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast-splash {
+    animation: none;
+  }
+}
+
 /* Strips the native button chrome that `.folder-row-link` never needed on `<a>`/`<span>`. */
 button.folder-row-link {
   all: unset;

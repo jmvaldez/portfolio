@@ -25,6 +25,8 @@ export interface Toast {
   id: number;
   label: string;
   value?: string;
+  /** Drawn as a centred full-viewport banner instead of a corner toast. */
+  splash?: boolean;
 }
 
 /**
@@ -117,7 +119,7 @@ interface ShellState {
   /** The kill-feed toast stack, showing at most `MAX_TOASTS`; a new arrival beyond that
    * drops the oldest. Each toast is also sent to the status region via `announce()`. */
   toasts: Toast[];
-  toast: (label: string, value?: string) => void;
+  toast: (label: string, value?: string, splash?: boolean) => void;
   dismissToast: (id: number) => void;
 
   /** Session-only visual effects state. */
@@ -131,6 +133,9 @@ let nextToastId = 0;
 
 /** How long a toast stays visible before auto-dismissing. */
 const TOAST_LIFETIME_MS = 4000;
+
+/** How long a splash toast stays up; `desktop.css`'s `toast-splash` animation runs for the same time. */
+const SPLASH_LIFETIME_MS = 3000;
 
 /** The cap on simultaneously visible toasts. */
 const MAX_TOASTS = 4;
@@ -277,14 +282,22 @@ export const useShellStore = create<ShellState>((set, get) => ({
   },
 
   toasts: [],
-  toast: (label, value) => {
+  toast: (label, value, splash) => {
     const id = ++nextToastId;
     set((state) => {
-      const next = [...state.toasts, { id, ...(value !== undefined ? { value } : {}), label }];
+      const next = [
+        ...state.toasts,
+        {
+          id,
+          ...(value !== undefined ? { value } : {}),
+          ...(splash ? { splash } : {}),
+          label,
+        },
+      ];
       return { toasts: next.length > MAX_TOASTS ? next.slice(next.length - MAX_TOASTS) : next };
     });
     get().announce(value ? `${label}: ${value}` : label);
-    setTimeout(() => get().dismissToast(id), TOAST_LIFETIME_MS);
+    setTimeout(() => get().dismissToast(id), splash ? SPLASH_LIFETIME_MS : TOAST_LIFETIME_MS);
   },
   dismissToast: (id) => set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) })),
 

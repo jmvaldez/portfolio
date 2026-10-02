@@ -1,6 +1,6 @@
 /*
  * Terminal styles, scoped to `.terminal`. Tones map to `--ink` / `--ink-dim`; the
- * terminal never uses the amber accent, so nothing here reads `--accent`.
+ * terminal never uses the amber accent, bar the `vim` takeover below.
  */
 
 .terminal {
@@ -59,4 +59,55 @@
   outline: none;
   color: var(--ink);
   font: inherit;
+}
+
+/* The `vim` easter egg's takeover: a column of tildes, a status line, a message line. Its
+ * status line and Stack Overflow card are the one place in the terminal that borrows the amber. */
+.vim {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.vim-buffer {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  color: var(--ink-dim);
+}
+
+.vim-card-slot {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  right: 4px;
+}
+
+.vim-card {
+  padding: 6px 8px;
+  border: 1px solid var(--accent);
+  background: var(--bg-sunk);
+  white-space: pre-wrap;
+}
+
+.vim-card-title {
+  color: var(--accent);
+}
+
+.vim-card-meta {
+  color: var(--ink-dim);
+}
+
+.vim-status {
+  display: flex;
+  justify-content: space-between;
+  background: var(--chrome);
+  color: var(--accent);
+}
+
+.vim-message {
+  min-height: 1.4em;
+  white-space: pre-wrap;
 }

@@ -35,6 +35,9 @@ const EGGS: Record<string, string> = {
   arm: "you'll know when it's armed.",
   disarm: "you'll know when it's not.",
   hack: 'do not.',
+  vi: 'abandon hope.',
+  vim: "it's just an editor.",
+  nvim: 'abandon hope, now with lua.',
 };
 
 function commandNode(name: string): FsNode {
