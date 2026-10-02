@@ -3,6 +3,7 @@ import react from '@astrojs/react';
 import sitemap from '@astrojs/sitemap';
 import tailwindcss from '@tailwindcss/vite';
 import siteGuard from './src/integrations/site-guard.ts';
+import devResumePdf from './src/integrations/dev-resume-pdf.ts';
 import { satteri } from '@astrojs/markdown-satteri';
 import { externalLinksInNewTab } from './src/lib/external-links.ts';
 
@@ -22,6 +23,7 @@ export default defineConfig({
   integrations: [
     react(),
     siteGuard(),
+    devResumePdf(),
     // Every page, minus the OG images, the raw fs body/source endpoints and the resume
     // PDF, none of which are pages.
     sitemap({
